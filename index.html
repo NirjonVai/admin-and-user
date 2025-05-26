@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login</title>
+</head>
+<body>
+  <h2>Login</h2>
+  <input type="email" id="email" placeholder="Email" /><br><br>
+  <input type="password" id="password" placeholder="Password" /><br><br>
+  <button id="loginBtn">Login</button>
+  <p>Don't have an account? <a href="signup.html">Sign up</a></p>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
+    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAPF4nGlb9R2osmXUwrPgatwAl1huIAGpg",
+      authDomain: "admin-and-user-f50c3.firebaseapp.com",
+      projectId: "admin-and-user-f50c3",
+      storageBucket: "admin-and-user-f50c3.appspot.com",
+      messagingSenderId: "926355768153",
+      appId: "1:926355768153:web:d52c55b2daf0e85a6e8248",
+      measurementId: "G-7FES0VM8S1"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    document.getElementById("loginBtn").addEventListener("click", async () => {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+        const user = auth.currentUser;
+        const docRef = doc(db, "users", user.uid);
+        const docSnap = await getDoc(docRef);
+        const role = docSnap.exists() ? docSnap.data().role : null;
+
+        if (role === "admin") {
+          window.location.href = "admin.html";
+        } else {
+          window.location.href = "dashboard.html";
+        }
+      } catch (error) {
+        alert(error.message);
+      }
+    });
+  </script>
+</body>
+</html>
