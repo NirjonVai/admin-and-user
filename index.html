@@ -3,25 +3,53 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Login</title>
+  <title>Login & Signup</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 30px; }
+    h2 { color: #333; }
+    input, button {
+      display: block;
+      margin: 10px 0;
+      padding: 10px;
+      font-size: 16px;
+      width: 300px;
+    }
+    button {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    .section { margin-bottom: 30px; }
+  </style>
 </head>
 <body>
-  <h2>Login</h2>
-  <input type="email" id="email" placeholder="Email" /><br><br>
-  <input type="password" id="password" placeholder="Password" /><br><br>
-  <button id="loginBtn">Login</button>
-  <p>Don't have an account? <a href="signup.html">Sign up</a></p>
+  <div class="section">
+    <h2>Login</h2>
+    <input id="loginEmail" type="email" placeholder="Email" />
+    <input id="loginPassword" type="password" placeholder="Password" />
+    <button onclick="login()">Login</button>
+  </div>
+
+  <div class="section">
+    <h2>Sign Up</h2>
+    <input id="signupEmail" type="email" placeholder="Email" />
+    <input id="signupPassword" type="password" placeholder="Password" />
+    <button onclick="signup()">Sign Up</button>
+  </div>
 
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
-    import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
-    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
+    import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAPF4nGlb9R2osmXUwrPgatwAl1huIAGpg",
       authDomain: "admin-and-user-f50c3.firebaseapp.com",
       projectId: "admin-and-user-f50c3",
-      storageBucket: "admin-and-user-f50c3.appspot.com",
+      storageBucket: "admin-and-user-f50c3.firebasestorage.app",
       messagingSenderId: "926355768153",
       appId: "1:926355768153:web:d52c55b2daf0e85a6e8248",
       measurementId: "G-7FES0VM8S1"
@@ -31,26 +59,38 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    document.getElementById("loginBtn").addEventListener("click", async () => {
-      const email = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
+    window.signup = async () => {
+      const email = document.getElementById("signupEmail").value;
+      const password = document.getElementById("signupPassword").value;
+
+      try {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+
+        // Save email to Firestore
+        await setDoc(doc(db, "users", user.uid), {
+          email: user.email
+        });
+
+        alert("Signup successful!");
+        window.location.href = "dashboard.html";
+      } catch (error) {
+        alert("Signup failed: " + error.message);
+      }
+    };
+
+    window.login = async () => {
+      const email = document.getElementById("loginEmail").value;
+      const password = document.getElementById("loginPassword").value;
 
       try {
         await signInWithEmailAndPassword(auth, email, password);
-        const user = auth.currentUser;
-        const docRef = doc(db, "users", user.uid);
-        const docSnap = await getDoc(docRef);
-        const role = docSnap.exists() ? docSnap.data().role : null;
-
-        if (role === "admin") {
-          window.location.href = "admin.html";
-        } else {
-          window.location.href = "dashboard.html";
-        }
+        alert("Login successful!");
+        window.location.href = "dashboard.html";
       } catch (error) {
-        alert(error.message);
+        alert("Login failed: " + error.message);
       }
-    });
+    };
   </script>
 </body>
 </html>
