@@ -91,7 +91,7 @@
 <body>
 
   <h1>Admin Panel - Manage Users & Withdrawals</h1>
-  <div id="versionTag">Version 1.4</div>
+  <div id="versionTag">Version 1.3</div>
   <button id="logoutBtn" title="Logout from admin panel">Logout</button>
 
   <h2>Users</h2>
@@ -103,7 +103,7 @@
         <th>Balance (৳)</th>
         <th>Change Email</th>
         <th>Change Role</th>
-        <th>Update Balance</th>
+        <th>Change Balance</th>
         <th>Send Password Reset</th>
         <th>Action</th>
       </tr>
@@ -186,20 +186,25 @@
         const snapshot = await getDocs(collection(db, "users"));
         snapshot.forEach(docSnap => {
           const data = docSnap.data();
+
           const tr = document.createElement("tr");
 
+          // Current email cell
           const emailTd = document.createElement("td");
           emailTd.textContent = data.email || "-";
           tr.appendChild(emailTd);
 
+          // Role cell
           const roleTd = document.createElement("td");
           roleTd.textContent = data.role || "user";
           tr.appendChild(roleTd);
 
+          // Balance cell
           const balanceTd = document.createElement("td");
-          balanceTd.textContent = data.mainBalance?.toFixed(2) || "0.00";
+          balanceTd.textContent = (data.mainBalance !== undefined) ? data.mainBalance.toFixed(2) : "0.00";
           tr.appendChild(balanceTd);
 
+          // Email change input
           const changeEmailTd = document.createElement("td");
           const emailInput = document.createElement("input");
           emailInput.type = "text";
@@ -207,6 +212,7 @@
           changeEmailTd.appendChild(emailInput);
           tr.appendChild(changeEmailTd);
 
+          // Role select dropdown
           const roleChangeTd = document.createElement("td");
           const roleSelect = document.createElement("select");
           roleSelect.innerHTML = `
@@ -216,13 +222,17 @@
           roleChangeTd.appendChild(roleSelect);
           tr.appendChild(roleChangeTd);
 
-          const balanceInputTd = document.createElement("td");
+          // Balance change input
+          const balanceChangeTd = document.createElement("td");
           const balanceInput = document.createElement("input");
           balanceInput.type = "number";
-          balanceInput.value = data.mainBalance || 0;
-          balanceInputTd.appendChild(balanceInput);
-          tr.appendChild(balanceInputTd);
+          balanceInput.min = "0";
+          balanceInput.step = "0.01";
+          balanceInput.value = (data.mainBalance !== undefined) ? data.mainBalance : 0;
+          balanceChangeTd.appendChild(balanceInput);
+          tr.appendChild(balanceChangeTd);
 
+          // Password reset button
           const pwResetTd = document.createElement("td");
           const pwResetBtn = document.createElement("button");
           pwResetBtn.textContent = "Send Reset Email";
@@ -230,6 +240,7 @@
           pwResetTd.appendChild(pwResetBtn);
           tr.appendChild(pwResetTd);
 
+          // Update button
           const actionTd = document.createElement("td");
           const updateBtn = document.createElement("button");
           updateBtn.textContent = "Update";
@@ -238,8 +249,12 @@
             const newRole = roleSelect.value;
             const newBalance = parseFloat(balanceInput.value);
 
-            if (!newEmail || isNaN(newBalance)) {
-              showMessage("Invalid input", "error");
+            if (!newEmail) {
+              showMessage("Email cannot be empty", "error");
+              return;
+            }
+            if (isNaN(newBalance) || newBalance < 0) {
+              showMessage("Balance must be a non-negative number", "error");
               return;
             }
 
@@ -249,8 +264,10 @@
                 role: newRole,
                 mainBalance: newBalance
               });
+              emailTd.textContent = newEmail;
+              roleTd.textContent = newRole;
+              balanceTd.textContent = newBalance.toFixed(2);
               showMessage(`Updated user: ${newEmail}`, "success");
-              await loadUsers(); // Refresh data
             } catch (e) {
               showMessage("Update failed: " + e.message, "error");
             }
@@ -306,12 +323,14 @@
 
           const actionTd = document.createElement("td");
 
+          // Approve button
           const approveBtn = document.createElement("button");
           approveBtn.textContent = "Approve";
           approveBtn.className = "approve-btn";
           approveBtn.onclick = () => processWithdraw(docSnap.id, true);
           actionTd.appendChild(approveBtn);
 
+          // Reject button
           const rejectBtn = document.createElement("button");
           rejectBtn.textContent = "Reject";
           rejectBtn.className = "reject-btn";
@@ -390,5 +409,6 @@
         .catch((error) => showMessage("Error sending reset email: " + error.message, "error"));
     }
   </script>
+
 </body>
 </html>
