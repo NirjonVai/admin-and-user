@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Dashboard with Tasks, Withdraw & History</title>
+  <title>Dashboard with Tasks & Withdraw</title>
   <style>
     body { font-family: Arial, sans-serif; padding: 30px; max-width: 600px; margin: auto; }
-    h1, h2 { color: #333; }
+    h1 { color: #333; }
     #userEmail, #balance { font-size: 18px; margin: 10px 0; }
     ul { list-style: none; padding: 0; }
     li { background: #f0f0f0; margin: 8px 0; padding: 10px; display: flex; align-items: center; justify-content: space-between; }
@@ -47,15 +47,6 @@
       width: 200px;
       margin-right: 10px;
     }
-    #historySection {
-      margin-top: 30px;
-    }
-    .history-entry {
-      background: #e0e0e0;
-      padding: 10px;
-      margin: 6px 0;
-      font-size: 14px;
-    }
   </style>
 </head>
 <body>
@@ -73,18 +64,13 @@
     <button id="withdrawBtn">Request Withdraw</button>
   </div>
 
-  <div id="historySection">
-    <h2>Withdraw History</h2>
-    <div id="withdrawHistory">Loading history...</div>
-  </div>
-
   <button id="logoutBtn">Logout</button>
   <p id="message"></p>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
     import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
-    import { getFirestore, doc, getDoc, updateDoc, collection, addDoc, query, where, getDocs, orderBy } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, updateDoc, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAPF4nGlb9R2osmXUwrPgatwAl1huIAGpg",
@@ -105,9 +91,9 @@
     const taskListEl = document.getElementById("taskList");
     const messageEl = document.getElementById("message");
     const logoutBtn = document.getElementById("logoutBtn");
+
     const withdrawBtn = document.getElementById("withdrawBtn");
     const withdrawAmountInput = document.getElementById("withdrawAmount");
-    const withdrawHistoryEl = document.getElementById("withdrawHistory");
 
     let currentUserId = null;
     let userData = null;
@@ -126,7 +112,6 @@
       currentUserId = user.uid;
       await loadUserData();
       renderTasks();
-      await loadWithdrawHistory();
     });
 
     async function loadUserData() {
@@ -168,11 +153,12 @@
 
     async function completeTask(taskId) {
       if (userData.completedTasks && userData.completedTasks[taskId]) {
-        return;
+        return; // already completed
       }
 
       userData.completedTasks = userData.completedTasks || {};
       userData.completedTasks[taskId] = true;
+
       userData.mainBalance = (userData.mainBalance || 0) + 5;
       balanceEl.textContent = "Main Balance: ৳" + userData.mainBalance.toFixed(2);
 
@@ -206,6 +192,7 @@
       }
 
       try {
+        // Add withdraw request document
         await addDoc(collection(db, "withdrawRequests"), {
           userId: currentUserId,
           email: userData.email || "",
@@ -216,42 +203,14 @@
 
         messageEl.textContent = "Withdraw request sent to admin.";
         messageEl.style.color = "green";
+
         withdrawAmountInput.value = "";
-        await loadWithdrawHistory();
 
       } catch (error) {
         messageEl.textContent = "Error sending withdraw request: " + error.message;
         messageEl.style.color = "red";
       }
     };
-
-    async function loadWithdrawHistory() {
-      withdrawHistoryEl.innerHTML = "Loading...";
-      try {
-        const q = query(
-          collection(db, "withdrawRequests"),
-          where("userId", "==", currentUserId),
-          orderBy("requestedAt", "desc")
-        );
-        const querySnapshot = await getDocs(q);
-        if (querySnapshot.empty) {
-          withdrawHistoryEl.innerHTML = "<p>No withdraw history found.</p>";
-          return;
-        }
-
-        withdrawHistoryEl.innerHTML = "";
-        querySnapshot.forEach(doc => {
-          const data = doc.data();
-          const entry = document.createElement("div");
-          entry.className = "history-entry";
-          const date = data.requestedAt?.toDate?.().toLocaleString() || "Unknown date";
-          entry.textContent = `৳${data.amount.toFixed(2)} - ${data.status} (${date})`;
-          withdrawHistoryEl.appendChild(entry);
-        });
-      } catch (error) {
-        withdrawHistoryEl.innerHTML = "<p>Error loading history: " + error.message + "</p>";
-      }
-    }
 
     logoutBtn.onclick = async () => {
       await signOut(auth);
