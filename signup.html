@@ -5,10 +5,13 @@
 </head>
 <body>
   <h2>Sign Up</h2>
-  <input type="email" id="email" placeholder="Email"><br><br>
-  <input type="password" id="password" placeholder="Password"><br><br>
-  <button id="signupBtn">Sign Up</button>
-  <p>Already have an account? <a href="index.html">Login</a></p>
+  <form id="signup-form">
+    <label>Email: <input type="email" id="email" required></label><br><br>
+    <label>Password: <input type="password" id="password" required></label><br><br>
+    <button type="submit">Sign Up</button>
+  </form>
+
+  <p>Already have an account? <a href="login.html">Login here</a></p>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
@@ -29,20 +32,27 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    document.getElementById("signupBtn").addEventListener("click", async () => {
-      const email = document.getElementById("email").value;
+    const signupForm = document.getElementById("signup-form");
+
+    signupForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const email = document.getElementById("email").value.trim();
       const password = document.getElementById("password").value;
 
       try {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
 
+        // Firestore-এ ইউজারের ডকুমেন্ট তৈরি করবো
         await setDoc(doc(db, "users", user.uid), {
+          email: user.email,
           role: "user"
         });
 
-        alert("Signup successful!");
-        window.location.href = "index.html";
+        alert("Sign Up successful! Please login.");
+        window.location.href = "login.html";
+
       } catch (error) {
         alert("Error: " + error.message);
       }
