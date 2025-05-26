@@ -18,26 +18,30 @@
       background-color: #4CAF50;
       color: white;
       border: none;
+      cursor: pointer;
     }
     button:hover {
       background-color: #45a049;
     }
     .section { margin-bottom: 30px; }
+    .error { color: red; }
   </style>
 </head>
 <body>
   <div class="section">
     <h2>Login</h2>
-    <input id="loginEmail" type="email" placeholder="Email" />
-    <input id="loginPassword" type="password" placeholder="Password" />
+    <input id="loginEmail" type="email" placeholder="Email" required />
+    <input id="loginPassword" type="password" placeholder="Password" required />
     <button onclick="login()">Login</button>
+    <div id="loginError" class="error"></div>
   </div>
 
   <div class="section">
     <h2>Sign Up</h2>
-    <input id="signupEmail" type="email" placeholder="Email" />
-    <input id="signupPassword" type="password" placeholder="Password" />
+    <input id="signupEmail" type="email" placeholder="Email" required />
+    <input id="signupPassword" type="password" placeholder="Password" required minlength="6" />
     <button onclick="signup()">Sign Up</button>
+    <div id="signupError" class="error"></div>
   </div>
 
   <script type="module">
@@ -59,15 +63,23 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
+    const loginErrorDiv = document.getElementById('loginError');
+    const signupErrorDiv = document.getElementById('signupError');
+
     window.signup = async () => {
-      const email = document.getElementById("signupEmail").value;
+      signupErrorDiv.textContent = "";
+      const email = document.getElementById("signupEmail").value.trim();
       const password = document.getElementById("signupPassword").value;
+
+      if (!email || !password) {
+        signupErrorDiv.textContent = "Please fill all fields.";
+        return;
+      }
 
       try {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
 
-        // Store email and role in Firestore
         await setDoc(doc(db, "users", user.uid), {
           email: user.email,
           role: "user"
@@ -76,19 +88,24 @@
         alert("Signup successful!");
         window.location.href = "dashboard.html";
       } catch (error) {
-        alert("Signup failed: " + error.message);
+        signupErrorDiv.textContent = error.message;
       }
     };
 
     window.login = async () => {
-      const email = document.getElementById("loginEmail").value;
+      loginErrorDiv.textContent = "";
+      const email = document.getElementById("loginEmail").value.trim();
       const password = document.getElementById("loginPassword").value;
+
+      if (!email || !password) {
+        loginErrorDiv.textContent = "Please fill all fields.";
+        return;
+      }
 
       try {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
 
-        // Check role from Firestore
         const userDoc = await getDoc(doc(db, "users", user.uid));
         const role = userDoc.exists() ? userDoc.data().role : "user";
 
@@ -99,7 +116,7 @@
           window.location.href = "dashboard.html";
         }
       } catch (error) {
-        alert("Login failed: " + error.message);
+        loginErrorDiv.textContent = error.message;
       }
     };
   </script>
