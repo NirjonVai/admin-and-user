@@ -1,26 +1,41 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Admin Panel - Manage Users</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Panel</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    th { background-color: #f2f2f2; }
+    input { width: 100%; }
+    button { padding: 5px 10px; margin-top: 10px; }
+  </style>
 </head>
 <body>
-  <h2>Admin Panel</h2>
-  <p>Manage Users Below</p>
-
-  <div id="userList"></div>
-
-  <button onclick="logout()">Logout</button>
+  <h2>Admin Panel - Manage Users</h2>
+  <table id="userTable">
+    <thead>
+      <tr>
+        <th>Email</th>
+        <th>Role</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
 
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
-    import { getFirestore, collection, getDocs, doc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
+    import { getFirestore, collection, getDocs, updateDoc, doc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAPF4nGlb9R2osmXUwrPgatwAl1huIAGpg",
       authDomain: "admin-and-user-f50c3.firebaseapp.com",
       projectId: "admin-and-user-f50c3",
-      storageBucket: "admin-and-user-f50c3.appspot.com",
+      storageBucket: "admin-and-user-f50c3.firebasestorage.app",
       messagingSenderId: "926355768153",
       appId: "1:926355768153:web:d52c55b2daf0e85a6e8248",
       measurementId: "G-7FES0VM8S1"
@@ -30,69 +45,56 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    const userListDiv = document.getElementById("userList");
+    const tbody = document.querySelector("#userTable tbody");
 
     onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        const userDoc = await getDoc(doc(db, "users", user.uid));
-        if (userDoc.exists() && userDoc.data().role === "admin") {
-          loadUsers();
-        } else {
-          alert("Access denied. Admins only.");
-          window.location.href = "dashboard.html";
-        }
-      } else {
+      if (!user) {
         window.location.href = "index.html";
+        return;
       }
+
+      const userDoc = await getDocs(collection(db, "users"));
+      let isAdmin = false;
+
+      // Check if current user is admin
+      userDoc.forEach((docu) => {
+        if (docu.id === user.uid && docu.data().role === "admin") {
+          isAdmin = true;
+        }
+      });
+
+      if (!isAdmin) {
+        alert("Access denied. Not an admin.");
+        window.location.href = "dashboard.html";
+        return;
+      }
+
+      // Load all users
+      const snapshot = await getDocs(collection(db, "users"));
+      snapshot.forEach((docu) => {
+        const data = docu.data();
+        const tr = document.createElement("tr");
+
+        tr.innerHTML = `
+          <td>${data.email}</td>
+          <td>
+            <input type="text" value="${data.role}" id="role-${docu.id}" />
+          </td>
+          <td>
+            <button onclick="updateUserRole('${docu.id}')">Update</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
     });
 
-    async function loadUsers() {
-      const usersCol = collection(db, "users");
-      const snapshot = await getDocs(usersCol);
-
-      userListDiv.innerHTML = "";
-
-      snapshot.forEach(docSnap => {
-        const data = docSnap.data();
-        const userId = docSnap.id;
-
-        const div = document.createElement("div");
-        div.innerHTML = `
-          <strong>UID:</strong> ${userId}<br>
-          <label>Email: <input type="text" id="email-${userId}" value="${data.email || ''}"></label><br>
-          <label>Role: 
-            <select id="role-${userId}">
-              <option value="user" ${data.role === "user" ? "selected" : ""}>User</option>
-              <option value="admin" ${data.role === "admin" ? "selected" : ""}>Admin</option>
-            </select>
-          </label><br>
-          <button onclick="updateUser('${userId}')">Update</button>
-          <hr>
-        `;
-        userListDiv.appendChild(div);
+    window.updateUserRole = async (uid) => {
+      const newRole = document.getElementById(`role-${uid}`).value;
+      await updateDoc(doc(db, "users", uid), {
+        role: newRole
       });
-    }
-
-    window.updateUser = async function (uid) {
-      const email = document.getElementById(`email-${uid}`).value;
-      const role = document.getElementById(`role-${uid}`).value;
-
-      try {
-        await updateDoc(doc(db, "users", uid), {
-          email: email,
-          role: role
-        });
-        alert(`User ${uid} updated!`);
-      } catch (e) {
-        alert("Error updating user: " + e.message);
-      }
-    }
-
-    function logout() {
-      signOut(auth).then(() => {
-        window.location.href = "index.html";
-      });
-    }
+      alert("User role updated!");
+    };
   </script>
 </body>
 </html>
