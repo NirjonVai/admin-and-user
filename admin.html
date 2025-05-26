@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Admin Panel - Manage Users</title>
+  <title>Admin Panel - Manage Users & Withdrawals</title>
   <style>
     body {
       font-family: Arial, sans-serif;
       padding: 20px;
       margin: 0;
     }
-    h1 {
+    h1, h2 {
       margin-bottom: 10px;
     }
     #logoutBtn {
@@ -36,6 +36,7 @@
       border: 1px solid #ddd;
       padding: 8px;
       text-align: left;
+      vertical-align: middle;
     }
     th {
       background-color: #f2f2f2;
@@ -69,14 +70,31 @@
       margin-bottom: 20px;
       line-height: 38px;
     }
+    .approve-btn {
+      background-color: #4caf50;
+      color: white;
+      border: none;
+    }
+    .approve-btn:hover {
+      background-color: #388e3c;
+    }
+    .reject-btn {
+      background-color: #f44336;
+      color: white;
+      border: none;
+    }
+    .reject-btn:hover {
+      background-color: #d32f2f;
+    }
   </style>
 </head>
 <body>
 
-  <h1>Admin Panel - Manage Users</h1>
-  <div id="versionTag">Version 1.1</div>
+  <h1>Admin Panel - Manage Users & Withdrawals</h1>
+  <div id="versionTag">Version 1.2</div>
   <button id="logoutBtn" title="Logout from admin panel">Logout</button>
 
+  <h2>Users</h2>
   <table>
     <thead>
       <tr>
@@ -91,11 +109,25 @@
     <tbody id="usersTableBody"></tbody>
   </table>
 
+  <h2>Withdraw Requests</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>User Email</th>
+        <th>Amount (৳)</th>
+        <th>Status</th>
+        <th>Request Date</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="withdrawTableBody"></tbody>
+  </table>
+
   <div id="message"></div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
-    import { getFirestore, collection, getDocs, doc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+    import { getFirestore, collection, getDocs, doc, updateDoc, getDoc, query, where } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
     import { getAuth, onAuthStateChanged, sendPasswordResetEmail, signOut } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
 
     const firebaseConfig = {
@@ -113,6 +145,7 @@
     const db = getFirestore(app);
 
     const usersTableBody = document.getElementById("usersTableBody");
+    const withdrawTableBody = document.getElementById("withdrawTableBody");
     const messageDiv = document.getElementById("message");
     const logoutBtn = document.getElementById("logoutBtn");
 
@@ -139,7 +172,8 @@
         return;
       }
 
-      loadUsers();
+      await loadUsers();
+      await loadWithdrawRequests();
     });
 
     async function loadUsers() {
@@ -220,6 +254,121 @@
         });
       } catch (error) {
         showMessage("Error loading users: " + error.message, "error");
+      }
+    }
+
+    async function loadWithdrawRequests() {
+      withdrawTableBody.innerHTML = "";
+
+      try {
+        const q = query(collection(db, "withdrawRequests"), where("status", "==", "pending"));
+        const snapshot = await getDocs(q);
+
+        if (snapshot.empty) {
+          const tr = document.createElement("tr");
+          const td = document.createElement("td");
+          td.colSpan = 5;
+          td.style.textAlign = "center";
+          td.textContent = "No pending withdrawal requests.";
+          tr.appendChild(td);
+          withdrawTableBody.appendChild(tr);
+          return;
+        }
+
+        snapshot.forEach(docSnap => {
+          const data = docSnap.data();
+          const tr = document.createElement("tr");
+
+          const emailTd = document.createElement("td");
+          emailTd.textContent = data.email || "-";
+          tr.appendChild(emailTd);
+
+          const amountTd = document.createElement("td");
+          amountTd.textContent = data.amount?.toFixed(2) || "0.00";
+          tr.appendChild(amountTd);
+
+          const statusTd = document.createElement("td");
+          statusTd.textContent = data.status || "pending";
+          tr.appendChild(statusTd);
+
+          const dateTd = document.createElement("td");
+          const date = data.requestDate?.toDate ? data.requestDate.toDate() : new Date();
+          dateTd.textContent = date.toLocaleString();
+          tr.appendChild(dateTd);
+
+          const actionTd = document.createElement("td");
+
+          // Approve button
+          const approveBtn = document.createElement("button");
+          approveBtn.textContent = "Approve";
+          approveBtn.className = "approve-btn";
+          approveBtn.onclick = () => processWithdraw(docSnap.id, true);
+          actionTd.appendChild(approveBtn);
+
+          // Reject button
+          const rejectBtn = document.createElement("button");
+          rejectBtn.textContent = "Reject";
+          rejectBtn.className = "reject-btn";
+          rejectBtn.onclick = () => processWithdraw(docSnap.id, false);
+          actionTd.appendChild(rejectBtn);
+
+          tr.appendChild(actionTd);
+          withdrawTableBody.appendChild(tr);
+        });
+      } catch (error) {
+        showMessage("Error loading withdraw requests: " + error.message, "error");
+      }
+    }
+
+    async function processWithdraw(withdrawId, approve) {
+      const withdrawRef = doc(db, "withdrawRequests", withdrawId);
+
+      try {
+        const withdrawSnap = await getDoc(withdrawRef);
+        if (!withdrawSnap.exists()) {
+          showMessage("Withdraw request not found.", "error");
+          return;
+        }
+
+        const data = withdrawSnap.data();
+        if (data.status !== "pending") {
+          showMessage("Withdraw request already processed.", "error");
+          return;
+        }
+
+        // If approved, update user balance accordingly
+        if (approve) {
+          const userRef = doc(db, "users", data.userId);
+          const userSnap = await getDoc(userRef);
+          if (!userSnap.exists()) {
+            showMessage("User not found.", "error");
+            return;
+          }
+
+          const userData = userSnap.data();
+          const newBalance = (userData.mainBalance || 0) - (data.amount || 0);
+
+          if (newBalance < 0) {
+            showMessage("User has insufficient balance for this withdrawal.", "error");
+            return;
+          }
+
+          await updateDoc(userRef, { mainBalance: newBalance });
+          await updateDoc(withdrawRef, { status: "approved", processedAt: new Date() });
+
+          showMessage(`Withdrawal approved for ${data.email}, deducted ৳${data.amount.toFixed(2)}`, "success");
+
+        } else {
+          // Reject: just update status
+          await updateDoc(withdrawRef, { status: "rejected", processedAt: new Date() });
+          showMessage(`Withdrawal request rejected for ${data.email}`, "success");
+        }
+
+        // Refresh the withdraw requests table
+        await loadWithdrawRequests();
+
+      } catch (error) {
+        showMessage("Error processing withdrawal: " + error.message, "error");
       }
     }
 
