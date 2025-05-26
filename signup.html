@@ -43,17 +43,19 @@
       try {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
+        console.log("User created:", user.uid, user.email);
 
-        // Firestore-এ ইউজারের ডকুমেন্ট তৈরি করবো
         await setDoc(doc(db, "users", user.uid), {
           email: user.email,
           role: "user"
         });
+        console.log("Firestore doc created for user:", user.uid);
 
         alert("Sign Up successful! Please login.");
         window.location.href = "login.html";
 
       } catch (error) {
+        console.error("Sign-up error:", error);
         alert("Error: " + error.message);
       }
     });
