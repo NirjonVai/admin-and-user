@@ -2,34 +2,58 @@
 <html>
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dashboard with Tasks</title>
   <style>
-    body { font-family: Arial, sans-serif; padding: 30px; }
+    body { font-family: Arial, sans-serif; padding: 30px; max-width: 600px; margin: auto; }
     h1 { color: #333; }
-    p { font-size: 18px; margin-top: 10px; }
+    #userEmail, #balance { font-size: 18px; margin: 10px 0; }
+    ul { list-style: none; padding: 0; }
+    li { background: #f0f0f0; margin: 8px 0; padding: 10px; display: flex; align-items: center; justify-content: space-between; }
     button {
+      padding: 6px 12px;
+      background-color: #4caf50;
+      border: none;
+      color: white;
+      cursor: pointer;
+    }
+    button:disabled {
+      background-color: #a5d6a7;
+      cursor: default;
+    }
+    #logoutBtn {
       margin-top: 20px;
       padding: 10px 20px;
       background-color: #f44336;
-      color: white;
       border: none;
+      color: white;
       cursor: pointer;
     }
-    button:hover {
+    #logoutBtn:hover {
       background-color: #d32f2f;
+    }
+    #message {
+      margin-top: 15px;
+      font-weight: bold;
     }
   </style>
 </head>
 <body>
+
   <h1>Welcome to your Dashboard!</h1>
-  <p id="userEmail">Loading email...</p>
-  <button onclick="logout()">Logout</button>
+  <p id="userEmail">Loading user info...</p>
+  <p id="balance">Loading balance...</p>
+
+  <h2>Tasks</h2>
+  <ul id="taskList"></ul>
+
+  <button id="logoutBtn">Logout</button>
+  <p id="message"></p>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
     import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
-    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAPF4nGlb9R2osmXUwrPgatwAl1huIAGpg",
@@ -45,24 +69,99 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    // Show user email from Firestore
-    onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        const userRef = doc(db, "users", user.uid);
-        const userSnap = await getDoc(userRef);
+    const userEmailEl = document.getElementById("userEmail");
+    const balanceEl = document.getElementById("balance");
+    const taskListEl = document.getElementById("taskList");
+    const messageEl = document.getElementById("message");
+    const logoutBtn = document.getElementById("logoutBtn");
 
-        if (userSnap.exists()) {
-          const userData = userSnap.data();
-          document.getElementById("userEmail").textContent = "Logged in as: " + userData.email;
-        } else {
-          document.getElementById("userEmail").textContent = "No user data found in Firestore.";
-        }
-      } else {
-        window.location.href = "index.html"; // redirect if not logged in
+    let currentUserId = null;
+    let userData = null;
+
+    // Sample tasks (could be fetched from Firestore if you want dynamic)
+    const tasks = [
+      { id: "task1", title: "Complete profile setup" },
+      { id: "task2", title: "Verify your email" },
+      { id: "task3", title: "Add payment method" }
+    ];
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = "index.html";
+        return;
       }
+      currentUserId = user.uid;
+      await loadUserData();
+      renderTasks();
     });
 
-    window.logout = async () => {
+    async function loadUserData() {
+      const userRef = doc(db, "users", currentUserId);
+      const userSnap = await getDoc(userRef);
+      if (userSnap.exists()) {
+        userData = userSnap.data();
+        userEmailEl.textContent = "Logged in as: " + (userData.email || "N/A");
+        if (typeof userData.mainBalance !== "number") {
+          userData.mainBalance = 0;
+        }
+        if (!userData.completedTasks) {
+          userData.completedTasks = {};
+        }
+        balanceEl.textContent = "Main Balance: ৳" + userData.mainBalance.toFixed(2);
+      } else {
+        userEmailEl.textContent = "User data not found.";
+        balanceEl.textContent = "";
+      }
+    }
+
+    function renderTasks() {
+      taskListEl.innerHTML = "";
+      tasks.forEach(task => {
+        const li = document.createElement("li");
+        li.textContent = task.title;
+
+        const btn = document.createElement("button");
+        const completed = userData.completedTasks && userData.completedTasks[task.id];
+        btn.textContent = completed ? "Completed" : "Complete Task";
+        btn.disabled = completed;
+
+        btn.onclick = () => completeTask(task.id);
+
+        li.appendChild(btn);
+        taskListEl.appendChild(li);
+      });
+    }
+
+    async function completeTask(taskId) {
+      if (userData.completedTasks && userData.completedTasks[taskId]) {
+        return; // already completed
+      }
+
+      // Update completedTasks object
+      userData.completedTasks = userData.completedTasks || {};
+      userData.completedTasks[taskId] = true;
+
+      // Add 5 to mainBalance
+      userData.mainBalance = (userData.mainBalance || 0) + 5;
+
+      balanceEl.textContent = "Main Balance: ৳" + userData.mainBalance.toFixed(2);
+
+      try {
+        const userRef = doc(db, "users", currentUserId);
+        await updateDoc(userRef, {
+          mainBalance: userData.mainBalance,
+          completedTasks: userData.completedTasks
+        });
+        messageEl.textContent = "Task completed! ৳5 added.";
+        messageEl.style.color = "green";
+        renderTasks();
+      } catch (err) {
+        messageEl.textContent = "Error updating balance: " + err.message;
+        messageEl.style.color = "red";
+      }
+    }
+
+    logoutBtn.onclick = async () => {
       await signOut(auth);
       alert("Logged out!");
       window.location.href = "index.html";
