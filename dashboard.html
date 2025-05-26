@@ -1,71 +1,35 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Dashboard with Tasks & Withdraw</title>
-  <style>
-    body { font-family: Arial, sans-serif; padding: 30px; max-width: 600px; margin: auto; }
-    h1 { color: #333; }
-    #userEmail, #balance { font-size: 18px; margin: 10px 0; }
-    ul { list-style: none; padding: 0; }
-    li { background: #f0f0f0; margin: 8px 0; padding: 10px; display: flex; align-items: center; justify-content: space-between; }
-    button {
-      padding: 6px 12px;
-      background-color: #4caf50;
-      border: none;
-      color: white;
-      cursor: pointer;
-    }
-    button:disabled {
-      background-color: #a5d6a7;
-      cursor: default;
-    }
-    #logoutBtn {
-      margin-top: 20px;
-      padding: 10px 20px;
-      background-color: #f44336;
-      border: none;
-      color: white;
-      cursor: pointer;
-    }
-    #logoutBtn:hover {
-      background-color: #d32f2f;
-    }
-    #message {
-      margin-top: 15px;
-      font-weight: bold;
-    }
-    #withdrawSection {
-      margin-top: 30px;
-      border-top: 1px solid #ccc;
-      padding-top: 20px;
-    }
-    #withdrawAmount {
-      padding: 10px;
-      font-size: 16px;
-      width: 200px;
-      margin-right: 10px;
-    }
-  </style>
+  <title>Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@latest/dist/tailwind.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
 </head>
-<body>
+<body class="font-sans px-6 py-8 max-w-xl mx-auto bg-white">
 
-  <h1>Welcome to your Dashboard!</h1>
-  <p id="userEmail">Loading user info...</p>
-  <p id="balance">Loading balance...</p>
+  <h1 class="text-2xl font-bold text-gray-800 mb-4">Welcome to your Dashboard!</h1>
+  <p id="userEmail" class="text-lg text-gray-700 mb-2">Loading user info...</p>
+  <p id="balance" class="text-lg text-gray-700 mb-4">Loading balance...</p>
 
-  <h2>Tasks</h2>
-  <ul id="taskList"></ul>
+  <h2 class="text-xl font-semibold text-gray-800 mb-2">Tasks</h2>
+  <ul id="taskList" class="mb-6 space-y-2"></ul>
 
-  <div id="withdrawSection">
-    <h2>Withdraw Funds</h2>
-    <input type="number" id="withdrawAmount" placeholder="Enter amount to withdraw" min="1" />
-    <button id="withdrawBtn">Request Withdraw</button>
+  <div id="withdrawSection" class="mt-8 pt-6 border-t border-gray-300">
+    <h2 class="text-xl font-semibold text-gray-800 mb-4">Withdraw Funds</h2>
+    <div class="flex items-center mb-4">
+      <input type="number" id="withdrawAmount" placeholder="Enter amount to withdraw" min="1"
+        class="p-2 border border-gray-300 rounded w-48 mr-4 text-base" />
+      <button id="withdrawBtn"
+        class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:bg-green-300">Request Withdraw</button>
+    </div>
   </div>
 
-  <button id="logoutBtn">Logout</button>
-  <p id="message"></p>
+  <button id="logoutBtn"
+    class="mt-6 px-6 py-2 bg-red-500 text-white rounded hover:bg-red-600">Logout</button>
+  <p id="message" class="mt-4 font-semibold"></p>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
@@ -91,7 +55,6 @@
     const taskListEl = document.getElementById("taskList");
     const messageEl = document.getElementById("message");
     const logoutBtn = document.getElementById("logoutBtn");
-
     const withdrawBtn = document.getElementById("withdrawBtn");
     const withdrawAmountInput = document.getElementById("withdrawAmount");
 
@@ -137,28 +100,32 @@
       taskListEl.innerHTML = "";
       tasks.forEach(task => {
         const li = document.createElement("li");
-        li.textContent = task.title;
+        li.className = "bg-gray-100 p-3 rounded flex justify-between items-center";
+
+        const span = document.createElement("span");
+        span.textContent = task.title;
 
         const btn = document.createElement("button");
         const completed = userData.completedTasks && userData.completedTasks[task.id];
         btn.textContent = completed ? "Completed" : "Complete Task";
         btn.disabled = completed;
+        btn.className = "px-3 py-1 text-white rounded " + (completed
+          ? "bg-green-300 cursor-not-allowed"
+          : "bg-green-500 hover:bg-green-600");
 
         btn.onclick = () => completeTask(task.id);
 
+        li.appendChild(span);
         li.appendChild(btn);
         taskListEl.appendChild(li);
       });
     }
 
     async function completeTask(taskId) {
-      if (userData.completedTasks && userData.completedTasks[taskId]) {
-        return; // already completed
-      }
+      if (userData.completedTasks && userData.completedTasks[taskId]) return;
 
       userData.completedTasks = userData.completedTasks || {};
       userData.completedTasks[taskId] = true;
-
       userData.mainBalance = (userData.mainBalance || 0) + 5;
       balanceEl.textContent = "Main Balance: ৳" + userData.mainBalance.toFixed(2);
 
@@ -169,11 +136,11 @@
           completedTasks: userData.completedTasks
         });
         messageEl.textContent = "Task completed! ৳5 added.";
-        messageEl.style.color = "green";
+        messageEl.className = "mt-4 font-semibold text-green-600";
         renderTasks();
       } catch (err) {
         messageEl.textContent = "Error updating balance: " + err.message;
-        messageEl.style.color = "red";
+        messageEl.className = "mt-4 font-semibold text-red-600";
       }
     }
 
@@ -182,17 +149,16 @@
       const amount = parseFloat(withdrawAmountInput.value);
       if (!amount || amount <= 0) {
         messageEl.textContent = "Enter a valid withdraw amount.";
-        messageEl.style.color = "red";
+        messageEl.className = "mt-4 font-semibold text-red-600";
         return;
       }
       if (amount > (userData.mainBalance || 0)) {
         messageEl.textContent = "Insufficient balance.";
-        messageEl.style.color = "red";
+        messageEl.className = "mt-4 font-semibold text-red-600";
         return;
       }
 
       try {
-        // Add withdraw request document
         await addDoc(collection(db, "withdrawRequests"), {
           userId: currentUserId,
           email: userData.email || "",
@@ -202,13 +168,12 @@
         });
 
         messageEl.textContent = "Withdraw request sent to admin.";
-        messageEl.style.color = "green";
-
+        messageEl.className = "mt-4 font-semibold text-green-600";
         withdrawAmountInput.value = "";
 
       } catch (error) {
         messageEl.textContent = "Error sending withdraw request: " + error.message;
-        messageEl.style.color = "red";
+        messageEl.className = "mt-4 font-semibold text-red-600";
       }
     };
 
