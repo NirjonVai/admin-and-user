@@ -3,129 +3,56 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Admin Panel - Manage Users & Withdrawals</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      padding: 20px;
-      margin: 0;
-    }
-    h1, h2 {
-      margin-bottom: 10px;
-    }
-    #logoutBtn {
-      background-color: #f44336;
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      cursor: pointer;
-      float: right;
-      margin-bottom: 20px;
-      font-size: 16px;
-    }
-    #logoutBtn:hover {
-      background-color: #d32f2f;
-    }
-    table {
-      border-collapse: collapse;
-      width: 100%;
-      margin-bottom: 20px;
-      clear: both;
-    }
-    th, td {
-      border: 1px solid #ddd;
-      padding: 8px;
-      text-align: left;
-      vertical-align: middle;
-    }
-    th {
-      background-color: #f2f2f2;
-    }
-    input[type=text], input[type=number], select {
-      width: 100%;
-      padding: 6px;
-      box-sizing: border-box;
-    }
-    button {
-      padding: 6px 12px;
-      cursor: pointer;
-      margin-right: 4px;
-      font-size: 14px;
-    }
-    #message {
-      margin-top: 10px;
-      clear: both;
-      font-weight: bold;
-    }
-    .success {
-      color: green;
-    }
-    .error {
-      color: red;
-    }
-    #versionTag {
-      float: left;
-      font-size: 14px;
-      color: #666;
-      margin-bottom: 20px;
-      line-height: 38px;
-    }
-    .approve-btn {
-      background-color: #4caf50;
-      color: white;
-      border: none;
-    }
-    .approve-btn:hover {
-      background-color: #388e3c;
-    }
-    .reject-btn {
-      background-color: #f44336;
-      color: white;
-      border: none;
-    }
-    .reject-btn:hover {
-      background-color: #d32f2f;
-    }
-  </style>
+  <title>Admin Panel</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@latest/dist/tailwind.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
 </head>
-<body>
+<body class="bg-gray-100 text-gray-900 p-6 font-sans">
 
-  <h1>Admin Panel - Manage Users & Withdrawals</h1>
-  <div id="versionTag">Version 1.3</div>
-  <button id="logoutBtn" title="Logout from admin panel">Logout</button>
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold">Admin Panel - Manage Users & Withdrawals</h1>
+    <button id="logoutBtn" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded">Logout</button>
+  </div>
 
-  <h2>Users</h2>
-  <table>
-    <thead>
-      <tr>
-        <th>Email</th>
-        <th>Role</th>
-        <th>Balance (৳)</th>
-        <th>Change Email</th>
-        <th>Change Role</th>
-        <th>Change Balance</th>
-        <th>Send Password Reset</th>
-        <th>Action</th>
-      </tr>
-    </thead>
-    <tbody id="usersTableBody"></tbody>
-  </table>
+  <div class="mb-6 text-sm text-gray-600">Version 1.3</div>
 
-  <h2>Withdraw Requests</h2>
-  <table>
-    <thead>
-      <tr>
-        <th>User Email</th>
-        <th>Amount (৳)</th>
-        <th>Status</th>
-        <th>Request Date</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody id="withdrawTableBody"></tbody>
-  </table>
+  <h2 class="text-xl font-semibold mb-2">Users</h2>
+  <div class="overflow-auto mb-10">
+    <table class="min-w-full bg-white border border-gray-300 text-sm">
+      <thead class="bg-gray-200">
+        <tr>
+          <th class="px-4 py-2 border">Email</th>
+          <th class="px-4 py-2 border">Role</th>
+          <th class="px-4 py-2 border">Balance (৳)</th>
+          <th class="px-4 py-2 border">Change Email</th>
+          <th class="px-4 py-2 border">Change Role</th>
+          <th class="px-4 py-2 border">Change Balance</th>
+          <th class="px-4 py-2 border">Reset Password</th>
+          <th class="px-4 py-2 border">Action</th>
+        </tr>
+      </thead>
+      <tbody id="usersTableBody"></tbody>
+    </table>
+  </div>
 
-  <div id="message"></div>
+  <h2 class="text-xl font-semibold mb-2">Withdraw Requests</h2>
+  <div class="overflow-auto mb-10">
+    <table class="min-w-full bg-white border border-gray-300 text-sm">
+      <thead class="bg-gray-200">
+        <tr>
+          <th class="px-4 py-2 border">User Email</th>
+          <th class="px-4 py-2 border">Amount (৳)</th>
+          <th class="px-4 py-2 border">Status</th>
+          <th class="px-4 py-2 border">Request Date</th>
+          <th class="px-4 py-2 border">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="withdrawTableBody"></tbody>
+    </table>
+  </div>
+
+  <div id="message" class="text-sm font-medium"></div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
@@ -156,7 +83,7 @@
         await signOut(auth);
         window.location.href = "index.html";
       } catch (error) {
-        showMessage("Logout failed: " + error.message, "error");
+        showMessage("Logout failed: " + error.message, "text-red-500");
       }
     };
 
@@ -189,74 +116,35 @@
 
           const tr = document.createElement("tr");
 
-          // Current email cell
-          const emailTd = document.createElement("td");
-          emailTd.textContent = data.email || "-";
-          tr.appendChild(emailTd);
-
-          // Role cell
-          const roleTd = document.createElement("td");
-          roleTd.textContent = data.role || "user";
-          tr.appendChild(roleTd);
-
-          // Balance cell
-          const balanceTd = document.createElement("td");
-          balanceTd.textContent = (data.mainBalance !== undefined) ? data.mainBalance.toFixed(2) : "0.00";
-          tr.appendChild(balanceTd);
-
-          // Email change input
-          const changeEmailTd = document.createElement("td");
-          const emailInput = document.createElement("input");
-          emailInput.type = "text";
-          emailInput.value = data.email || "";
-          changeEmailTd.appendChild(emailInput);
-          tr.appendChild(changeEmailTd);
-
-          // Role select dropdown
-          const roleChangeTd = document.createElement("td");
-          const roleSelect = document.createElement("select");
-          roleSelect.innerHTML = `
-            <option value="user" ${data.role === "user" ? "selected" : ""}>User</option>
-            <option value="admin" ${data.role === "admin" ? "selected" : ""}>Admin</option>
+          tr.innerHTML = `
+            <td class="border px-4 py-2">${data.email || "-"}</td>
+            <td class="border px-4 py-2">${data.role || "user"}</td>
+            <td class="border px-4 py-2">${(data.mainBalance ?? 0).toFixed(2)}</td>
+            <td class="border px-4 py-2"><input class="border rounded px-2 py-1 w-full" type="text" value="${data.email || ""}" /></td>
+            <td class="border px-4 py-2">
+              <select class="border rounded px-2 py-1 w-full">
+                <option value="user" ${data.role === "user" ? "selected" : ""}>User</option>
+                <option value="admin" ${data.role === "admin" ? "selected" : ""}>Admin</option>
+              </select>
+            </td>
+            <td class="border px-4 py-2"><input class="border rounded px-2 py-1 w-full" type="number" min="0" step="0.01" value="${data.mainBalance ?? 0}" /></td>
+            <td class="border px-4 py-2"><button class="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded">Send Reset</button></td>
+            <td class="border px-4 py-2"><button class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded">Update</button></td>
           `;
-          roleChangeTd.appendChild(roleSelect);
-          tr.appendChild(roleChangeTd);
 
-          // Balance change input
-          const balanceChangeTd = document.createElement("td");
-          const balanceInput = document.createElement("input");
-          balanceInput.type = "number";
-          balanceInput.min = "0";
-          balanceInput.step = "0.01";
-          balanceInput.value = (data.mainBalance !== undefined) ? data.mainBalance : 0;
-          balanceChangeTd.appendChild(balanceInput);
-          tr.appendChild(balanceChangeTd);
+          const inputs = tr.querySelectorAll("input, select");
+          const resetBtn = tr.querySelector("button:nth-of-type(1)");
+          const updateBtn = tr.querySelector("button:nth-of-type(2)");
 
-          // Password reset button
-          const pwResetTd = document.createElement("td");
-          const pwResetBtn = document.createElement("button");
-          pwResetBtn.textContent = "Send Reset Email";
-          pwResetBtn.onclick = () => sendResetEmail(emailInput.value.trim());
-          pwResetTd.appendChild(pwResetBtn);
-          tr.appendChild(pwResetTd);
+          resetBtn.onclick = () => sendResetEmail(inputs[0].value.trim());
 
-          // Update button
-          const actionTd = document.createElement("td");
-          const updateBtn = document.createElement("button");
-          updateBtn.textContent = "Update";
           updateBtn.onclick = async () => {
-            const newEmail = emailInput.value.trim();
-            const newRole = roleSelect.value;
-            const newBalance = parseFloat(balanceInput.value);
+            const newEmail = inputs[0].value.trim();
+            const newRole = inputs[1].value;
+            const newBalance = parseFloat(inputs[2].value);
 
-            if (!newEmail) {
-              showMessage("Email cannot be empty", "error");
-              return;
-            }
-            if (isNaN(newBalance) || newBalance < 0) {
-              showMessage("Balance must be a non-negative number", "error");
-              return;
-            }
+            if (!newEmail) return showMessage("Email cannot be empty", "text-red-500");
+            if (isNaN(newBalance) || newBalance < 0) return showMessage("Invalid balance", "text-red-500");
 
             try {
               await updateDoc(doc(db, "users", docSnap.id), {
@@ -264,21 +152,17 @@
                 role: newRole,
                 mainBalance: newBalance
               });
-              emailTd.textContent = newEmail;
-              roleTd.textContent = newRole;
-              balanceTd.textContent = newBalance.toFixed(2);
-              showMessage(`Updated user: ${newEmail}`, "success");
+              showMessage("User updated successfully", "text-green-600");
+              await loadUsers();
             } catch (e) {
-              showMessage("Update failed: " + e.message, "error");
+              showMessage("Update failed: " + e.message, "text-red-500");
             }
           };
-          actionTd.appendChild(updateBtn);
-          tr.appendChild(actionTd);
 
           usersTableBody.appendChild(tr);
         });
       } catch (error) {
-        showMessage("Error loading users: " + error.message, "error");
+        showMessage("Error loading users: " + error.message, "text-red-500");
       }
     }
 
@@ -290,13 +174,7 @@
         const snapshot = await getDocs(q);
 
         if (snapshot.empty) {
-          const tr = document.createElement("tr");
-          const td = document.createElement("td");
-          td.colSpan = 5;
-          td.style.textAlign = "center";
-          td.textContent = "No pending withdrawal requests.";
-          tr.appendChild(td);
-          withdrawTableBody.appendChild(tr);
+          withdrawTableBody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-gray-500">No pending requests</td></tr>`;
           return;
         }
 
@@ -304,111 +182,72 @@
           const data = docSnap.data();
           const tr = document.createElement("tr");
 
-          const emailTd = document.createElement("td");
-          emailTd.textContent = data.email || "-";
-          tr.appendChild(emailTd);
+          const date = data.requestDate?.toDate ? data.requestDate.toDate().toLocaleString() : "-";
 
-          const amountTd = document.createElement("td");
-          amountTd.textContent = data.amount?.toFixed(2) || "0.00";
-          tr.appendChild(amountTd);
+          tr.innerHTML = `
+            <td class="border px-4 py-2">${data.email || "-"}</td>
+            <td class="border px-4 py-2">${data.amount?.toFixed(2) || "0.00"}</td>
+            <td class="border px-4 py-2">${data.status || "pending"}</td>
+            <td class="border px-4 py-2">${date}</td>
+            <td class="border px-4 py-2 space-x-2">
+              <button class="bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded">Approve</button>
+              <button class="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded">Reject</button>
+            </td>
+          `;
 
-          const statusTd = document.createElement("td");
-          statusTd.textContent = data.status || "pending";
-          tr.appendChild(statusTd);
-
-          const dateTd = document.createElement("td");
-          const date = data.requestDate?.toDate ? data.requestDate.toDate() : new Date();
-          dateTd.textContent = date.toLocaleString();
-          tr.appendChild(dateTd);
-
-          const actionTd = document.createElement("td");
-
-          // Approve button
-          const approveBtn = document.createElement("button");
-          approveBtn.textContent = "Approve";
-          approveBtn.className = "approve-btn";
+          const [approveBtn, rejectBtn] = tr.querySelectorAll("button");
           approveBtn.onclick = () => processWithdraw(docSnap.id, true);
-          actionTd.appendChild(approveBtn);
-
-          // Reject button
-          const rejectBtn = document.createElement("button");
-          rejectBtn.textContent = "Reject";
-          rejectBtn.className = "reject-btn";
           rejectBtn.onclick = () => processWithdraw(docSnap.id, false);
-          actionTd.appendChild(rejectBtn);
 
-          tr.appendChild(actionTd);
           withdrawTableBody.appendChild(tr);
         });
       } catch (error) {
-        showMessage("Error loading withdraw requests: " + error.message, "error");
+        showMessage("Error loading withdraws: " + error.message, "text-red-500");
       }
     }
 
-    async function processWithdraw(withdrawId, approve) {
-      const withdrawRef = doc(db, "withdrawRequests", withdrawId);
-
+    async function processWithdraw(id, approve) {
+      const withdrawRef = doc(db, "withdrawRequests", id);
       try {
-        const withdrawSnap = await getDoc(withdrawRef);
-        if (!withdrawSnap.exists()) {
-          showMessage("Withdraw request not found.", "error");
-          return;
-        }
+        const snap = await getDoc(withdrawRef);
+        if (!snap.exists()) return showMessage("Withdraw not found", "text-red-500");
 
-        const data = withdrawSnap.data();
-        if (data.status !== "pending") {
-          showMessage("Withdraw request already processed.", "error");
-          return;
-        }
+        const data = snap.data();
+        if (data.status !== "pending") return showMessage("Already processed", "text-red-500");
 
         if (approve) {
           const userRef = doc(db, "users", data.userId);
           const userSnap = await getDoc(userRef);
-          if (!userSnap.exists()) {
-            showMessage("User not found.", "error");
-            return;
-          }
+          if (!userSnap.exists()) return showMessage("User not found", "text-red-500");
 
-          const userData = userSnap.data();
-          const newBalance = (userData.mainBalance || 0) - (data.amount || 0);
-
-          if (newBalance < 0) {
-            showMessage("User has insufficient balance for this withdrawal.", "error");
-            return;
-          }
+          const newBalance = (userSnap.data().mainBalance || 0) - (data.amount || 0);
+          if (newBalance < 0) return showMessage("Insufficient balance", "text-red-500");
 
           await updateDoc(userRef, { mainBalance: newBalance });
           await updateDoc(withdrawRef, { status: "approved", processedAt: new Date() });
-
-          showMessage(`Withdrawal approved for ${data.email}, deducted ৳${data.amount.toFixed(2)}`, "success");
-
+          showMessage("Withdrawal approved", "text-green-600");
         } else {
           await updateDoc(withdrawRef, { status: "rejected", processedAt: new Date() });
-          showMessage(`Withdrawal request rejected for ${data.email}`, "success");
+          showMessage("Withdrawal rejected", "text-green-600");
         }
 
         await loadWithdrawRequests();
-
       } catch (error) {
-        showMessage("Error processing withdrawal: " + error.message, "error");
+        showMessage("Error processing withdraw: " + error.message, "text-red-500");
       }
-    }
-
-    function showMessage(msg, type) {
-      messageDiv.textContent = msg;
-      messageDiv.className = type;
     }
 
     function sendResetEmail(email) {
-      if (!email) {
-        showMessage("Enter an email to send password reset.", "error");
-        return;
-      }
+      if (!email) return showMessage("Enter a valid email", "text-red-500");
       sendPasswordResetEmail(auth, email)
-        .then(() => showMessage("Password reset email sent to " + email, "success"))
-        .catch((error) => showMessage("Error sending reset email: " + error.message, "error"));
+        .then(() => showMessage("Reset email sent", "text-green-600"))
+        .catch(error => showMessage("Error: " + error.message, "text-red-500"));
+    }
+
+    function showMessage(msg, typeClass) {
+      messageDiv.textContent = msg;
+      messageDiv.className = `mt-4 ${typeClass}`;
     }
   </script>
-
 </body>
 </html>
