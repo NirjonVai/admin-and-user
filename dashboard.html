@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Dashboard with Tasks</title>
+  <title>Dashboard with Tasks & Withdraw</title>
   <style>
     body { font-family: Arial, sans-serif; padding: 30px; max-width: 600px; margin: auto; }
     h1 { color: #333; }
@@ -36,6 +36,17 @@
       margin-top: 15px;
       font-weight: bold;
     }
+    #withdrawSection {
+      margin-top: 30px;
+      border-top: 1px solid #ccc;
+      padding-top: 20px;
+    }
+    #withdrawAmount {
+      padding: 10px;
+      font-size: 16px;
+      width: 200px;
+      margin-right: 10px;
+    }
   </style>
 </head>
 <body>
@@ -47,13 +58,19 @@
   <h2>Tasks</h2>
   <ul id="taskList"></ul>
 
+  <div id="withdrawSection">
+    <h2>Withdraw Funds</h2>
+    <input type="number" id="withdrawAmount" placeholder="Enter amount to withdraw" min="1" />
+    <button id="withdrawBtn">Request Withdraw</button>
+  </div>
+
   <button id="logoutBtn">Logout</button>
   <p id="message"></p>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
     import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
-    import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, updateDoc, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAPF4nGlb9R2osmXUwrPgatwAl1huIAGpg",
@@ -75,10 +92,12 @@
     const messageEl = document.getElementById("message");
     const logoutBtn = document.getElementById("logoutBtn");
 
+    const withdrawBtn = document.getElementById("withdrawBtn");
+    const withdrawAmountInput = document.getElementById("withdrawAmount");
+
     let currentUserId = null;
     let userData = null;
 
-    // Sample tasks (could be fetched from Firestore if you want dynamic)
     const tasks = [
       { id: "task1", title: "Complete profile setup" },
       { id: "task2", title: "Verify your email" },
@@ -137,13 +156,10 @@
         return; // already completed
       }
 
-      // Update completedTasks object
       userData.completedTasks = userData.completedTasks || {};
       userData.completedTasks[taskId] = true;
 
-      // Add 5 to mainBalance
       userData.mainBalance = (userData.mainBalance || 0) + 5;
-
       balanceEl.textContent = "Main Balance: ৳" + userData.mainBalance.toFixed(2);
 
       try {
@@ -160,6 +176,41 @@
         messageEl.style.color = "red";
       }
     }
+
+    withdrawBtn.onclick = async () => {
+      messageEl.textContent = "";
+      const amount = parseFloat(withdrawAmountInput.value);
+      if (!amount || amount <= 0) {
+        messageEl.textContent = "Enter a valid withdraw amount.";
+        messageEl.style.color = "red";
+        return;
+      }
+      if (amount > (userData.mainBalance || 0)) {
+        messageEl.textContent = "Insufficient balance.";
+        messageEl.style.color = "red";
+        return;
+      }
+
+      try {
+        // Add withdraw request document
+        await addDoc(collection(db, "withdrawRequests"), {
+          userId: currentUserId,
+          email: userData.email || "",
+          amount: amount,
+          status: "pending",
+          requestedAt: new Date()
+        });
+
+        messageEl.textContent = "Withdraw request sent to admin.";
+        messageEl.style.color = "green";
+
+        withdrawAmountInput.value = "";
+
+      } catch (error) {
+        messageEl.textContent = "Error sending withdraw request: " + error.message;
+        messageEl.style.color = "red";
+      }
+    };
 
     logoutBtn.onclick = async () => {
       await signOut(auth);
