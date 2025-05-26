@@ -1,14 +1,12 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Sign Up</title>
 </head>
 <body>
   <h2>Sign Up</h2>
-  <input type="email" id="email" placeholder="Email" /><br><br>
-  <input type="password" id="password" placeholder="Password" /><br><br>
+  <input type="email" id="email" placeholder="Email"><br><br>
+  <input type="password" id="password" placeholder="Password"><br><br>
   <button id="signupBtn">Sign Up</button>
   <p>Already have an account? <a href="index.html">Login</a></p>
 
@@ -37,11 +35,16 @@
 
       try {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        await setDoc(doc(db, "users", userCredential.user.uid), { role: "user" });
+        const user = userCredential.user;
+
+        await setDoc(doc(db, "users", user.uid), {
+          role: "user"
+        });
+
         alert("Signup successful!");
         window.location.href = "dashboard.html";
       } catch (error) {
-        alert(error.message);
+        alert("Error: " + error.message);
       }
     });
   </script>
