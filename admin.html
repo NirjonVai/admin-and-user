@@ -3,33 +3,43 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Admin Panel</title>
+  <title>Admin Panel - Manage Users</title>
   <style>
-    body { font-family: Arial; padding: 20px; }
-    table { border-collapse: collapse; width: 100%; }
-    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-    th { background: #eee; }
-    select, button { padding: 5px; }
-    #msg { margin-top: 10px; }
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    table { border-collapse: collapse; width: 100%; margin-bottom: 20px; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+    th { background-color: #f2f2f2; }
+    input[type=text], select { width: 100%; padding: 6px; }
+    button { padding: 6px 12px; cursor: pointer; }
+    #message { margin-top: 10px; }
+    .success { color: green; }
+    .error { color: red; }
   </style>
 </head>
 <body>
 
-<h1>Admin Panel - User Management</h1>
+<h1>Admin Panel - Manage Users</h1>
 
 <table>
   <thead>
-    <tr><th>Email</th><th>Role</th><th>Change Role</th><th>Action</th></tr>
+    <tr>
+      <th>Email</th>
+      <th>Role</th>
+      <th>Change Email</th>
+      <th>Change Role</th>
+      <th>Send Password Reset</th>
+      <th>Action</th>
+    </tr>
   </thead>
-  <tbody id="usersBody"></tbody>
+  <tbody id="usersTableBody"></tbody>
 </table>
 
-<div id="msg"></div>
+<div id="message"></div>
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
   import { getFirestore, collection, getDocs, doc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
-  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
+  import { getAuth, onAuthStateChanged, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyAPF4nGlb9R2osmXUwrPgatwAl1huIAGpg",
@@ -44,21 +54,21 @@
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const db = getFirestore(app);
-  const usersBody = document.getElementById('usersBody');
-  const msg = document.getElementById('msg');
 
-  // Check if user is admin, else redirect
+  const usersTableBody = document.getElementById("usersTableBody");
+  const messageDiv = document.getElementById("message");
+
   onAuthStateChanged(auth, async user => {
     if (!user) {
-      alert('Please login first.');
-      window.location.href = 'index.html';
+      alert("Please login first.");
+      window.location.href = "index.html";
       return;
     }
 
     const userDoc = await getDoc(doc(db, "users", user.uid));
     if (!userDoc.exists() || userDoc.data().role !== "admin") {
-      alert('Access denied. Admins only.');
-      window.location.href = 'index.html';
+      alert("Access denied. Admins only.");
+      window.location.href = "index.html";
       return;
     }
 
@@ -66,62 +76,99 @@
   });
 
   async function loadUsers() {
-    usersBody.innerHTML = "";
-    msg.textContent = "";
+    usersTableBody.innerHTML = "";
+    messageDiv.textContent = "";
 
     try {
-      const querySnapshot = await getDocs(collection(db, "users"));
-
-      querySnapshot.forEach(docSnap => {
+      const snapshot = await getDocs(collection(db, "users"));
+      snapshot.forEach(docSnap => {
         const data = docSnap.data();
 
-        const tr = document.createElement('tr');
+        const tr = document.createElement("tr");
 
-        // Email cell
-        const tdEmail = document.createElement('td');
-        tdEmail.textContent = data.email || "-";
-        tr.appendChild(tdEmail);
+        // Current email cell
+        const emailTd = document.createElement("td");
+        emailTd.textContent = data.email || "-";
+        tr.appendChild(emailTd);
 
-        // Current role cell
-        const tdRole = document.createElement('td');
-        tdRole.textContent = data.role || "user";
-        tr.appendChild(tdRole);
+        // Role cell
+        const roleTd = document.createElement("td");
+        roleTd.textContent = data.role || "user";
+        tr.appendChild(roleTd);
+
+        // Email change input
+        const changeEmailTd = document.createElement("td");
+        const emailInput = document.createElement("input");
+        emailInput.type = "text";
+        emailInput.value = data.email || "";
+        changeEmailTd.appendChild(emailInput);
+        tr.appendChild(changeEmailTd);
 
         // Role select dropdown
-        const tdSelect = document.createElement('td');
-        const select = document.createElement('select');
-        select.innerHTML = `
+        const roleChangeTd = document.createElement("td");
+        const roleSelect = document.createElement("select");
+        roleSelect.innerHTML = `
           <option value="user" ${data.role === "user" ? "selected" : ""}>User</option>
           <option value="admin" ${data.role === "admin" ? "selected" : ""}>Admin</option>
         `;
-        tdSelect.appendChild(select);
-        tr.appendChild(tdSelect);
+        roleChangeTd.appendChild(roleSelect);
+        tr.appendChild(roleChangeTd);
+
+        // Password reset email input + button
+        const pwResetTd = document.createElement("td");
+        const pwResetBtn = document.createElement("button");
+        pwResetBtn.textContent = "Send Reset Email";
+        pwResetBtn.onclick = () => sendResetEmail(emailInput.value.trim());
+        pwResetTd.appendChild(pwResetBtn);
+        tr.appendChild(pwResetTd);
 
         // Update button
-        const tdAction = document.createElement('td');
-        const btn = document.createElement('button');
-        btn.textContent = "Update";
-        btn.onclick = async () => {
+        const actionTd = document.createElement("td");
+        const updateBtn = document.createElement("button");
+        updateBtn.textContent = "Update";
+        updateBtn.onclick = async () => {
+          const newEmail = emailInput.value.trim();
+          const newRole = roleSelect.value;
+
+          if (!newEmail) {
+            showMessage("Email cannot be empty", "error");
+            return;
+          }
           try {
-            await updateDoc(doc(db, "users", docSnap.id), { role: select.value });
-            tdRole.textContent = select.value;
-            msg.textContent = `Role updated for ${data.email}`;
-            msg.style.color = "green";
-          } catch (error) {
-            msg.textContent = "Error updating role: " + error.message;
-            msg.style.color = "red";
+            await updateDoc(doc(db, "users", docSnap.id), {
+              email: newEmail,
+              role: newRole
+            });
+            emailTd.textContent = newEmail;
+            roleTd.textContent = newRole;
+            showMessage(`Updated user: ${newEmail}`, "success");
+          } catch (e) {
+            showMessage("Update failed: " + e.message, "error");
           }
         };
-        tdAction.appendChild(btn);
-        tr.appendChild(tdAction);
+        actionTd.appendChild(updateBtn);
+        tr.appendChild(actionTd);
 
-        usersBody.appendChild(tr);
+        usersTableBody.appendChild(tr);
       });
-
     } catch (error) {
-      msg.textContent = "Error loading users: " + error.message;
-      msg.style.color = "red";
+      showMessage("Error loading users: " + error.message, "error");
     }
+  }
+
+  function showMessage(msg, type) {
+    messageDiv.textContent = msg;
+    messageDiv.className = type;
+  }
+
+  function sendResetEmail(email) {
+    if (!email) {
+      showMessage("Enter an email to send password reset.", "error");
+      return;
+    }
+    sendPasswordResetEmail(auth, email)
+      .then(() => showMessage("Password reset email sent to " + email, "success"))
+      .catch((error) => showMessage("Error sending reset email: " + error.message, "error"));
   }
 </script>
 
