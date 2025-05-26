@@ -4,46 +4,29 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Login & Signup</title>
-  <style>
-    body { font-family: Arial, sans-serif; padding: 30px; max-width: 400px; margin: auto; }
-    h2 { color: #333; }
-    input, button {
-      display: block;
-      margin: 10px 0;
-      padding: 10px;
-      font-size: 16px;
-      width: 100%;
-      box-sizing: border-box;
-    }
-    button {
-      background-color: #4CAF50;
-      color: white;
-      border: none;
-      cursor: pointer;
-    }
-    button:hover {
-      background-color: #45a049;
-    }
-    .section { margin-bottom: 40px; }
-    .error { color: red; margin-top: 5px; }
-  </style>
+ <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@latest/dist/tailwind.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
 </head>
-<body>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-6">
+  <div class="bg-white p-8 rounded shadow-md w-full max-w-md">
+    
+    <div class="mb-10">
+      <h2 class="text-2xl font-semibold text-gray-800 mb-4">Login</h2>
+      <input id="loginEmail" type="email" placeholder="Email" required class="w-full p-3 border border-gray-300 rounded mb-3" />
+      <input id="loginPassword" type="password" placeholder="Password" required class="w-full p-3 border border-gray-300 rounded mb-3" />
+      <button id="loginBtn" class="w-full bg-green-500 text-white py-3 rounded hover:bg-green-600 transition">Login</button>
+      <div id="loginError" class="text-red-500 text-sm mt-2"></div>
+    </div>
 
-  <div class="section">
-    <h2>Login</h2>
-    <input id="loginEmail" type="email" placeholder="Email" required />
-    <input id="loginPassword" type="password" placeholder="Password" required />
-    <button id="loginBtn">Login</button>
-    <div id="loginError" class="error"></div>
-  </div>
+    <div>
+      <h2 class="text-2xl font-semibold text-gray-800 mb-4">Sign Up</h2>
+      <input id="signupEmail" type="email" placeholder="Email" required class="w-full p-3 border border-gray-300 rounded mb-3" />
+      <input id="signupPassword" type="password" placeholder="Password (min 6 chars)" minlength="6" required class="w-full p-3 border border-gray-300 rounded mb-3" />
+      <button id="signupBtn" class="w-full bg-blue-500 text-white py-3 rounded hover:bg-blue-600 transition">Sign Up</button>
+      <div id="signupError" class="text-red-500 text-sm mt-2"></div>
+    </div>
 
-  <div class="section">
-    <h2>Sign Up</h2>
-    <input id="signupEmail" type="email" placeholder="Email" required />
-    <input id="signupPassword" type="password" placeholder="Password (min 6 chars)" minlength="6" required />
-    <button id="signupBtn">Sign Up</button>
-    <div id="signupError" class="error"></div>
   </div>
 
 <script type="module">
@@ -99,7 +82,6 @@
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // Get user role from Firestore
       const userDoc = await getDoc(doc(db, "users", user.uid));
       let role = "user";
       if (userDoc.exists()) {
@@ -138,7 +120,6 @@
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // Add user data to Firestore with default role "user"
       await setDoc(doc(db, "users", user.uid), {
         email: user.email,
         role: "user",
