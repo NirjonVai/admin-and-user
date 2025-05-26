@@ -1,18 +1,19 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Login & Signup</title>
   <style>
-    body { font-family: Arial, sans-serif; padding: 30px; }
+    body { font-family: Arial, sans-serif; padding: 30px; max-width: 400px; margin: auto; }
     h2 { color: #333; }
     input, button {
       display: block;
       margin: 10px 0;
       padding: 10px;
       font-size: 16px;
-      width: 300px;
+      width: 100%;
+      box-sizing: border-box;
     }
     button {
       background-color: #4CAF50;
@@ -23,102 +24,133 @@
     button:hover {
       background-color: #45a049;
     }
-    .section { margin-bottom: 30px; }
-    .error { color: red; }
+    .section { margin-bottom: 40px; }
+    .error { color: red; margin-top: 5px; }
   </style>
 </head>
 <body>
+
   <div class="section">
     <h2>Login</h2>
     <input id="loginEmail" type="email" placeholder="Email" required />
     <input id="loginPassword" type="password" placeholder="Password" required />
-    <button onclick="login()">Login</button>
+    <button id="loginBtn">Login</button>
     <div id="loginError" class="error"></div>
   </div>
 
   <div class="section">
     <h2>Sign Up</h2>
     <input id="signupEmail" type="email" placeholder="Email" required />
-    <input id="signupPassword" type="password" placeholder="Password" required minlength="6" />
-    <button onclick="signup()">Sign Up</button>
+    <input id="signupPassword" type="password" placeholder="Password (min 6 chars)" minlength="6" required />
+    <button id="signupBtn">Sign Up</button>
     <div id="signupError" class="error"></div>
   </div>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
-    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
-    import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+  import {
+    getAuth,
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword,
+  } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
+  import {
+    getFirestore,
+    doc,
+    setDoc,
+    getDoc,
+  } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyAPF4nGlb9R2osmXUwrPgatwAl1huIAGpg",
-      authDomain: "admin-and-user-f50c3.firebaseapp.com",
-      projectId: "admin-and-user-f50c3",
-      storageBucket: "admin-and-user-f50c3.firebasestorage.app",
-      messagingSenderId: "926355768153",
-      appId: "1:926355768153:web:d52c55b2daf0e85a6e8248",
-      measurementId: "G-7FES0VM8S1"
-    };
+  const firebaseConfig = {
+    apiKey: "AIzaSyAPF4nGlb9R2osmXUwrPgatwAl1huIAGpg",
+    authDomain: "admin-and-user-f50c3.firebaseapp.com",
+    projectId: "admin-and-user-f50c3",
+    storageBucket: "admin-and-user-f50c3.firebasestorage.app",
+    messagingSenderId: "926355768153",
+    appId: "1:926355768153:web:d52c55b2daf0e85a6e8248",
+    measurementId: "G-7FES0VM8S1"
+  };
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
 
-    const loginErrorDiv = document.getElementById('loginError');
-    const signupErrorDiv = document.getElementById('signupError');
+  const loginEmail = document.getElementById("loginEmail");
+  const loginPassword = document.getElementById("loginPassword");
+  const loginBtn = document.getElementById("loginBtn");
+  const loginError = document.getElementById("loginError");
 
-    window.signup = async () => {
-      signupErrorDiv.textContent = "";
-      const email = document.getElementById("signupEmail").value.trim();
-      const password = document.getElementById("signupPassword").value;
+  const signupEmail = document.getElementById("signupEmail");
+  const signupPassword = document.getElementById("signupPassword");
+  const signupBtn = document.getElementById("signupBtn");
+  const signupError = document.getElementById("signupError");
 
-      if (!email || !password) {
-        signupErrorDiv.textContent = "Please fill all fields.";
-        return;
+  // Login
+  loginBtn.addEventListener("click", async () => {
+    loginError.textContent = "";
+    const email = loginEmail.value.trim();
+    const password = loginPassword.value;
+
+    if (!email || !password) {
+      loginError.textContent = "Please fill all fields.";
+      return;
+    }
+
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      // Get user role from Firestore
+      const userDoc = await getDoc(doc(db, "users", user.uid));
+      let role = "user";
+      if (userDoc.exists()) {
+        role = userDoc.data().role || "user";
       }
 
-      try {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        const user = userCredential.user;
+      alert("Login successful!");
 
-        await setDoc(doc(db, "users", user.uid), {
-          email: user.email,
-          role: "user"
-        });
-
-        alert("Signup successful!");
+      if (role === "admin") {
+        window.location.href = "admin.html";
+      } else {
         window.location.href = "dashboard.html";
-      } catch (error) {
-        signupErrorDiv.textContent = error.message;
       }
-    };
+    } catch (error) {
+      loginError.textContent = error.message;
+    }
+  });
 
-    window.login = async () => {
-      loginErrorDiv.textContent = "";
-      const email = document.getElementById("loginEmail").value.trim();
-      const password = document.getElementById("loginPassword").value;
+  // Signup
+  signupBtn.addEventListener("click", async () => {
+    signupError.textContent = "";
+    const email = signupEmail.value.trim();
+    const password = signupPassword.value;
 
-      if (!email || !password) {
-        loginErrorDiv.textContent = "Please fill all fields.";
-        return;
-      }
+    if (!email || !password) {
+      signupError.textContent = "Please fill all fields.";
+      return;
+    }
 
-      try {
-        const userCredential = await signInWithEmailAndPassword(auth, email, password);
-        const user = userCredential.user;
+    if (password.length < 6) {
+      signupError.textContent = "Password must be at least 6 characters.";
+      return;
+    }
 
-        const userDoc = await getDoc(doc(db, "users", user.uid));
-        const role = userDoc.exists() ? userDoc.data().role : "user";
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
 
-        alert("Login successful!");
-        if (role === "admin") {
-          window.location.href = "admin.html";
-        } else {
-          window.location.href = "dashboard.html";
-        }
-      } catch (error) {
-        loginErrorDiv.textContent = error.message;
-      }
-    };
-  </script>
+      // Add user data to Firestore with default role "user"
+      await setDoc(doc(db, "users", user.uid), {
+        email: user.email,
+        role: "user",
+      });
+
+      alert("Signup successful!");
+      window.location.href = "dashboard.html";
+    } catch (error) {
+      signupError.textContent = error.message;
+    }
+  });
+</script>
+
 </body>
 </html>
