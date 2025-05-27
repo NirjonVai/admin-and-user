@@ -15,6 +15,11 @@
     <input id="signupPhone" type="tel" placeholder="Phone Number" class="w-full p-3 border border-gray-300 rounded mb-3" />
     <input id="signupEmail" type="email" placeholder="Email" class="w-full p-3 border border-gray-300 rounded mb-3" />
     <input id="signupPassword" type="password" placeholder="Password (min 6 chars)" class="w-full p-3 border border-gray-300 rounded mb-3" />
+    
+    <!-- Referral input field -->
+    <input id="signupReferral" type="text" placeholder="Referral Code (optional)" readonly
+      class="w-full p-3 border border-gray-300 rounded mb-3 bg-gray-100 cursor-not-allowed" />
+    
     <button id="signupBtn" class="w-full bg-blue-500 text-white py-3 rounded hover:bg-blue-600 transition">Sign Up</button>
     <p class="mt-4 text-center text-sm">Already have an account? <a href="login.html" class="text-green-500 hover:underline">Login</a></p>
   </div>
@@ -22,7 +27,7 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
   import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
-  import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+  import { getFirestore, doc, setDoc, updateDoc, increment, getDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyAPF4nGlb9R2osmXUwrPgatwAl1huIAGpg",
@@ -39,12 +44,25 @@
   const db = getFirestore(app);
 
   const signupBtn = document.getElementById("signupBtn");
+  const referralInput = document.getElementById("signupReferral");
+
+  // Get referral code from URL params
+  const urlParams = new URLSearchParams(window.location.search);
+  const referralCode = urlParams.get("ref") || "";
+
+  // Set referral input value if referral code exists
+  if(referralCode) {
+    referralInput.value = referralCode;
+  } else {
+    referralInput.placeholder = "Referral Code (optional)";
+  }
 
   signupBtn.addEventListener("click", async () => {
     const username = document.getElementById("signupUsername").value.trim();
     const phone = document.getElementById("signupPhone").value.trim();
     const email = document.getElementById("signupEmail").value.trim();
     const password = document.getElementById("signupPassword").value;
+    const referral = referralInput.value.trim();
 
     if (!username || !phone || !email || !password) {
       Swal.fire({
@@ -74,12 +92,26 @@
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
+      // Save new user data
       await setDoc(doc(db, "users", user.uid), {
         email,
         username,
         phone,
         role: "user",
+        mainBalance: 0,
+        completedTasks: {},
       });
+
+      // If referral code exists, add 5 Taka bonus to referrer user
+      if (referral) {
+        const referrerDocRef = doc(db, "users", referral);
+        const referrerDocSnap = await getDoc(referrerDocRef);
+        if (referrerDocSnap.exists()) {
+          await updateDoc(referrerDocRef, {
+            mainBalance: increment(5)
+          });
+        }
+      }
 
       Swal.fire({
         title: "Sign-up Successful. Please login.",
