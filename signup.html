@@ -15,6 +15,7 @@
     <input id="signupPhone" type="tel" placeholder="Phone Number" class="w-full p-3 border border-gray-300 rounded mb-3" />
     <input id="signupEmail" type="email" placeholder="Email" class="w-full p-3 border border-gray-300 rounded mb-3" />
     <input id="signupPassword" type="password" placeholder="Password (min 6 chars)" class="w-full p-3 border border-gray-300 rounded mb-3" />
+    <input id="referralCode" type="text" placeholder="Referral Code (optional)" class="w-full p-3 border border-gray-300 rounded mb-3" />
     <button id="signupBtn" class="w-full bg-blue-500 text-white py-3 rounded hover:bg-blue-600 transition">Sign Up</button>
     <p class="mt-4 text-center text-sm">Already have an account? <a href="login.html" class="text-green-500 hover:underline">Login</a></p>
   </div>
@@ -22,7 +23,7 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
   import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
-  import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+  import { getFirestore, doc, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyAPF4nGlb9R2osmXUwrPgatwAl1huIAGpg",
@@ -40,11 +41,19 @@
 
   const signupBtn = document.getElementById("signupBtn");
 
+  // Autofill referral code from URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const refCode = urlParams.get('ref');
+  if (refCode) {
+    document.getElementById("referralCode").value = refCode;
+  }
+
   signupBtn.addEventListener("click", async () => {
     const username = document.getElementById("signupUsername").value.trim();
     const phone = document.getElementById("signupPhone").value.trim();
     const email = document.getElementById("signupEmail").value.trim();
     const password = document.getElementById("signupPassword").value;
+    const referralCode = document.getElementById("referralCode").value.trim();
 
     if (!username || !phone || !email || !password) {
       Swal.fire("Please fill all fields.", "", "error");
@@ -60,15 +69,32 @@
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      await setDoc(doc(db, "users", user.uid), {
+      const userData = {
         email,
         username,
         phone,
         role: "user",
-      });
+        mainBalance: 0,
+        referredBy: referralCode || null,
+        completedTasks: {}
+      };
+
+      await setDoc(doc(db, "users", user.uid), userData);
+
+      // If referral code is valid, reward the referrer
+      if (referralCode) {
+        const refDoc = doc(db, "users", referralCode);
+        const refSnap = await getDoc(refDoc);
+        if (refSnap.exists()) {
+          const refData = refSnap.data();
+          const newBalance = (refData.mainBalance || 0) + 5;
+          await updateDoc(refDoc, { mainBalance: newBalance });
+        }
+      }
 
       Swal.fire("Sign-up Successful. Please login.", "", "success");
       setTimeout(() => window.location.href = "index.html", 1500);
+
     } catch (error) {
       Swal.fire(error.message, "", "error");
     }
