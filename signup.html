@@ -47,12 +47,26 @@
     const password = document.getElementById("signupPassword").value;
 
     if (!username || !phone || !email || !password) {
-      Swal.fire("Please fill all fields.", "", "error");
+      Swal.fire({
+        title: "Please fill all fields.",
+        icon: "error",
+        position: "top-end",
+        toast: true,
+        showConfirmButton: false,
+        timer: 3000
+      });
       return;
     }
 
     if (password.length < 6) {
-      Swal.fire("Password must be at least 6 characters.", "", "error");
+      Swal.fire({
+        title: "Password must be at least 6 characters.",
+        icon: "error",
+        position: "top-end",
+        toast: true,
+        showConfirmButton: false,
+        timer: 3000
+      });
       return;
     }
 
@@ -67,10 +81,25 @@
         role: "user",
       });
 
-      Swal.fire("Sign-up Successful. Please login.", "", "success");
-      setTimeout(() => window.location.href = "index.html", 1500);
+      Swal.fire({
+        title: "Sign-up Successful. Please login.",
+        icon: "success",
+        position: "top-end",
+        toast: true,
+        showConfirmButton: false,
+        timer: 2000
+      });
+
+      setTimeout(() => window.location.href = "index.html", 2000);
     } catch (error) {
-      Swal.fire(error.message, "", "error");
+      Swal.fire({
+        title: error.message,
+        icon: "error",
+        position: "top-end",
+        toast: true,
+        showConfirmButton: false,
+        timer: 3000
+      });
     }
   });
 </script>
