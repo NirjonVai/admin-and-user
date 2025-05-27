@@ -27,9 +27,9 @@
     </div>
   </div>
 
-  <div id="withdrawHistory" class="mt-10">
-    <h2 class="text-xl font-semibold text-gray-800 mb-4">Withdraw Request History</h2>
-    <ul id="withdrawList" class="space-y-2 text-gray-700 text-sm"></ul>
+  <div class="mt-8 pt-6 border-t border-gray-300">
+    <h2 class="text-xl font-semibold text-gray-800 mb-4">Withdraw Requests History</h2>
+    <ul id="withdrawHistory" class="space-y-3"></ul>
   </div>
 
   <button id="logoutBtn"
@@ -62,7 +62,7 @@
     const logoutBtn = document.getElementById("logoutBtn");
     const withdrawBtn = document.getElementById("withdrawBtn");
     const withdrawAmountInput = document.getElementById("withdrawAmount");
-    const withdrawListEl = document.getElementById("withdrawList");
+    const withdrawHistoryEl = document.getElementById("withdrawHistory");
 
     let currentUserId = null;
     let userData = null;
@@ -90,8 +90,12 @@
       if (userSnap.exists()) {
         userData = userSnap.data();
         userEmailEl.textContent = "Logged in as: " + (userData.email || "N/A");
-        if (typeof userData.mainBalance !== "number") userData.mainBalance = 0;
-        if (!userData.completedTasks) userData.completedTasks = {};
+        if (typeof userData.mainBalance !== "number") {
+          userData.mainBalance = 0;
+        }
+        if (!userData.completedTasks) {
+          userData.completedTasks = {};
+        }
         balanceEl.textContent = "Main Balance: ৳" + userData.mainBalance.toFixed(2);
       } else {
         userEmailEl.textContent = "User data not found.";
@@ -173,7 +177,7 @@
         messageEl.textContent = "Withdraw request sent to admin.";
         messageEl.className = "mt-4 font-semibold text-green-600";
         withdrawAmountInput.value = "";
-        loadWithdrawHistory();
+        loadWithdrawHistory(); // Refresh after request
 
       } catch (error) {
         messageEl.textContent = "Error sending withdraw request: " + error.message;
@@ -182,21 +186,39 @@
     };
 
     async function loadWithdrawHistory() {
-      withdrawListEl.innerHTML = "";
-      const q = query(
-        collection(db, "withdrawRequests"),
-        where("userId", "==", currentUserId),
-        orderBy("requestedAt", "desc")
-      );
-      const querySnapshot = await getDocs(q);
-      querySnapshot.forEach((doc) => {
-        const data = doc.data();
-        const li = document.createElement("li");
-        const date = data.requestedAt?.toDate?.().toLocaleString() || "";
-        li.textContent = `৳${data.amount} - ${data.status} (${date})`;
-        li.className = "border p-2 rounded bg-gray-50";
-        withdrawListEl.appendChild(li);
-      });
+      withdrawHistoryEl.innerHTML = "<p class='text-gray-500'>Loading...</p>";
+      try {
+        const q = query(
+          collection(db, "withdrawRequests"),
+          where("userId", "==", currentUserId),
+          orderBy("requestedAt", "desc")
+        );
+        const snapshot = await getDocs(q);
+        withdrawHistoryEl.innerHTML = "";
+        snapshot.forEach(docSnap => {
+          const data = docSnap.data();
+          const li = document.createElement("li");
+          li.className = "bg-gray-100 p-3 rounded flex justify-between items-center";
+
+          const left = document.createElement("div");
+          left.innerHTML = `<strong>৳${data.amount}</strong><br><small>${new Date(data.requestedAt.toDate()).toLocaleString()}</small>`;
+
+          const status = document.createElement("span");
+          let color = "gray";
+          if (data.status === "approved") color = "green";
+          else if (data.status === "rejected") color = "red";
+          else if (data.status === "pending") color = "yellow";
+
+          status.className = `text-sm font-semibold text-${color}-600`;
+          status.textContent = data.status.charAt(0).toUpperCase() + data.status.slice(1);
+
+          li.appendChild(left);
+          li.appendChild(status);
+          withdrawHistoryEl.appendChild(li);
+        });
+      } catch (err) {
+        withdrawHistoryEl.innerHTML = "<p class='text-red-600'>Error loading history.</p>";
+      }
     }
 
     logoutBtn.onclick = async () => {
