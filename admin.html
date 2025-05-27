@@ -36,8 +36,8 @@
     </table>
   </div>
 
-  <h2 class="text-xl font-semibold mb-2">Withdraw Requests</h2>
-  <div class="overflow-x-auto">
+  <h2 class="text-xl font-semibold mb-2">Pending Withdraw Requests</h2>
+  <div class="overflow-x-auto mb-6">
     <table class="w-full table-auto border border-gray-300 text-sm">
       <thead class="bg-gray-100">
         <tr>
@@ -49,6 +49,21 @@
         </tr>
       </thead>
       <tbody id="withdrawTableBody"></tbody>
+    </table>
+  </div>
+
+  <h2 class="text-xl font-semibold mb-2">Withdrawal History</h2>
+  <div class="overflow-x-auto">
+    <table class="w-full table-auto border border-gray-300 text-sm">
+      <thead class="bg-gray-100">
+        <tr>
+          <th class="border p-2">User Email</th>
+          <th class="border p-2">Amount (৳)</th>
+          <th class="border p-2">Status</th>
+          <th class="border p-2">Processed Date</th>
+        </tr>
+      </thead>
+      <tbody id="withdrawHistoryBody"></tbody>
     </table>
   </div>
 
@@ -75,6 +90,7 @@
 
     const usersTableBody = document.getElementById("usersTableBody");
     const withdrawTableBody = document.getElementById("withdrawTableBody");
+    const withdrawHistoryBody = document.getElementById("withdrawHistoryBody");
     const messageDiv = document.getElementById("message");
     const logoutBtn = document.getElementById("logoutBtn");
 
@@ -103,6 +119,7 @@
 
       await loadUsers();
       await loadWithdrawRequests();
+      await loadWithdrawHistory();
     });
 
     async function loadUsers() {
@@ -184,7 +201,6 @@
         snapshot.forEach(docSnap => {
           const data = docSnap.data();
           const tr = document.createElement("tr");
-
           const date = data.requestDate?.toDate ? data.requestDate.toDate() : new Date();
 
           tr.innerHTML = `
@@ -205,6 +221,38 @@
         });
       } catch (error) {
         showMessage("Error loading withdraw requests: " + error.message, "text-red-500");
+      }
+    }
+
+    async function loadWithdrawHistory() {
+      withdrawHistoryBody.innerHTML = "";
+
+      try {
+        const q = query(collection(db, "withdrawRequests"), where("status", "!=", "pending"));
+        const snapshot = await getDocs(q);
+
+        if (snapshot.empty) {
+          withdrawHistoryBody.innerHTML = `<tr><td colspan="4" class="text-center p-4 text-gray-500">No history available.</td></tr>`;
+          return;
+        }
+
+        snapshot.forEach(docSnap => {
+          const data = docSnap.data();
+          const tr = document.createElement("tr");
+
+          const processedDate = data.processedAt?.toDate ? data.processedAt.toDate() : new Date();
+
+          tr.innerHTML = `
+            <td class="border p-2">${data.email || "-"}</td>
+            <td class="border p-2">${data.amount?.toFixed(2) || "0.00"}</td>
+            <td class="border p-2 capitalize">${data.status || "-"}</td>
+            <td class="border p-2">${processedDate.toLocaleString()}</td>
+          `;
+
+          withdrawHistoryBody.appendChild(tr);
+        });
+      } catch (error) {
+        showMessage("Error loading withdraw history: " + error.message, "text-red-500");
       }
     }
 
@@ -236,6 +284,7 @@
         }
 
         await loadWithdrawRequests();
+        await loadWithdrawHistory();
 
       } catch (error) {
         showMessage("Processing error: " + error.message, "text-red-500");
