@@ -43,7 +43,14 @@
     const password = document.getElementById("loginPassword").value;
 
     if (!email || !password) {
-      Swal.fire("Please fill all fields.", "", "error");
+      Swal.fire({
+        title: "Please fill all fields.",
+        icon: "error",
+        position: "top-end",
+        toast: true,
+        showConfirmButton: false,
+        timer: 3000
+      });
       return;
     }
 
@@ -53,12 +60,27 @@
       const userDoc = await getDoc(doc(db, "users", user.uid));
       const role = userDoc.exists() ? userDoc.data().role || "user" : "user";
 
-      Swal.fire("Login successful!", "", "success");
+      Swal.fire({
+        title: "Login successful!",
+        icon: "success",
+        position: "top-end",
+        toast: true,
+        showConfirmButton: false,
+        timer: 2000
+      });
+
       setTimeout(() => {
         window.location.href = role === "admin" ? "admin.html" : "dashboard.html";
-      }, 1000);
+      }, 2000);
     } catch (error) {
-      Swal.fire(error.message, "", "error");
+      Swal.fire({
+        title: error.message,
+        icon: "error",
+        position: "top-end",
+        toast: true,
+        showConfirmButton: false,
+        timer: 3000
+      });
     }
   });
 </script>
