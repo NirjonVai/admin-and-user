@@ -5,32 +5,74 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Admin Panel</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@latest/dist/tailwind.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
 </head>
-<body class="bg-white px-6 py-8 max-w-4xl mx-auto font-sans">
+<body class="bg-white text-gray-800 p-6 font-sans">
 
-  <h1 class="text-3xl font-bold mb-6">Admin Panel - Withdraw Requests</h1>
-  <div id="message" class="mb-4 font-semibold"></div>
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold">Admin Panel</h1>
+    <button id="logoutBtn" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded">Logout</button>
+  </div>
 
-  <table class="min-w-full border border-gray-300 rounded shadow">
-    <thead class="bg-gray-100">
-      <tr>
-        <th class="p-3 border border-gray-300 text-left">User Email</th>
-        <th class="p-3 border border-gray-300 text-right">Amount (৳)</th>
-        <th class="p-3 border border-gray-300 text-center">Status</th>
-        <th class="p-3 border border-gray-300 text-center">Requested At</th>
-        <th class="p-3 border border-gray-300 text-center">Actions</th>
-      </tr>
-    </thead>
-    <tbody id="withdrawRequestsBody"></tbody>
-  </table>
+  <div class="mb-6 text-sm text-gray-500">Version 1.3</div>
 
-  <button id="logoutBtn" class="mt-6 px-6 py-2 bg-red-600 text-white rounded hover:bg-red-700">Logout</button>
+  <h2 class="text-xl font-semibold mb-2">Users</h2>
+  <div class="overflow-x-auto">
+    <table class="w-full table-auto border border-gray-300 mb-8 text-sm">
+      <thead class="bg-gray-100">
+        <tr>
+          <th class="border p-2">Email</th>
+          <th class="border p-2">Role</th>
+          <th class="border p-2">Balance (৳)</th>
+          <th class="border p-2">Change Email</th>
+          <th class="border p-2">Change Role</th>
+          <th class="border p-2">Change Balance</th>
+          <th class="border p-2">Send Reset</th>
+          <th class="border p-2">Action</th>
+        </tr>
+      </thead>
+      <tbody id="usersTableBody"></tbody>
+    </table>
+  </div>
+
+  <h2 class="text-xl font-semibold mb-2">Pending Withdraw Requests</h2>
+  <div class="overflow-x-auto mb-6">
+    <table class="w-full table-auto border border-gray-300 text-sm">
+      <thead class="bg-gray-100">
+        <tr>
+          <th class="border p-2">User Email</th>
+          <th class="border p-2">Amount (৳)</th>
+          <th class="border p-2">Status</th>
+          <th class="border p-2">Request Date</th>
+          <th class="border p-2">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="withdrawTableBody"></tbody>
+    </table>
+  </div>
+
+  <h2 class="text-xl font-semibold mb-2">Withdrawal History</h2>
+  <div class="overflow-x-auto">
+    <table class="w-full table-auto border border-gray-300 text-sm">
+      <thead class="bg-gray-100">
+        <tr>
+          <th class="border p-2">User Email</th>
+          <th class="border p-2">Amount (৳)</th>
+          <th class="border p-2">Status</th>
+          <th class="border p-2">Processed Date</th>
+        </tr>
+      </thead>
+      <tbody id="withdrawHistoryBody"></tbody>
+    </table>
+  </div>
+
+  <div id="message" class="mt-4 font-semibold"></div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
-    import { getFirestore, collection, query, orderBy, getDocs, doc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+    import { getFirestore, collection, getDocs, doc, updateDoc, getDoc, query, where } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged, sendPasswordResetEmail, signOut } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAPF4nGlb9R2osmXUwrPgatwAl1huIAGpg",
@@ -46,153 +88,222 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    const withdrawRequestsBody = document.getElementById("withdrawRequestsBody");
-    const messageEl = document.getElementById("message");
+    const usersTableBody = document.getElementById("usersTableBody");
+    const withdrawTableBody = document.getElementById("withdrawTableBody");
+    const withdrawHistoryBody = document.getElementById("withdrawHistoryBody");
+    const messageDiv = document.getElementById("message");
     const logoutBtn = document.getElementById("logoutBtn");
 
-    let currentUserId = null;
-    let isAdminUser = false;
+    logoutBtn.onclick = async () => {
+      try {
+        await signOut(auth);
+        window.location.href = "index.html";
+      } catch (error) {
+        showMessage("Logout failed: " + error.message, "text-red-500");
+      }
+    };
 
-    onAuthStateChanged(auth, async (user) => {
+    onAuthStateChanged(auth, async user => {
       if (!user) {
+        alert("Please login first.");
         window.location.href = "index.html";
         return;
       }
-      currentUserId = user.uid;
 
-      // Check admin role
-      const userDoc = await getDoc(doc(db, "users", currentUserId));
-      if (!userDoc.exists()) {
-        messageEl.textContent = "User data not found.";
+      const userDoc = await getDoc(doc(db, "users", user.uid));
+      if (!userDoc.exists() || userDoc.data().role !== "admin") {
+        alert("Access denied. Admins only.");
+        window.location.href = "index.html";
         return;
       }
-      const userData = userDoc.data();
-      if (userData.role !== "admin") {
-        messageEl.textContent = "Access denied. You are not an admin.";
-        return;
-      }
-      isAdminUser = true;
 
-      loadWithdrawRequests();
+      await loadUsers();
+      await loadWithdrawRequests();
+      await loadWithdrawHistory();
     });
 
-    async function loadWithdrawRequests() {
-      messageEl.textContent = "Loading withdraw requests...";
-      withdrawRequestsBody.innerHTML = "";
+    async function loadUsers() {
+      usersTableBody.innerHTML = "";
+      messageDiv.textContent = "";
 
       try {
-        const q = query(
-          collection(db, "withdrawRequests"),
-          orderBy("requestedAt", "desc")
-        );
-        const querySnapshot = await getDocs(q);
-        if (querySnapshot.empty) {
-          messageEl.textContent = "No withdraw requests found.";
-          return;
-        }
-
-        messageEl.textContent = "";
-
-        querySnapshot.forEach(docSnap => {
+        const snapshot = await getDocs(collection(db, "users"));
+        snapshot.forEach(docSnap => {
           const data = docSnap.data();
-          const id = docSnap.id;
-
           const tr = document.createElement("tr");
-          tr.className = "border-b border-gray-300";
-
-          // Date formatting
-          const date = data.requestedAt && data.requestedAt.toDate ? data.requestedAt.toDate() : new Date(data.requestedAt);
-          const dateStr = date.toLocaleDateString() + " " + date.toLocaleTimeString();
 
           tr.innerHTML = `
-            <td class="p-3 border border-gray-300">${data.email || "N/A"}</td>
-            <td class="p-3 border border-gray-300 text-right">৳${data.amount.toFixed(2)}</td>
-            <td class="p-3 border border-gray-300 text-center font-semibold capitalize">${data.status}</td>
-            <td class="p-3 border border-gray-300 text-center">${dateStr}</td>
-            <td class="p-3 border border-gray-300 text-center space-x-2">
-              ${data.status === "pending" ? `
-                <button data-id="${id}" data-action="approve" class="approveBtn bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded">Approve</button>
-                <button data-id="${id}" data-action="reject" class="rejectBtn bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded">Reject</button>
-              ` : `<span class="text-gray-500">No actions</span>`}
+            <td class="border p-2">${data.email || "-"}</td>
+            <td class="border p-2">${data.role || "user"}</td>
+            <td class="border p-2">${(data.mainBalance !== undefined) ? data.mainBalance.toFixed(2) : "0.00"}</td>
+            <td class="border p-2"><input type="text" class="w-full p-1 border rounded" value="${data.email || ""}" /></td>
+            <td class="border p-2">
+              <select class="w-full p-1 border rounded">
+                <option value="user" ${data.role === "user" ? "selected" : ""}>User</option>
+                <option value="admin" ${data.role === "admin" ? "selected" : ""}>Admin</option>
+              </select>
+            </td>
+            <td class="border p-2"><input type="number" min="0" step="0.01" class="w-full p-1 border rounded" value="${data.mainBalance || 0}" /></td>
+            <td class="border p-2">
+              <button class="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded">Send Reset</button>
+            </td>
+            <td class="border p-2">
+              <button class="bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded">Update</button>
             </td>
           `;
 
-          withdrawRequestsBody.appendChild(tr);
-        });
+          const [emailInput, roleSelect, balanceInput] = tr.querySelectorAll("input, select");
+          const resetBtn = tr.querySelector("td:nth-child(7) button");
+          const updateBtn = tr.querySelector("td:nth-child(8) button");
 
-        // Add event listeners for approve/reject buttons
-        document.querySelectorAll(".approveBtn").forEach(btn => {
-          btn.addEventListener("click", async (e) => {
-            const id = e.target.dataset.id;
-            await updateWithdrawRequest(id, "approved");
-          });
-        });
-        document.querySelectorAll(".rejectBtn").forEach(btn => {
-          btn.addEventListener("click", async (e) => {
-            const id = e.target.dataset.id;
-            await updateWithdrawRequest(id, "rejected");
-          });
-        });
+          resetBtn.onclick = () => sendResetEmail(emailInput.value.trim());
 
+          updateBtn.onclick = async () => {
+            const newEmail = emailInput.value.trim();
+            const newRole = roleSelect.value;
+            const newBalance = parseFloat(balanceInput.value);
+
+            if (!newEmail) return showMessage("Email cannot be empty", "text-red-500");
+            if (isNaN(newBalance) || newBalance < 0) return showMessage("Invalid balance", "text-red-500");
+
+            try {
+              await updateDoc(doc(db, "users", docSnap.id), {
+                email: newEmail,
+                role: newRole,
+                mainBalance: newBalance
+              });
+              showMessage(`Updated user: ${newEmail}`, "text-green-600");
+              await loadUsers();
+            } catch (e) {
+              showMessage("Update failed: " + e.message, "text-red-500");
+            }
+          };
+
+          usersTableBody.appendChild(tr);
+        });
       } catch (error) {
-        messageEl.textContent = "Error loading withdraw requests: " + error.message;
+        showMessage("Error loading users: " + error.message, "text-red-500");
       }
     }
 
-    async function updateWithdrawRequest(id, newStatus) {
-      if (!isAdminUser) return;
-
-      messageEl.textContent = `Updating request...`;
+    async function loadWithdrawRequests() {
+      withdrawTableBody.innerHTML = "";
 
       try {
-        const reqDocRef = doc(db, "withdrawRequests", id);
-        const reqDocSnap = await getDoc(reqDocRef);
-        if (!reqDocSnap.exists()) {
-          messageEl.textContent = "Request not found.";
-          return;
-        }
-        const reqData = reqDocSnap.data();
+        const q = query(collection(db, "withdrawRequests"), where("status", "==", "pending"));
+        const snapshot = await getDocs(q);
 
-        if (reqData.status !== "pending") {
-          messageEl.textContent = "Request already processed.";
+        if (snapshot.empty) {
+          withdrawTableBody.innerHTML = `<tr><td colspan="5" class="text-center p-4 text-gray-500">No pending withdrawal requests.</td></tr>`;
           return;
         }
 
-        if (newStatus === "rejected") {
-          // Refund balance to user
-          const userRef = doc(db, "users", reqData.userId);
-          const userSnap = await getDoc(userRef);
-          if (!userSnap.exists()) {
-            messageEl.textContent = "User not found.";
-            return;
-          }
-          const userData = userSnap.data();
-          const newBalance = (userData.mainBalance || 0) + reqData.amount;
+        snapshot.forEach(docSnap => {
+          const data = docSnap.data();
+          const tr = document.createElement("tr");
+          const date = data.requestDate?.toDate ? data.requestDate.toDate() : new Date();
 
-          await updateDoc(userRef, {
-            mainBalance: newBalance
-          });
-        }
+          tr.innerHTML = `
+            <td class="border p-2">${data.email || "-"}</td>
+            <td class="border p-2">${data.amount?.toFixed(2) || "0.00"}</td>
+            <td class="border p-2">${data.status || "pending"}</td>
+            <td class="border p-2">${date.toLocaleString()}</td>
+            <td class="border p-2 flex gap-2">
+              <button class="approve bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded">Approve</button>
+              <button class="reject bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded">Reject</button>
+            </td>
+          `;
 
-        // Update request status
-        await updateDoc(reqDocRef, {
-          status: newStatus,
-          processedAt: new Date()
+          tr.querySelector(".approve").onclick = () => processWithdraw(docSnap.id, true);
+          tr.querySelector(".reject").onclick = () => processWithdraw(docSnap.id, false);
+
+          withdrawTableBody.appendChild(tr);
         });
-
-        messageEl.textContent = `Request ${newStatus} successfully.`;
-        await loadWithdrawRequests();
-
       } catch (error) {
-        messageEl.textContent = "Error updating request: " + error.message;
+        showMessage("Error loading withdraw requests: " + error.message, "text-red-500");
       }
     }
 
-    logoutBtn.onclick = async () => {
-      await signOut(auth);
-      alert("Logged out!");
-      window.location.href = "index.html";
-    };
+    async function loadWithdrawHistory() {
+      withdrawHistoryBody.innerHTML = "";
+
+      try {
+        const q = query(collection(db, "withdrawRequests"), where("status", "!=", "pending"));
+        const snapshot = await getDocs(q);
+
+        if (snapshot.empty) {
+          withdrawHistoryBody.innerHTML = `<tr><td colspan="4" class="text-center p-4 text-gray-500">No history available.</td></tr>`;
+          return;
+        }
+
+        snapshot.forEach(docSnap => {
+          const data = docSnap.data();
+          const tr = document.createElement("tr");
+
+          const processedDate = data.processedAt?.toDate ? data.processedAt.toDate() : new Date();
+
+          tr.innerHTML = `
+            <td class="border p-2">${data.email || "-"}</td>
+            <td class="border p-2">${data.amount?.toFixed(2) || "0.00"}</td>
+            <td class="border p-2 capitalize">${data.status || "-"}</td>
+            <td class="border p-2">${processedDate.toLocaleString()}</td>
+          `;
+
+          withdrawHistoryBody.appendChild(tr);
+        });
+      } catch (error) {
+        showMessage("Error loading withdraw history: " + error.message, "text-red-500");
+      }
+    }
+
+    async function processWithdraw(id, approve) {
+      const ref = doc(db, "withdrawRequests", id);
+
+      try {
+        const snap = await getDoc(ref);
+        if (!snap.exists()) return showMessage("Request not found", "text-red-500");
+
+        const data = snap.data();
+        if (data.status !== "pending") return showMessage("Already processed", "text-red-500");
+
+        if (approve) {
+          const userRef = doc(db, "users", data.userId);
+          const userSnap = await getDoc(userRef);
+          if (!userSnap.exists()) return showMessage("User not found", "text-red-500");
+
+          const newBalance = (userSnap.data().mainBalance || 0) - (data.amount || 0);
+          if (newBalance < 0) return showMessage("Insufficient balance", "text-red-500");
+
+          await updateDoc(userRef, { mainBalance: newBalance });
+          await updateDoc(ref, { status: "approved", processedAt: new Date() });
+
+          showMessage(`Approved ৳${data.amount.toFixed(2)} for ${data.email}`, "text-green-600");
+        } else {
+          await updateDoc(ref, { status: "rejected", processedAt: new Date() });
+          showMessage(`Rejected withdrawal for ${data.email}`, "text-yellow-600");
+        }
+
+        await loadWithdrawRequests();
+        await loadWithdrawHistory();
+
+      } catch (error) {
+        showMessage("Processing error: " + error.message, "text-red-500");
+      }
+    }
+
+    function showMessage(msg, colorClass) {
+      messageDiv.textContent = msg;
+      messageDiv.className = `mt-4 font-semibold ${colorClass}`;
+    }
+
+    // Added the sendResetEmail function here as requested
+    function sendResetEmail(email) {
+      if (!email) return showMessage("Enter an email", "text-red-500");
+      sendPasswordResetEmail(auth, email)
+        .then(() => showMessage("Reset email sent to " + email, "text-green-600"))
+        .catch((e) => showMessage("Error: " + e.message, "text-red-500"));
+    }
   </script>
+
 </body>
 </html>
