@@ -33,6 +33,7 @@
       <input id="signupPhone" type="tel" placeholder="Phone Number" required class="w-full p-3 border border-gray-300 rounded mb-3" />
       <input id="signupEmail" type="email" placeholder="Email" required class="w-full p-3 border border-gray-300 rounded mb-3" />
       <input id="signupPassword" type="password" placeholder="Password (min 6 chars)" minlength="6" required class="w-full p-3 border border-gray-300 rounded mb-3" />
+      <input id="signupReferral" type="text" placeholder="Referral Code (optional)" class="w-full p-3 border border-gray-300 rounded mb-3" />
       <button id="signupBtn" class="w-full bg-blue-500 text-white py-3 rounded hover:bg-blue-600 transition">Sign Up</button>
     </div>
 
@@ -50,6 +51,8 @@
     doc,
     setDoc,
     getDoc,
+    updateDoc,
+    increment,
   } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 
   const firebaseConfig = {
@@ -75,6 +78,7 @@
   const signupBtn = document.getElementById("signupBtn");
   const signupUsername = document.getElementById("signupUsername");
   const signupPhone = document.getElementById("signupPhone");
+  const signupReferral = document.getElementById("signupReferral");
 
   const showLogin = document.getElementById("showLogin");
   const showSignup = document.getElementById("showSignup");
@@ -144,15 +148,16 @@
     }
   });
 
-  // Signup
+  // Signup with Referral bonus
   signupBtn.addEventListener("click", async () => {
     const email = signupEmail.value.trim();
     const password = signupPassword.value;
     const username = signupUsername.value.trim();
     const phone = signupPhone.value.trim();
+    const referralCode = signupReferral.value.trim();
 
     if (!email || !password || !username || !phone) {
-      showAlert("Please fill all fields.", "error");
+      showAlert("Please fill all required fields.", "error");
       return;
     }
 
@@ -165,14 +170,34 @@
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
+      // Set user data, with initial bonus 0
       await setDoc(doc(db, "users", user.uid), {
         email: user.email,
         username: username,
         phone: phone,
         role: "user",
+        bonus: 0,
       });
 
+      // If referral code is provided, validate and give bonus to referrer
+      if (referralCode) {
+        const refDocRef = doc(db, "users", referralCode);
+        const refDocSnap = await getDoc(refDocRef);
+        if (refDocSnap.exists()) {
+          // Increase referrer's bonus by 5 taka
+          await updateDoc(refDocRef, {
+            bonus: increment(5)
+          });
+          showAlert("Referral bonus added to referrer!", "success");
+        } else {
+          showAlert("Invalid referral code.", "warning");
+        }
+      }
+
       showAlert("Sign-up Successful. Please login.", "success");
+
+      // Reset referral input
+      signupReferral.value = "";
 
       // Show login form after signup
       loginForm.classList.remove("hidden");
