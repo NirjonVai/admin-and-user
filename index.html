@@ -29,6 +29,8 @@
     <!-- Sign Up Form -->
     <div id="signupForm" class="hidden">
       <h2 class="text-2xl font-semibold text-gray-800 mb-4">Sign Up</h2>
+      <input id="signupUsername" type="text" placeholder="Username" required class="w-full p-3 border border-gray-300 rounded mb-3" />
+      <input id="signupPhone" type="tel" placeholder="Phone Number" required class="w-full p-3 border border-gray-300 rounded mb-3" />
       <input id="signupEmail" type="email" placeholder="Email" required class="w-full p-3 border border-gray-300 rounded mb-3" />
       <input id="signupPassword" type="password" placeholder="Password (min 6 chars)" minlength="6" required class="w-full p-3 border border-gray-300 rounded mb-3" />
       <button id="signupBtn" class="w-full bg-blue-500 text-white py-3 rounded hover:bg-blue-600 transition">Sign Up</button>
@@ -71,6 +73,8 @@
   const signupEmail = document.getElementById("signupEmail");
   const signupPassword = document.getElementById("signupPassword");
   const signupBtn = document.getElementById("signupBtn");
+  const signupUsername = document.getElementById("signupUsername");
+  const signupPhone = document.getElementById("signupPhone");
 
   const showLogin = document.getElementById("showLogin");
   const showSignup = document.getElementById("showSignup");
@@ -144,8 +148,10 @@
   signupBtn.addEventListener("click", async () => {
     const email = signupEmail.value.trim();
     const password = signupPassword.value;
+    const username = signupUsername.value.trim();
+    const phone = signupPhone.value.trim();
 
-    if (!email || !password) {
+    if (!email || !password || !username || !phone) {
       showAlert("Please fill all fields.", "error");
       return;
     }
@@ -161,6 +167,8 @@
 
       await setDoc(doc(db, "users", user.uid), {
         email: user.email,
+        username: username,
+        phone: phone,
         role: "user",
       });
 
