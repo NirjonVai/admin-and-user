@@ -10,15 +10,13 @@
 </head>
 <body class="bg-white text-gray-800 p-6 font-sans">
 
-  <!-- Header -->
   <div class="flex justify-between items-center mb-6">
     <h1 class="text-2xl font-bold">Admin Panel</h1>
     <button id="logoutBtn" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded">Logout</button>
   </div>
 
-  <div class="mb-6 text-sm text-gray-500">Version 1.3</div>
+  <div class="mb-6 text-sm text-gray-500">Version 1.4</div>
 
-  <!-- Users Table -->
   <h2 class="text-xl font-semibold mb-2">Users</h2>
   <div class="overflow-x-auto">
     <table class="w-full table-auto border border-gray-300 mb-8 text-sm">
@@ -38,7 +36,6 @@
     </table>
   </div>
 
-  <!-- Withdraw Requests -->
   <h2 class="text-xl font-semibold mb-2">Pending Withdraw Requests</h2>
   <div class="overflow-x-auto mb-6">
     <table class="w-full table-auto border border-gray-300 text-sm">
@@ -55,7 +52,6 @@
     </table>
   </div>
 
-  <!-- History -->
   <h2 class="text-xl font-semibold mb-2">Withdrawal History</h2>
   <div class="overflow-x-auto">
     <table class="w-full table-auto border border-gray-300 text-sm">
@@ -270,31 +266,23 @@
         const data = snap.data();
         if (data.status !== "pending") return showMessage("Already processed", "text-red-500");
 
-        const userRef = doc(db, "users", data.userId);
-        const userSnap = await getDoc(userRef);
-        if (!userSnap.exists()) return showMessage("User not found", "text-red-500");
-
-        const userData = userSnap.data();
-        const balance = userData.mainBalance || 0;
-        const amount = data.amount || 0;
-
         if (approve) {
-          if (balance < amount) return showMessage("Insufficient balance", "text-red-500");
-
-          await updateDoc(userRef, { mainBalance: balance - amount });
           await updateDoc(ref, { status: "approved", processedAt: new Date() });
-
-          showMessage(`Approved ৳${amount.toFixed(2)} for ${data.email}`, "text-green-600");
+          showMessage(`Approved ৳${data.amount.toFixed(2)} for ${data.email}`, "text-green-600");
         } else {
-          await updateDoc(userRef, { mainBalance: balance + amount });
+          const userRef = doc(db, "users", data.userId);
+          const userSnap = await getDoc(userRef);
+          if (!userSnap.exists()) return showMessage("User not found", "text-red-500");
+
+          const newBalance = (userSnap.data().mainBalance || 0) + (data.amount || 0);
+          await updateDoc(userRef, { mainBalance: newBalance });
           await updateDoc(ref, { status: "rejected", processedAt: new Date() });
 
-          showMessage(`Rejected and returned ৳${amount.toFixed(2)} to ${data.email}`, "text-yellow-600");
+          showMessage(`Rejected and refunded ৳${data.amount.toFixed(2)} to ${data.email}`, "text-yellow-600");
         }
 
         await loadWithdrawRequests();
         await loadWithdrawHistory();
-
       } catch (error) {
         showMessage("Processing error: " + error.message, "text-red-500");
       }
@@ -312,5 +300,6 @@
         .catch((e) => showMessage("Error: " + e.message, "text-red-500"));
     }
   </script>
+
 </body>
 </html>
