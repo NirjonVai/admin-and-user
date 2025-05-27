@@ -26,10 +26,8 @@
         class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:bg-green-300">Request Withdraw</button>
     </div>
 
-    <div class="mt-8">
-      <h3 class="text-lg font-medium text-gray-800 mb-2">Withdraw History</h3>
-      <ul id="withdrawHistory" class="space-y-2 text-sm text-gray-700"></ul>
-    </div>
+    <h3 class="text-lg font-semibold text-gray-800 mb-2">Withdraw History</h3>
+    <ul id="withdrawHistory" class="space-y-2 text-sm text-gray-700"></ul>
   </div>
 
   <button id="logoutBtn"
@@ -177,7 +175,7 @@
         messageEl.textContent = "Withdraw request sent to admin.";
         messageEl.className = "mt-4 font-semibold text-green-600";
         withdrawAmountInput.value = "";
-        loadWithdrawHistory();
+        loadWithdrawHistory(); // Refresh history
 
       } catch (error) {
         messageEl.textContent = "Error sending withdraw request: " + error.message;
@@ -186,27 +184,33 @@
     };
 
     async function loadWithdrawHistory() {
-      withdrawHistoryEl.innerHTML = "<li>Loading...</li>";
+      withdrawHistoryEl.innerHTML = "<li class='text-gray-500'>Loading...</li>";
       try {
         const q = query(
           collection(db, "withdrawRequests"),
           where("userId", "==", currentUserId),
           orderBy("requestedAt", "desc")
         );
-        const querySnapshot = await getDocs(q);
-        withdrawHistoryEl.innerHTML = "";
-        if (querySnapshot.empty) {
-          withdrawHistoryEl.innerHTML = "<li>No withdraw history.</li>";
+        const snapshot = await getDocs(q);
+
+        if (snapshot.empty) {
+          withdrawHistoryEl.innerHTML = "<li class='text-gray-500'>No withdraw history.</li>";
           return;
         }
-        querySnapshot.forEach(docSnap => {
+
+        withdrawHistoryEl.innerHTML = "";
+        snapshot.forEach(docSnap => {
           const data = docSnap.data();
+          const date = data.requestedAt?.seconds
+            ? new Date(data.requestedAt.seconds * 1000).toLocaleString()
+            : "Unknown date";
           const li = document.createElement("li");
-          li.textContent = `৳${data.amount} - ${data.status} (${new Date(data.requestedAt.seconds * 1000).toLocaleString()})`;
+          li.textContent = `৳${data.amount} - ${data.status} (${date})`;
           withdrawHistoryEl.appendChild(li);
         });
       } catch (err) {
-        withdrawHistoryEl.innerHTML = "<li>Error loading history.</li>";
+        console.error("Withdraw history error:", err);
+        withdrawHistoryEl.innerHTML = "<li class='text-red-500'>Error loading history.</li>";
       }
     }
 
