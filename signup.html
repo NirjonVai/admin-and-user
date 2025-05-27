@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Sign Up</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body class="bg-gray-100 min-h-screen flex items-center justify-center p-6">
@@ -15,7 +15,10 @@
     <input id="signupPhone" type="tel" placeholder="Phone Number" class="w-full p-3 border border-gray-300 rounded mb-3" />
     <input id="signupEmail" type="email" placeholder="Email" class="w-full p-3 border border-gray-300 rounded mb-3" />
     <input id="signupPassword" type="password" placeholder="Password (min 6 chars)" class="w-full p-3 border border-gray-300 rounded mb-3" />
-    <input id="referralCode" type="text" placeholder="Referral Code (optional)" class="w-full p-3 border border-gray-300 rounded mb-3" />
+    
+    <!-- Referral code input, readonly, auto-filled if ?ref= present -->
+    <input id="signupReferral" type="text" placeholder="Referral Code (optional)" readonly class="w-full p-3 border border-gray-300 rounded mb-3 bg-gray-100 cursor-not-allowed" />
+
     <button id="signupBtn" class="w-full bg-blue-500 text-white py-3 rounded hover:bg-blue-600 transition">Sign Up</button>
     <p class="mt-4 text-center text-sm">Already have an account? <a href="login.html" class="text-green-500 hover:underline">Login</a></p>
   </div>
@@ -23,7 +26,7 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
   import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
-  import { getFirestore, doc, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+  import { getFirestore, doc, setDoc, getDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyAPF4nGlb9R2osmXUwrPgatwAl1huIAGpg",
@@ -40,12 +43,13 @@
   const db = getFirestore(app);
 
   const signupBtn = document.getElementById("signupBtn");
+  const referralInput = document.getElementById("signupReferral");
 
-  // Autofill referral code from URL
+  // Auto-fill referral code from URL ?ref=...
   const urlParams = new URLSearchParams(window.location.search);
   const refCode = urlParams.get('ref');
-  if (refCode) {
-    document.getElementById("referralCode").value = refCode;
+  if(refCode){
+    referralInput.value = refCode;
   }
 
   signupBtn.addEventListener("click", async () => {
@@ -53,7 +57,7 @@
     const phone = document.getElementById("signupPhone").value.trim();
     const email = document.getElementById("signupEmail").value.trim();
     const password = document.getElementById("signupPassword").value;
-    const referralCode = document.getElementById("referralCode").value.trim();
+    const referralCode = referralInput.value.trim();
 
     if (!username || !phone || !email || !password) {
       Swal.fire("Please fill all fields.", "", "error");
@@ -69,26 +73,24 @@
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      const userData = {
+      // Save new user data
+      await setDoc(doc(db, "users", user.uid), {
         email,
         username,
         phone,
         role: "user",
         mainBalance: 0,
-        referredBy: referralCode || null,
         completedTasks: {}
-      };
+      });
 
-      await setDoc(doc(db, "users", user.uid), userData);
-
-      // If referral code is valid, reward the referrer
-      if (referralCode) {
+      // If referral code present and valid, add bonus to referrer
+      if (referralCode && referralCode !== user.uid) {
         const refDoc = doc(db, "users", referralCode);
         const refSnap = await getDoc(refDoc);
         if (refSnap.exists()) {
-          const refData = refSnap.data();
-          const newBalance = (refData.mainBalance || 0) + 5;
-          await updateDoc(refDoc, { mainBalance: newBalance });
+          await updateDoc(refDoc, {
+            mainBalance: increment(5)
+          });
         }
       }
 
