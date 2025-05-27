@@ -5,8 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@latest/dist/tailwind.min.css" rel="stylesheet">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
 </head>
 <body class="bg-white font-sans px-6 py-8 max-w-xl mx-auto">
 
@@ -20,24 +19,52 @@
   <div id="withdrawSection" class="mt-8 pt-6 border-t border-gray-300">
     <h2 class="text-xl font-semibold text-gray-800 mb-4">Withdraw Funds</h2>
     <div class="flex items-center mb-4">
-      <input type="number" id="withdrawAmount" placeholder="Enter amount to withdraw" min="1"
-        class="p-2 border border-gray-300 rounded w-48 mr-4 text-base" />
-      <button id="withdrawBtn"
-        class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:bg-green-300">Request Withdraw</button>
+      <input
+        type="number"
+        id="withdrawAmount"
+        placeholder="Enter amount to withdraw"
+        min="1"
+        class="p-2 border border-gray-300 rounded w-48 mr-4 text-base"
+      />
+      <button
+        id="withdrawBtn"
+        class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:bg-green-300"
+      >
+        Request Withdraw
+      </button>
     </div>
 
-    <h3 class="text-lg font-semibold text-gray-800 mb-2">Withdraw History</h3>
-    <ul id="withdrawHistory" class="space-y-2 text-sm text-gray-700"></ul>
+    <h2 class="text-xl font-semibold text-gray-800 mb-4 mt-8">Withdraw History</h2>
+    <ul id="withdrawHistory" class="space-y-2 max-h-48 overflow-auto border border-gray-200 p-3 rounded bg-gray-50"></ul>
   </div>
 
-  <button id="logoutBtn"
-    class="mt-6 px-6 py-2 bg-red-500 text-white rounded hover:bg-red-600">Logout</button>
+  <button
+    id="logoutBtn"
+    class="mt-6 px-6 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+  >
+    Logout
+  </button>
   <p id="message" class="mt-4 font-semibold"></p>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
-    import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
-    import { getFirestore, doc, getDoc, updateDoc, collection, addDoc, query, where, getDocs, orderBy } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+    import {
+      getAuth,
+      signOut,
+      onAuthStateChanged,
+    } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
+    import {
+      getFirestore,
+      doc,
+      getDoc,
+      updateDoc,
+      collection,
+      addDoc,
+      query,
+      where,
+      orderBy,
+      getDocs,
+    } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAPF4nGlb9R2osmXUwrPgatwAl1huIAGpg",
@@ -46,7 +73,7 @@
       storageBucket: "admin-and-user-f50c3.firebasestorage.app",
       messagingSenderId: "926355768153",
       appId: "1:926355768153:web:d52c55b2daf0e85a6e8248",
-      measurementId: "G-7FES0VM8S1"
+      measurementId: "G-7FES0VM8S1",
     };
 
     const app = initializeApp(firebaseConfig);
@@ -68,7 +95,7 @@
     const tasks = [
       { id: "task1", title: "Complete profile setup" },
       { id: "task2", title: "Verify your email" },
-      { id: "task3", title: "Add payment method" }
+      { id: "task3", title: "Add payment method" },
     ];
 
     onAuthStateChanged(auth, async (user) => {
@@ -79,7 +106,7 @@
       currentUserId = user.uid;
       await loadUserData();
       renderTasks();
-      loadWithdrawHistory();
+      await loadWithdrawHistory();
     });
 
     async function loadUserData() {
@@ -103,20 +130,24 @@
 
     function renderTasks() {
       taskListEl.innerHTML = "";
-      tasks.forEach(task => {
+      tasks.forEach((task) => {
         const li = document.createElement("li");
-        li.className = "bg-gray-100 p-3 rounded flex justify-between items-center";
+        li.className =
+          "bg-gray-100 p-3 rounded flex justify-between items-center";
 
         const span = document.createElement("span");
         span.textContent = task.title;
 
         const btn = document.createElement("button");
-        const completed = userData.completedTasks && userData.completedTasks[task.id];
+        const completed =
+          userData.completedTasks && userData.completedTasks[task.id];
         btn.textContent = completed ? "Completed" : "Complete Task";
         btn.disabled = completed;
-        btn.className = "px-3 py-1 text-white rounded " + (completed
-          ? "bg-green-300 cursor-not-allowed"
-          : "bg-green-500 hover:bg-green-600");
+        btn.className =
+          "px-3 py-1 text-white rounded " +
+          (completed
+            ? "bg-green-300 cursor-not-allowed"
+            : "bg-green-500 hover:bg-green-600");
 
         btn.onclick = () => completeTask(task.id);
 
@@ -138,13 +169,72 @@
         const userRef = doc(db, "users", currentUserId);
         await updateDoc(userRef, {
           mainBalance: userData.mainBalance,
-          completedTasks: userData.completedTasks
+          completedTasks: userData.completedTasks,
         });
         messageEl.textContent = "Task completed! ৳5 added.";
         messageEl.className = "mt-4 font-semibold text-green-600";
         renderTasks();
       } catch (err) {
         messageEl.textContent = "Error updating balance: " + err.message;
+        messageEl.className = "mt-4 font-semibold text-red-600";
+      }
+    }
+
+    async function loadWithdrawHistory() {
+      withdrawHistoryEl.innerHTML = "Loading history...";
+      try {
+        const q = query(
+          collection(db, "withdrawRequests"),
+          where("userId", "==", currentUserId),
+          orderBy("requestedAt", "desc")
+        );
+        const querySnapshot = await getDocs(q);
+        withdrawHistoryEl.innerHTML = "";
+
+        if (querySnapshot.empty) {
+          withdrawHistoryEl.innerHTML = "<li>No withdraw history found.</li>";
+          return;
+        }
+
+        querySnapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+
+          // Safety check for requestedAt (Timestamp or fallback)
+          let requestedAtStr = "Unknown date";
+          if (data.requestedAt) {
+            if (data.requestedAt.toDate) {
+              requestedAtStr = data.requestedAt.toDate().toLocaleString();
+            } else if (data.requestedAt instanceof Date) {
+              requestedAtStr = data.requestedAt.toLocaleString();
+            }
+          }
+
+          const li = document.createElement("li");
+          li.className =
+            "bg-white rounded border border-gray-300 p-3 flex justify-between items-center shadow-sm";
+
+          const leftSpan = document.createElement("span");
+          leftSpan.innerHTML = `<strong>৳${data.amount.toFixed(
+            2
+          )}</strong> - ${requestedAtStr}`;
+
+          const rightSpan = document.createElement("span");
+          const statusLower = (data.status || "").toLowerCase();
+          let statusColor = "text-gray-600";
+          if (statusLower === "pending") statusColor = "text-yellow-500";
+          else if (statusLower === "approved") statusColor = "text-green-600";
+          else if (statusLower === "rejected") statusColor = "text-red-600";
+
+          rightSpan.textContent = data.status || "Unknown";
+          rightSpan.className = statusColor + " font-semibold";
+
+          li.appendChild(leftSpan);
+          li.appendChild(rightSpan);
+          withdrawHistoryEl.appendChild(li);
+        });
+      } catch (error) {
+        withdrawHistoryEl.innerHTML = "<li>Error loading history.</li>";
+        messageEl.textContent = "Error loading withdraw history: " + error.message;
         messageEl.className = "mt-4 font-semibold text-red-600";
       }
     }
@@ -169,50 +259,19 @@
           email: userData.email || "",
           amount: amount,
           status: "pending",
-          requestedAt: new Date()
+          requestedAt: new Date(),
         });
 
         messageEl.textContent = "Withdraw request sent to admin.";
         messageEl.className = "mt-4 font-semibold text-green-600";
         withdrawAmountInput.value = "";
-        loadWithdrawHistory(); // Refresh history
-
+        // Reload history after new request
+        await loadWithdrawHistory();
       } catch (error) {
         messageEl.textContent = "Error sending withdraw request: " + error.message;
         messageEl.className = "mt-4 font-semibold text-red-600";
       }
     };
-
-    async function loadWithdrawHistory() {
-      withdrawHistoryEl.innerHTML = "<li class='text-gray-500'>Loading...</li>";
-      try {
-        const q = query(
-          collection(db, "withdrawRequests"),
-          where("userId", "==", currentUserId),
-          orderBy("requestedAt", "desc")
-        );
-        const snapshot = await getDocs(q);
-
-        if (snapshot.empty) {
-          withdrawHistoryEl.innerHTML = "<li class='text-gray-500'>No withdraw history.</li>";
-          return;
-        }
-
-        withdrawHistoryEl.innerHTML = "";
-        snapshot.forEach(docSnap => {
-          const data = docSnap.data();
-          const date = data.requestedAt?.seconds
-            ? new Date(data.requestedAt.seconds * 1000).toLocaleString()
-            : "Unknown date";
-          const li = document.createElement("li");
-          li.textContent = `৳${data.amount} - ${data.status} (${date})`;
-          withdrawHistoryEl.appendChild(li);
-        });
-      } catch (err) {
-        console.error("Withdraw history error:", err);
-        withdrawHistoryEl.innerHTML = "<li class='text-red-500'>Error loading history.</li>";
-      }
-    }
 
     logoutBtn.onclick = async () => {
       await signOut(auth);
