@@ -25,11 +25,11 @@
       <button id="withdrawBtn"
         class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:bg-green-300">Request Withdraw</button>
     </div>
-  </div>
 
-  <div class="mt-8 pt-6 border-t border-gray-300">
-    <h2 class="text-xl font-semibold text-gray-800 mb-4">Withdraw Requests History</h2>
-    <ul id="withdrawHistory" class="space-y-3"></ul>
+    <div class="mt-8">
+      <h3 class="text-lg font-medium text-gray-800 mb-2">Withdraw History</h3>
+      <ul id="withdrawHistory" class="space-y-2 text-sm text-gray-700"></ul>
+    </div>
   </div>
 
   <button id="logoutBtn"
@@ -177,7 +177,7 @@
         messageEl.textContent = "Withdraw request sent to admin.";
         messageEl.className = "mt-4 font-semibold text-green-600";
         withdrawAmountInput.value = "";
-        loadWithdrawHistory(); // Refresh after request
+        loadWithdrawHistory();
 
       } catch (error) {
         messageEl.textContent = "Error sending withdraw request: " + error.message;
@@ -186,38 +186,27 @@
     };
 
     async function loadWithdrawHistory() {
-      withdrawHistoryEl.innerHTML = "<p class='text-gray-500'>Loading...</p>";
+      withdrawHistoryEl.innerHTML = "<li>Loading...</li>";
       try {
         const q = query(
           collection(db, "withdrawRequests"),
           where("userId", "==", currentUserId),
           orderBy("requestedAt", "desc")
         );
-        const snapshot = await getDocs(q);
+        const querySnapshot = await getDocs(q);
         withdrawHistoryEl.innerHTML = "";
-        snapshot.forEach(docSnap => {
+        if (querySnapshot.empty) {
+          withdrawHistoryEl.innerHTML = "<li>No withdraw history.</li>";
+          return;
+        }
+        querySnapshot.forEach(docSnap => {
           const data = docSnap.data();
           const li = document.createElement("li");
-          li.className = "bg-gray-100 p-3 rounded flex justify-between items-center";
-
-          const left = document.createElement("div");
-          left.innerHTML = `<strong>৳${data.amount}</strong><br><small>${new Date(data.requestedAt.toDate()).toLocaleString()}</small>`;
-
-          const status = document.createElement("span");
-          let color = "gray";
-          if (data.status === "approved") color = "green";
-          else if (data.status === "rejected") color = "red";
-          else if (data.status === "pending") color = "yellow";
-
-          status.className = `text-sm font-semibold text-${color}-600`;
-          status.textContent = data.status.charAt(0).toUpperCase() + data.status.slice(1);
-
-          li.appendChild(left);
-          li.appendChild(status);
+          li.textContent = `৳${data.amount} - ${data.status} (${new Date(data.requestedAt.seconds * 1000).toLocaleString()})`;
           withdrawHistoryEl.appendChild(li);
         });
       } catch (err) {
-        withdrawHistoryEl.innerHTML = "<p class='text-red-600'>Error loading history.</p>";
+        withdrawHistoryEl.innerHTML = "<li>Error loading history.</li>";
       }
     }
 
