@@ -10,6 +10,7 @@
 </head>
 <body class="bg-white text-gray-800 p-6 font-sans">
 
+  <!-- Header -->
   <div class="flex justify-between items-center mb-6">
     <h1 class="text-2xl font-bold">Admin Panel</h1>
     <button id="logoutBtn" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded">Logout</button>
@@ -17,6 +18,7 @@
 
   <div class="mb-6 text-sm text-gray-500">Version 1.3</div>
 
+  <!-- Users Table -->
   <h2 class="text-xl font-semibold mb-2">Users</h2>
   <div class="overflow-x-auto">
     <table class="w-full table-auto border border-gray-300 mb-8 text-sm">
@@ -36,6 +38,7 @@
     </table>
   </div>
 
+  <!-- Withdraw Requests -->
   <h2 class="text-xl font-semibold mb-2">Pending Withdraw Requests</h2>
   <div class="overflow-x-auto mb-6">
     <table class="w-full table-auto border border-gray-300 text-sm">
@@ -52,6 +55,7 @@
     </table>
   </div>
 
+  <!-- History -->
   <h2 class="text-xl font-semibold mb-2">Withdrawal History</h2>
   <div class="overflow-x-auto">
     <table class="w-full table-auto border border-gray-300 text-sm">
@@ -266,21 +270,26 @@
         const data = snap.data();
         if (data.status !== "pending") return showMessage("Already processed", "text-red-500");
 
+        const userRef = doc(db, "users", data.userId);
+        const userSnap = await getDoc(userRef);
+        if (!userSnap.exists()) return showMessage("User not found", "text-red-500");
+
+        const userData = userSnap.data();
+        const balance = userData.mainBalance || 0;
+        const amount = data.amount || 0;
+
         if (approve) {
-          const userRef = doc(db, "users", data.userId);
-          const userSnap = await getDoc(userRef);
-          if (!userSnap.exists()) return showMessage("User not found", "text-red-500");
+          if (balance < amount) return showMessage("Insufficient balance", "text-red-500");
 
-          const newBalance = (userSnap.data().mainBalance || 0) - (data.amount || 0);
-          if (newBalance < 0) return showMessage("Insufficient balance", "text-red-500");
-
-          await updateDoc(userRef, { mainBalance: newBalance });
+          await updateDoc(userRef, { mainBalance: balance - amount });
           await updateDoc(ref, { status: "approved", processedAt: new Date() });
 
-          showMessage(`Approved ৳${data.amount.toFixed(2)} for ${data.email}`, "text-green-600");
+          showMessage(`Approved ৳${amount.toFixed(2)} for ${data.email}`, "text-green-600");
         } else {
+          await updateDoc(userRef, { mainBalance: balance + amount });
           await updateDoc(ref, { status: "rejected", processedAt: new Date() });
-          showMessage(`Rejected withdrawal for ${data.email}`, "text-yellow-600");
+
+          showMessage(`Rejected and returned ৳${amount.toFixed(2)} to ${data.email}`, "text-yellow-600");
         }
 
         await loadWithdrawRequests();
@@ -296,7 +305,6 @@
       messageDiv.className = `mt-4 font-semibold ${colorClass}`;
     }
 
-    // Added the sendResetEmail function here as requested
     function sendResetEmail(email) {
       if (!email) return showMessage("Enter an email", "text-red-500");
       sendPasswordResetEmail(auth, email)
@@ -304,6 +312,5 @@
         .catch((e) => showMessage("Error: " + e.message, "text-red-500"));
     }
   </script>
-
 </body>
 </html>
