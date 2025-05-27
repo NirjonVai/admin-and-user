@@ -5,33 +5,27 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Login & Signup</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@latest/dist/tailwind.min.css" rel="stylesheet">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@latest/dist/tailwind.min.css" rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
 </head>
 <body class="bg-gray-100 min-h-screen flex items-center justify-center p-6">
   <div class="bg-white p-8 rounded shadow-md w-full max-w-md">
     
-    <!-- Toggle Buttons -->
-    <div class="flex justify-between mb-6">
-      <button id="showLogin" class="w-1/2 py-2 bg-green-500 text-white rounded-l hover:bg-green-600">Login</button>
-      <button id="showSignup" class="w-1/2 py-2 bg-gray-300 text-gray-800 rounded-r hover:bg-blue-500 hover:text-white">Sign Up</button>
-    </div>
-
-    <!-- Login Form -->
-    <div id="loginForm">
+    <div class="mb-10">
       <h2 class="text-2xl font-semibold text-gray-800 mb-4">Login</h2>
       <input id="loginEmail" type="email" placeholder="Email" required class="w-full p-3 border border-gray-300 rounded mb-3" />
       <input id="loginPassword" type="password" placeholder="Password" required class="w-full p-3 border border-gray-300 rounded mb-3" />
       <button id="loginBtn" class="w-full bg-green-500 text-white py-3 rounded hover:bg-green-600 transition">Login</button>
+      <div id="loginError" class="text-red-500 text-sm mt-2"></div>
     </div>
 
-    <!-- Sign Up Form -->
-    <div id="signupForm" class="hidden">
+    <div>
       <h2 class="text-2xl font-semibold text-gray-800 mb-4">Sign Up</h2>
       <input id="signupEmail" type="email" placeholder="Email" required class="w-full p-3 border border-gray-300 rounded mb-3" />
+      <input id="signupPhone" type="tel" placeholder="Phone Number" required class="w-full p-3 border border-gray-300 rounded mb-3" />
       <input id="signupPassword" type="password" placeholder="Password (min 6 chars)" minlength="6" required class="w-full p-3 border border-gray-300 rounded mb-3" />
       <button id="signupBtn" class="w-full bg-blue-500 text-white py-3 rounded hover:bg-blue-600 transition">Sign Up</button>
+      <div id="signupError" class="text-red-500 text-sm mt-2"></div>
     </div>
 
   </div>
@@ -67,52 +61,22 @@
   const loginEmail = document.getElementById("loginEmail");
   const loginPassword = document.getElementById("loginPassword");
   const loginBtn = document.getElementById("loginBtn");
+  const loginError = document.getElementById("loginError");
 
   const signupEmail = document.getElementById("signupEmail");
+  const signupPhone = document.getElementById("signupPhone");
   const signupPassword = document.getElementById("signupPassword");
   const signupBtn = document.getElementById("signupBtn");
-
-  const showLogin = document.getElementById("showLogin");
-  const showSignup = document.getElementById("showSignup");
-  const loginForm = document.getElementById("loginForm");
-  const signupForm = document.getElementById("signupForm");
-
-  showLogin.addEventListener("click", () => {
-    loginForm.classList.remove("hidden");
-    signupForm.classList.add("hidden");
-    showLogin.classList.replace("bg-gray-300", "bg-green-500");
-    showLogin.classList.replace("text-gray-800", "text-white");
-    showSignup.classList.replace("bg-blue-500", "bg-gray-300");
-    showSignup.classList.replace("text-white", "text-gray-800");
-  });
-
-  showSignup.addEventListener("click", () => {
-    signupForm.classList.remove("hidden");
-    loginForm.classList.add("hidden");
-    showSignup.classList.replace("bg-gray-300", "bg-blue-500");
-    showSignup.classList.replace("text-gray-800", "text-white");
-    showLogin.classList.replace("bg-green-500", "bg-gray-300");
-    showLogin.classList.replace("text-white", "text-gray-800");
-  });
-
-  const showAlert = (title, icon) => {
-    Swal.fire({
-      toast: true,
-      position: 'top-end',
-      icon: icon,
-      title: title,
-      showConfirmButton: false,
-      timer: 2500,
-    });
-  };
+  const signupError = document.getElementById("signupError");
 
   // Login
   loginBtn.addEventListener("click", async () => {
+    loginError.textContent = "";
     const email = loginEmail.value.trim();
     const password = loginPassword.value;
 
     if (!email || !password) {
-      showAlert("Please fill all fields.", "error");
+      loginError.textContent = "Please fill all fields.";
       return;
     }
 
@@ -126,32 +90,32 @@
         role = userDoc.data().role || "user";
       }
 
-      showAlert("Login successful!", "success");
+      alert("Login successful!");
 
-      setTimeout(() => {
-        if (role === "admin") {
-          window.location.href = "admin.html";
-        } else {
-          window.location.href = "dashboard.html";
-        }
-      }, 1000);
+      if (role === "admin") {
+        window.location.href = "admin.html";
+      } else {
+        window.location.href = "dashboard.html";
+      }
     } catch (error) {
-      showAlert(error.message, "error");
+      loginError.textContent = error.message;
     }
   });
 
   // Signup
   signupBtn.addEventListener("click", async () => {
+    signupError.textContent = "";
     const email = signupEmail.value.trim();
+    const phone = signupPhone.value.trim();
     const password = signupPassword.value;
 
-    if (!email || !password) {
-      showAlert("Please fill all fields.", "error");
+    if (!email || !phone || !password) {
+      signupError.textContent = "Please fill all fields.";
       return;
     }
 
     if (password.length < 6) {
-      showAlert("Password must be at least 6 characters.", "error");
+      signupError.textContent = "Password must be at least 6 characters.";
       return;
     }
 
@@ -159,18 +123,17 @@
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
+      // Save user data including phone number
       await setDoc(doc(db, "users", user.uid), {
         email: user.email,
+        phone: phone,
         role: "user",
       });
 
-      showAlert("Signup successful!", "success");
-
-      setTimeout(() => {
-        window.location.href = "dashboard.html";
-      }, 1000);
+      alert("Signup successful!");
+      window.location.href = "dashboard.html";
     } catch (error) {
-      showAlert(error.message, "error");
+      signupError.textContent = error.message;
     }
   });
 </script>
