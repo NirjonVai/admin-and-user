@@ -88,7 +88,7 @@
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // Save new user data
+      // Save new user data with mainBalance initialized 0 if missing
       await setDoc(doc(db, "users", user.uid), {
         email,
         username,
@@ -97,22 +97,29 @@
         mainBalance: 0,
         completedTasks: {}
       });
+      console.log("User created with UID:", user.uid);
 
-      // If referral code is present, give bonus 5৳ to referrer
+      // If referral code present, add bonus
       if (referral) {
         try {
           const refUserRef = doc(db, "users", referral);
           const refUserSnap = await getDoc(refUserRef);
           if (refUserSnap.exists()) {
+            // Defensive: if mainBalance missing, set 0 before increment
+            const data = refUserSnap.data();
+            if (typeof data.mainBalance !== "number") {
+              await updateDoc(refUserRef, { mainBalance: 0 });
+              console.log("Initialized referrer mainBalance to 0");
+            }
             await updateDoc(refUserRef, {
               mainBalance: increment(5)
             });
-            console.log("Referral bonus added successfully to:", referral);
+            console.log("Referral bonus added successfully to user:", referral);
           } else {
             console.warn("Referral user not found:", referral);
           }
         } catch (refError) {
-          console.error("Referral bonus error:", refError);
+          console.error("Referral bonus update error:", refError);
         }
       }
 
@@ -135,6 +142,7 @@
         showConfirmButton: false,
         timer: 3000
       });
+      console.error("Signup error:", error);
     }
   });
 </script>
