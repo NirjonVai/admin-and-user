@@ -164,11 +164,16 @@
         role: "user",
       });
 
-      showAlert("Sign-up Successful", "success");
+      showAlert("Sign-up Successful. Please login.", "success");
 
-      setTimeout(() => {
-        window.location.href = "dashboard.html";
-      }, 1000);
+      // Show login form after signup
+      loginForm.classList.remove("hidden");
+      signupForm.classList.add("hidden");
+      showLogin.classList.replace("bg-gray-300", "bg-green-500");
+      showLogin.classList.replace("text-gray-800", "text-white");
+      showSignup.classList.replace("bg-blue-500", "bg-gray-300");
+      showSignup.classList.replace("text-white", "text-gray-800");
+
     } catch (error) {
       showAlert(error.message, "error");
     }
