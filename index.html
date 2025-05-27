@@ -24,7 +24,6 @@
       <input id="loginEmail" type="email" placeholder="Email" required class="w-full p-3 border border-gray-300 rounded mb-3" />
       <input id="loginPassword" type="password" placeholder="Password" required class="w-full p-3 border border-gray-300 rounded mb-3" />
       <button id="loginBtn" class="w-full bg-green-500 text-white py-3 rounded hover:bg-green-600 transition">Login</button>
-      <div id="loginError" class="text-red-500 text-sm mt-2"></div>
     </div>
 
     <!-- Sign Up Form -->
@@ -55,7 +54,7 @@
     apiKey: "AIzaSyAPF4nGlb9R2osmXUwrPgatwAl1huIAGpg",
     authDomain: "admin-and-user-f50c3.firebaseapp.com",
     projectId: "admin-and-user-f50c3",
-    storageBucket: "admin-and-user-f50c3.firebasestorage.app",
+    storageBucket: "admin-and-user-f50c3.appspot.com",
     messagingSenderId: "926355768153",
     appId: "1:926355768153:web:d52c55b2daf0e85a6e8248",
     measurementId: "G-7FES0VM8S1"
@@ -68,12 +67,10 @@
   const loginEmail = document.getElementById("loginEmail");
   const loginPassword = document.getElementById("loginPassword");
   const loginBtn = document.getElementById("loginBtn");
-  const loginError = document.getElementById("loginError");
 
   const signupEmail = document.getElementById("signupEmail");
   const signupPassword = document.getElementById("signupPassword");
   const signupBtn = document.getElementById("signupBtn");
-  const signupError = document.getElementById("signupError");
 
   const showLogin = document.getElementById("showLogin");
   const showSignup = document.getElementById("showSignup");
@@ -98,26 +95,24 @@
     showLogin.classList.replace("text-white", "text-gray-800");
   });
 
-  // SweetAlert helper
   const showAlert = (title, icon) => {
     Swal.fire({
       toast: true,
       position: 'top-end',
-      showConfirmButton: false,
-      timer: 2500,
       icon: icon,
       title: title,
+      showConfirmButton: false,
+      timer: 2500,
     });
   };
 
   // Login
   loginBtn.addEventListener("click", async () => {
-    loginError.textContent = "";
     const email = loginEmail.value.trim();
     const password = loginPassword.value;
 
     if (!email || !password) {
-      loginError.textContent = "Please fill all fields.";
+      showAlert("Please fill all fields.", "error");
       return;
     }
 
@@ -147,17 +142,16 @@
 
   // Signup
   signupBtn.addEventListener("click", async () => {
-    signupError.textContent = "";
     const email = signupEmail.value.trim();
     const password = signupPassword.value;
 
     if (!email || !password) {
-      signupError.textContent = "Please fill all fields.";
+      showAlert("Please fill all fields.", "error");
       return;
     }
 
     if (password.length < 6) {
-      signupError.textContent = "Password must be at least 6 characters.";
+      showAlert("Password must be at least 6 characters.", "error");
       return;
     }
 
@@ -171,6 +165,7 @@
       });
 
       showAlert("Signup successful!", "success");
+
       setTimeout(() => {
         window.location.href = "dashboard.html";
       }, 1000);
