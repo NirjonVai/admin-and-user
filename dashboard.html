@@ -12,9 +12,6 @@
 
   <h1 class="text-2xl font-bold text-gray-800 mb-4">Welcome to your Dashboard!</h1>
   <p id="userEmail" class="text-lg text-gray-700 mb-2">Loading user info...</p>
-
-  <!-- New referral count display -->
-  <p id="referralCount" class="text-lg text-gray-700 mb-4">Loading referral count...</p>
   
   <div class="flex items-center mb-6 space-x-2">
     <input id="referralLinkInput" type="text" readonly
@@ -75,7 +72,6 @@
     const withdrawBtn = document.getElementById("withdrawBtn");
     const withdrawAmountInput = document.getElementById("withdrawAmount");
     const withdrawHistoryEl = document.getElementById("withdrawHistory");
-    const referralCountEl = document.getElementById("referralCount");
 
     let currentUserId = null;
     let userData = null;
@@ -96,7 +92,6 @@
       renderReferralLink();
       renderTasks();
       await loadWithdrawHistory();
-       await loadReferralCount();
     });
 
     async function loadUserData() {
@@ -119,10 +114,10 @@
     }
 
     function renderReferralLink() {
-      const baseUrl = window.location.origin + window.location.pathname.replace(/\/dashboard\.html$/, "/signup.html");
-      const referralUrl = `${baseUrl}?ref=${currentUserId}`;
-      referralLinkInput.value = referralUrl;
-    }
+  const baseUrl = window.location.origin + window.location.pathname.replace(/\/dashboard\.html$/, "/signup.html");
+  const referralUrl = `${baseUrl}?ref=${currentUserId}`;
+  referralLinkInput.value = referralUrl;
+}
 
     copyReferralBtn.onclick = () => {
       referralLinkInput.select();
@@ -256,26 +251,10 @@
       }
     }
 
-    // New function: loadReferralCount
-    async function loadReferralCount() {
-      referralCountEl.textContent = "Loading referral count...";
-      try {
-        const q = query(collection(db, "users"), where("referrer", "==", currentUserId));
-        const querySnapshot = await getDocs(q);
-        const count = querySnapshot.size;
-        referralCountEl.textContent = `You have referred ${count} user${count === 1 ? "" : "s"}.`;
-      } catch (error) {
-        referralCountEl.textContent = "Error loading referral count.";
-      }
-    }
-
     logoutBtn.onclick = async () => {
-      try {
-        await signOut(auth);
-        window.location.href = "index.html";
-      } catch (error) {
-        alert("Logout failed: " + error.message);
-      }
+      await signOut(auth);
+      alert("Logged out!");
+      window.location.href = "index.html";
     };
   </script>
 </body>
