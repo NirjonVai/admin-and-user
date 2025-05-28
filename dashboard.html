@@ -1,261 +1,282 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Dashboard</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@latest/dist/tailwind.min.css" rel="stylesheet" />
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@latest/dist/tailwind.min.css" rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
 </head>
 <body class="bg-white font-sans px-6 py-8 max-w-xl mx-auto">
 
-  <h1 class="text-2xl font-bold text-gray-800 mb-4">Welcome to your Dashboard!</h1>
-  <p id="userEmail" class="text-lg text-gray-700 mb-2">Loading user info...</p>
-  
-  <div class="flex items-center mb-6 space-x-2">
-    <input id="referralLinkInput" type="text" readonly
-      class="flex-grow p-2 border border-gray-300 rounded text-sm text-blue-700 cursor-pointer"
-      title="Your referral link" />
-    <button id="copyReferralBtn"
-      class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Copy</button>
-  </div>
+  <h1 class="text-2xl font-bold text-gray-800 mb-4">Welcome to your Dashboard!</h1>
+  <p id="userEmail" class="text-lg text-gray-700 mb-2">Loading user info...</p>
 
-  <p id="balance" class="text-lg text-gray-700 mb-4">Loading balance...</p>
+  <!-- New referral count display -->
+  <p id="referralCount" class="text-lg text-gray-700 mb-4">Loading referral count...</p>
+  
+  <div class="flex items-center mb-6 space-x-2">
+    <input id="referralLinkInput" type="text" readonly
+      class="flex-grow p-2 border border-gray-300 rounded text-sm text-blue-700 cursor-pointer"
+      title="Your referral link" />
+    <button id="copyReferralBtn"
+      class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Copy</button>
+  </div>
 
-  <h2 class="text-xl font-semibold text-gray-800 mb-2">Tasks</h2>
-  <ul id="taskList" class="mb-6 space-y-2"></ul>
+  <p id="balance" class="text-lg text-gray-700 mb-4">Loading balance...</p>
 
-  <div id="withdrawSection" class="mt-8 pt-6 border-t border-gray-300">
-    <h2 class="text-xl font-semibold text-gray-800 mb-4">Withdraw Funds</h2>
-    <div class="flex items-center mb-4">
-      <input type="number" id="withdrawAmount" placeholder="Enter amount to withdraw" min="1"
-        class="p-2 border border-gray-300 rounded w-48 mr-4 text-base" />
-      <button id="withdrawBtn"
-        class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:bg-green-300">Request Withdraw</button>
-    </div>
+  <h2 class="text-xl font-semibold text-gray-800 mb-2">Tasks</h2>
+  <ul id="taskList" class="mb-6 space-y-2"></ul>
 
-    <h2 class="text-xl font-semibold text-gray-800 mb-4">Withdraw History</h2>
-    <ul id="withdrawHistory" class="space-y-2 max-h-48 overflow-auto border border-gray-300 rounded p-3 bg-gray-50"></ul>
-  </div>
+  <div id="withdrawSection" class="mt-8 pt-6 border-t border-gray-300">
+    <h2 class="text-xl font-semibold text-gray-800 mb-4">Withdraw Funds</h2>
+    <div class="flex items-center mb-4">
+      <input type="number" id="withdrawAmount" placeholder="Enter amount to withdraw" min="1"
+        class="p-2 border border-gray-300 rounded w-48 mr-4 text-base" />
+      <button id="withdrawBtn"
+        class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:bg-green-300">Request Withdraw</button>
+    </div>
 
-  <button id="logoutBtn"
-    class="mt-6 px-6 py-2 bg-red-500 text-white rounded hover:bg-red-600">Logout</button>
-  <p id="message" class="mt-4 font-semibold"></p>
+    <h2 class="text-xl font-semibold text-gray-800 mb-4">Withdraw History</h2>
+    <ul id="withdrawHistory" class="space-y-2 max-h-48 overflow-auto border border-gray-300 rounded p-3 bg-gray-50"></ul>
+  </div>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
-    import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
-    import { getFirestore, doc, getDoc, updateDoc, collection, addDoc, query, where, getDocs, orderBy } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+  <button id="logoutBtn"
+    class="mt-6 px-6 py-2 bg-red-500 text-white rounded hover:bg-red-600">Logout</button>
+  <p id="message" class="mt-4 font-semibold"></p>
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyAPF4nGlb9R2osmXUwrPgatwAl1huIAGpg",
-      authDomain: "admin-and-user-f50c3.firebaseapp.com",
-      projectId: "admin-and-user-f50c3",
-      storageBucket: "admin-and-user-f50c3.firebasestorage.app",
-      messagingSenderId: "926355768153",
-      appId: "1:926355768153:web:d52c55b2daf0e85a6e8248",
-      measurementId: "G-7FES0VM8S1"
-    };
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+    import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc, updateDoc, collection, addDoc, query, where, getDocs, orderBy } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
+    const firebaseConfig = {
+      apiKey: "AIzaSyAPF4nGlb9R2osmXUwrPgatwAl1huIAGpg",
+      authDomain: "admin-and-user-f50c3.firebaseapp.com",
+      projectId: "admin-and-user-f50c3",
+      storageBucket: "admin-and-user-f50c3.firebasestorage.app",
+      messagingSenderId: "926355768153",
+      appId: "1:926355768153:web:d52c55b2daf0e85a6e8248",
+      measurementId: "G-7FES0VM8S1"
+    };
 
-    const userEmailEl = document.getElementById("userEmail");
-    const referralLinkInput = document.getElementById("referralLinkInput");
-    const copyReferralBtn = document.getElementById("copyReferralBtn");
-    const balanceEl = document.getElementById("balance");
-    const taskListEl = document.getElementById("taskList");
-    const messageEl = document.getElementById("message");
-    const logoutBtn = document.getElementById("logoutBtn");
-    const withdrawBtn = document.getElementById("withdrawBtn");
-    const withdrawAmountInput = document.getElementById("withdrawAmount");
-    const withdrawHistoryEl = document.getElementById("withdrawHistory");
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
 
-    let currentUserId = null;
-    let userData = null;
+    const userEmailEl = document.getElementById("userEmail");
+    const referralLinkInput = document.getElementById("referralLinkInput");
+    const copyReferralBtn = document.getElementById("copyReferralBtn");
+    const balanceEl = document.getElementById("balance");
+    const taskListEl = document.getElementById("taskList");
+    const messageEl = document.getElementById("message");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const withdrawBtn = document.getElementById("withdrawBtn");
+    const withdrawAmountInput = document.getElementById("withdrawAmount");
+    const withdrawHistoryEl = document.getElementById("withdrawHistory");
+    const referralCountEl = document.getElementById("referralCount");
 
-    const tasks = [
-      { id: "task1", title: "Complete profile setup" },
-      { id: "task2", title: "Verify your email" },
-      { id: "task3", title: "Add payment method" }
-    ];
+    let currentUserId = null;
+    let userData = null;
 
-    onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        window.location.href = "index.html";
-        return;
-      }
-      currentUserId = user.uid;
-      await loadUserData();
-      renderReferralLink();
-      renderTasks();
-      await loadWithdrawHistory();
-    });
+    const tasks = [
+      { id: "task1", title: "Complete profile setup" },
+      { id: "task2", title: "Verify your email" },
+      { id: "task3", title: "Add payment method" }
+    ];
 
-    async function loadUserData() {
-      const userRef = doc(db, "users", currentUserId);
-      const userSnap = await getDoc(userRef);
-      if (userSnap.exists()) {
-        userData = userSnap.data();
-        userEmailEl.textContent = "Logged in as: " + (userData.email || "N/A");
-        if (typeof userData.mainBalance !== "number") {
-          userData.mainBalance = 0;
-        }
-        if (!userData.completedTasks) {
-          userData.completedTasks = {};
-        }
-        balanceEl.textContent = "Main Balance: ৳" + userData.mainBalance.toFixed(2);
-      } else {
-        userEmailEl.textContent = "User data not found.";
-        balanceEl.textContent = "";
-      }
-    }
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = "index.html";
+        return;
+      }
+      currentUserId = user.uid;
+      await loadUserData();
+      renderReferralLink();
+      renderTasks();
+      await loadWithdrawHistory();
+       await loadReferralCount();
+    });
 
-    function renderReferralLink() {
-  const baseUrl = window.location.origin + window.location.pathname.replace(/\/dashboard\.html$/, "/signup.html");
-  const referralUrl = `${baseUrl}?ref=${currentUserId}`;
-  referralLinkInput.value = referralUrl;
-}
+    async function loadUserData() {
+      const userRef = doc(db, "users", currentUserId);
+      const userSnap = await getDoc(userRef);
+      if (userSnap.exists()) {
+        userData = userSnap.data();
+        userEmailEl.textContent = "Logged in as: " + (userData.email || "N/A");
+        if (typeof userData.mainBalance !== "number") {
+          userData.mainBalance = 0;
+        }
+        if (!userData.completedTasks) {
+          userData.completedTasks = {};
+        }
+        balanceEl.textContent = "Main Balance: ৳" + userData.mainBalance.toFixed(2);
+      } else {
+        userEmailEl.textContent = "User data not found.";
+        balanceEl.textContent = "";
+      }
+    }
 
-    copyReferralBtn.onclick = () => {
-      referralLinkInput.select();
-      referralLinkInput.setSelectionRange(0, 99999); // For mobile
-      navigator.clipboard.writeText(referralLinkInput.value).then(() => {
-        alert("Referral link copied to clipboard!");
-      }).catch(() => {
-        alert("Failed to copy referral link.");
-      });
-    };
+    function renderReferralLink() {
+      const baseUrl = window.location.origin + window.location.pathname.replace(/\/dashboard\.html$/, "/signup.html");
+      const referralUrl = `${baseUrl}?ref=${currentUserId}`;
+      referralLinkInput.value = referralUrl;
+    }
 
-    function renderTasks() {
-      taskListEl.innerHTML = "";
-      tasks.forEach(task => {
-        const li = document.createElement("li");
-        li.className = "bg-gray-100 p-3 rounded flex justify-between items-center";
+    copyReferralBtn.onclick = () => {
+      referralLinkInput.select();
+      referralLinkInput.setSelectionRange(0, 99999); // For mobile
+      navigator.clipboard.writeText(referralLinkInput.value).then(() => {
+        alert("Referral link copied to clipboard!");
+      }).catch(() => {
+        alert("Failed to copy referral link.");
+      });
+    };
 
-        const span = document.createElement("span");
-        span.textContent = task.title;
+    function renderTasks() {
+      taskListEl.innerHTML = "";
+      tasks.forEach(task => {
+        const li = document.createElement("li");
+        li.className = "bg-gray-100 p-3 rounded flex justify-between items-center";
 
-        const btn = document.createElement("button");
-        const completed = userData.completedTasks && userData.completedTasks[task.id];
-        btn.textContent = completed ? "Completed" : "Complete Task";
-        btn.disabled = completed;
-        btn.className = "px-3 py-1 text-white rounded " + (completed
-          ? "bg-green-300 cursor-not-allowed"
-          : "bg-green-500 hover:bg-green-600");
+        const span = document.createElement("span");
+        span.textContent = task.title;
 
-        btn.onclick = () => completeTask(task.id);
+        const btn = document.createElement("button");
+        const completed = userData.completedTasks && userData.completedTasks[task.id];
+        btn.textContent = completed ? "Completed" : "Complete Task";
+        btn.disabled = completed;
+        btn.className = "px-3 py-1 text-white rounded " + (completed
+          ? "bg-green-300 cursor-not-allowed"
+          : "bg-green-500 hover:bg-green-600");
 
-        li.appendChild(span);
-        li.appendChild(btn);
-        taskListEl.appendChild(li);
-      });
-    }
+        btn.onclick = () => completeTask(task.id);
 
-    async function completeTask(taskId) {
-      if (userData.completedTasks && userData.completedTasks[taskId]) return;
+        li.appendChild(span);
+        li.appendChild(btn);
+        taskListEl.appendChild(li);
+      });
+    }
 
-      userData.completedTasks = userData.completedTasks || {};
-      userData.completedTasks[taskId] = true;
-      userData.mainBalance = (userData.mainBalance || 0) + 5;
-      balanceEl.textContent = "Main Balance: ৳" + userData.mainBalance.toFixed(2);
+    async function completeTask(taskId) {
+      if (userData.completedTasks && userData.completedTasks[taskId]) return;
 
-      try {
-        const userRef = doc(db, "users", currentUserId);
-        await updateDoc(userRef, {
-          mainBalance: userData.mainBalance,
-          completedTasks: userData.completedTasks
-        });
-        messageEl.textContent = "Task completed! ৳5 added.";
-        messageEl.className = "mt-4 font-semibold text-green-600";
-        renderTasks();
-      } catch (err) {
-        messageEl.textContent = "Error updating balance: " + err.message;
-        messageEl.className = "mt-4 font-semibold text-red-600";
-      }
-    }
+      userData.completedTasks = userData.completedTasks || {};
+      userData.completedTasks[taskId] = true;
+      userData.mainBalance = (userData.mainBalance || 0) + 5;
+      balanceEl.textContent = "Main Balance: ৳" + userData.mainBalance.toFixed(2);
 
-    withdrawBtn.onclick = async () => {
-      messageEl.textContent = "";
-      const amount = parseFloat(withdrawAmountInput.value);
-      if (!amount || amount <= 0) {
-        messageEl.textContent = "Enter a valid withdraw amount.";
-        messageEl.className = "mt-4 font-semibold text-red-600";
-        return;
-      }
-      if (amount > (userData.mainBalance || 0)) {
-        messageEl.textContent = "Insufficient balance.";
-        messageEl.className = "mt-4 font-semibold text-red-600";
-        return;
-      }
+      try {
+        const userRef = doc(db, "users", currentUserId);
+        await updateDoc(userRef, {
+          mainBalance: userData.mainBalance,
+          completedTasks: userData.completedTasks
+        });
+        messageEl.textContent = "Task completed! ৳5 added.";
+        messageEl.className = "mt-4 font-semibold text-green-600";
+        renderTasks();
+      } catch (err) {
+        messageEl.textContent = "Error updating balance: " + err.message;
+        messageEl.className = "mt-4 font-semibold text-red-600";
+      }
+    }
 
-      try {
-        const userRef = doc(db, "users", currentUserId);
-        await updateDoc(userRef, {
-          mainBalance: userData.mainBalance - amount
-        });
-        userData.mainBalance -= amount;
-        balanceEl.textContent = "Main Balance: ৳" + userData.mainBalance.toFixed(2);
+    withdrawBtn.onclick = async () => {
+      messageEl.textContent = "";
+      const amount = parseFloat(withdrawAmountInput.value);
+      if (!amount || amount <= 0) {
+        messageEl.textContent = "Enter a valid withdraw amount.";
+        messageEl.className = "mt-4 font-semibold text-red-600";
+        return;
+      }
+      if (amount > (userData.mainBalance || 0)) {
+        messageEl.textContent = "Insufficient balance.";
+        messageEl.className = "mt-4 font-semibold text-red-600";
+        return;
+      }
 
-        await addDoc(collection(db, "withdrawRequests"), {
-          userId: currentUserId,
-          email: userData.email || "",
-          amount: amount,
-          status: "pending",
-          requestedAt: new Date()
-        });
+      try {
+        const userRef = doc(db, "users", currentUserId);
+        await updateDoc(userRef, {
+          mainBalance: userData.mainBalance - amount
+        });
+        userData.mainBalance -= amount;
+        balanceEl.textContent = "Main Balance: ৳" + userData.mainBalance.toFixed(2);
 
-        messageEl.textContent = "Withdraw request sent to admin.";
-        messageEl.className = "mt-4 font-semibold text-green-600";
-        withdrawAmountInput.value = "";
-        await loadWithdrawHistory();
+        await addDoc(collection(db, "withdrawRequests"), {
+          userId: currentUserId,
+          email: userData.email || "",
+          amount: amount,
+          status: "pending",
+          requestedAt: new Date()
+        });
 
-      } catch (error) {
-        messageEl.textContent = "Error sending withdraw request: " + error.message;
-        messageEl.className = "mt-4 font-semibold text-red-600";
-      }
-    };
+        messageEl.textContent = "Withdraw request sent to admin.";
+        messageEl.className = "mt-4 font-semibold text-green-600";
+        withdrawAmountInput.value = "";
+        await loadWithdrawHistory();
 
-    async function loadWithdrawHistory() {
-      withdrawHistoryEl.innerHTML = "Loading withdraw history...";
-      try {
-        const q = query(
-          collection(db, "withdrawRequests"),
-          where("userId", "==", currentUserId),
-          orderBy("requestedAt", "desc")
-        );
-        const querySnapshot = await getDocs(q);
-        withdrawHistoryEl.innerHTML = "";
-        if (querySnapshot.empty) {
-          withdrawHistoryEl.textContent = "No withdraw history found.";
-          return;
-        }
-        querySnapshot.forEach(docSnap => {
-          const data = docSnap.data();
-          const li = document.createElement("li");
-          li.className = "p-2 rounded border border-gray-300 flex justify-between items-center bg-white";
+      } catch (error) {
+        messageEl.textContent = "Error sending withdraw request: " + error.message;
+        messageEl.className = "mt-4 font-semibold text-red-600";
+      }
+    };
 
-          const date = data.requestedAt && data.requestedAt.toDate ? data.requestedAt.toDate() : new Date(data.requestedAt);
-          const dateStr = date.toLocaleDateString() + " " + date.toLocaleTimeString();
+    async function loadWithdrawHistory() {
+      withdrawHistoryEl.innerHTML = "Loading withdraw history...";
+      try {
+        const q = query(
+          collection(db, "withdrawRequests"),
+          where("userId", "==", currentUserId),
+          orderBy("requestedAt", "desc")
+        );
+        const querySnapshot = await getDocs(q);
+        withdrawHistoryEl.innerHTML = "";
+        if (querySnapshot.empty) {
+          withdrawHistoryEl.textContent = "No withdraw history found.";
+          return;
+        }
+        querySnapshot.forEach(docSnap => {
+          const data = docSnap.data();
+          const li = document.createElement("li");
+          li.className = "p-2 rounded border border-gray-300 flex justify-between items-center bg-white";
 
-          li.innerHTML = `
-            <span>৳${data.amount.toFixed(2)} - <strong>${data.status.toUpperCase()}</strong></span>
-            <span class="text-xs text-gray-500">${dateStr}</span>
-          `;
-          withdrawHistoryEl.appendChild(li);
-        });
-      } catch (error) {
-        withdrawHistoryEl.textContent = "Error loading history: " + error.message;
-      }
-    }
+          const date = data.requestedAt && data.requestedAt.toDate ? data.requestedAt.toDate() : new Date(data.requestedAt);
+          const dateStr = date.toLocaleDateString() + " " + date.toLocaleTimeString();
 
-    logoutBtn.onclick = async () => {
-      await signOut(auth);
-      alert("Logged out!");
-      window.location.href = "index.html";
-    };
-  </script>
+          li.innerHTML = `
+            <span>৳${data.amount.toFixed(2)} - <strong>${data.status.toUpperCase()}</strong></span>
+            <span class="text-xs text-gray-500">${dateStr}</span>
+          `;
+          withdrawHistoryEl.appendChild(li);
+        });
+      } catch (error) {
+        withdrawHistoryEl.textContent = "Error loading history: " + error.message;
+      }
+    }
+
+    // New function: loadReferralCount
+    async function loadReferralCount() {
+      referralCountEl.textContent = "Loading referral count...";
+      try {
+        const q = query(collection(db, "users"), where("referrer", "==", currentUserId));
+        const querySnapshot = await getDocs(q);
+        const count = querySnapshot.size;
+        referralCountEl.textContent = `You have referred ${count} user${count === 1 ? "" : "s"}.`;
+      } catch (error) {
+        referralCountEl.textContent = "Error loading referral count.";
+      }
+    }
+
+    logoutBtn.onclick = async () => {
+      try {
+        await signOut(auth);
+        window.location.href = "index.html";
+      } catch (error) {
+        alert("Logout failed: " + error.message);
+      }
+    };
+  </script>
 </body>
 </html>
