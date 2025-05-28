@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Sign Up</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body class="bg-gray-100 min-h-screen flex items-center justify-center p-6">
@@ -22,7 +22,7 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
   import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
-  import { getFirestore, doc, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+  import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyAPF4nGlb9R2osmXUwrPgatwAl1huIAGpg",
@@ -37,12 +37,6 @@
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const db = getFirestore(app);
-
-  // Helper to get query params from URL
-  function getQueryParam(param) {
-    const urlParams = new URLSearchParams(window.location.search);
-    return urlParams.get(param);
-  }
 
   const signupBtn = document.getElementById("signupBtn");
 
@@ -63,48 +57,18 @@
     }
 
     try {
-      // Create user with email and password
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // Prepare user data object
-      const newUserData = {
+      await setDoc(doc(db, "users", user.uid), {
         email,
         username,
         phone,
         role: "user",
-        mainBalance: 0,
-        completedTasks: {},
-      };
-
-      // Save new user document
-      await setDoc(doc(db, "users", user.uid), newUserData);
-
-      // Check if referred by someone
-      const referrerId = getQueryParam("ref");
-      if (referrerId) {
-        try {
-          const referrerRef = doc(db, "users", referrerId);
-          const referrerSnap = await getDoc(referrerRef);
-          if (referrerSnap.exists()) {
-            // Update referrer's balance +10
-            const referrerData = referrerSnap.data();
-            const currentBalance = typeof referrerData.mainBalance === "number" ? referrerData.mainBalance : 0;
-            await updateDoc(referrerRef, {
-              mainBalance: currentBalance + 10
-            });
-            console.log("Referral bonus added to user:", referrerId);
-          } else {
-            console.log("Referrer user not found.");
-          }
-        } catch (e) {
-          console.error("Error updating referrer bonus:", e);
-        }
-      }
+      });
 
       Swal.fire("Sign-up Successful. Please login.", "", "success");
       setTimeout(() => window.location.href = "index.html", 1500);
-
     } catch (error) {
       Swal.fire(error.message, "", "error");
     }
