@@ -3,32 +3,28 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Sign Up</title>
+  <title>Login</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@latest/dist/tailwind.min.css" rel="stylesheet" />
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
 </head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen">
   <div class="w-full max-w-md bg-white p-8 rounded shadow">
-    <h2 class="text-2xl font-bold mb-6 text-center">Create an Account</h2>
-    <form onsubmit="event.preventDefault(); signupUser();">
-      <input id="username" type="text" placeholder="Username" class="mb-4 w-full px-4 py-2 border rounded" required />
+    <h2 class="text-2xl font-bold mb-6 text-center">Login to Your Account</h2>
+    <form onsubmit="event.preventDefault(); loginUser();">
       <input id="email" type="email" placeholder="Email" class="mb-4 w-full px-4 py-2 border rounded" required />
-      <input id="phone" type="text" placeholder="Phone Number" class="mb-4 w-full px-4 py-2 border rounded" required />
       <input id="password" type="password" placeholder="Password" class="mb-4 w-full px-4 py-2 border rounded" required />
-      <input id="referralCode" type="text" placeholder="Referral Code (optional)" class="mb-4 w-full px-4 py-2 border rounded" />
       <button type="submit" class="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600">
-        Sign Up
+        Login
       </button>
     </form>
-    <p class="mt-4 text-center">Already have an account? <a href="index.html" class="text-blue-500">Login</a></p>
+    <p class="mt-4 text-center">Don't have an account? <a href="signup.html" class="text-blue-500">Sign up</a></p>
   </div>
 
   <!-- Firebase JS -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
-    import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
-    import { getFirestore, doc, setDoc, getDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+    import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAPF4nGlb9R2osmXUwrPgatwAl1huIAGpg",
@@ -42,51 +38,19 @@
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
-    const db = getFirestore(app);
 
-    window.signupUser = async function () {
-      const username = document.getElementById('username').value.trim();
+    window.loginUser = async function () {
       const email = document.getElementById('email').value.trim();
-      const phone = document.getElementById('phone').value.trim();
       const password = document.getElementById('password').value;
-      const referralCode = document.getElementById('referralCode').value.trim();
 
       try {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        const user = userCredential.user;
-        const userId = user.uid;
-
-        const userData = {
-          username,
-          email,
-          phone,
-          role: "user",
-          balance: 0,
-          referralCode: userId
-        };
-
-        await setDoc(doc(db, "users", userId), userData);
-
-        if (referralCode) {
-          const referrerDoc = await getDoc(doc(db, "users", referralCode));
-          if (referrerDoc.exists()) {
-            await updateDoc(doc(db, "users", referralCode), {
-              balance: increment(100)
-            });
-          }
-        }
-
-        alert("Sign up successful!");
+        await signInWithEmailAndPassword(auth, email, password);
+        alert("Login successful!");
         window.location.href = "dashboard.html";
       } catch (error) {
-        alert(error.message);
+        alert("Login failed: " + error.message);
       }
     };
-
-    // Auto-fill referral from URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const ref = urlParams.get('ref');
-    if (ref) document.getElementById('referralCode').value = ref;
   </script>
 </body>
 </html>
