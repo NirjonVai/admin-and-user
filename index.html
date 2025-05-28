@@ -36,6 +36,18 @@
   const auth = getAuth(app);
   const db = getFirestore(app);
 
+  const showToast = (icon, message) => {
+    Swal.fire({
+      toast: true,
+      position: 'top-end',
+      showConfirmButton: false,
+      timer: 3000,
+      timerProgressBar: true,
+      icon: icon,
+      title: message
+    });
+  };
+
   const loginBtn = document.getElementById("loginBtn");
 
   loginBtn.addEventListener("click", async () => {
@@ -43,14 +55,7 @@
     const password = document.getElementById("loginPassword").value;
 
     if (!email || !password) {
-      Swal.fire({
-        title: "Please fill all fields.",
-        icon: "error",
-        position: "top-end",
-        toast: true,
-        showConfirmButton: false,
-        timer: 3000
-      });
+      showToast("error", "Please fill all fields.");
       return;
     }
 
@@ -60,27 +65,13 @@
       const userDoc = await getDoc(doc(db, "users", user.uid));
       const role = userDoc.exists() ? userDoc.data().role || "user" : "user";
 
-      Swal.fire({
-        title: "Login successful!",
-        icon: "success",
-        position: "top-end",
-        toast: true,
-        showConfirmButton: false,
-        timer: 2000
-      });
+      showToast("success", "Login successful!");
 
       setTimeout(() => {
         window.location.href = role === "admin" ? "admin.html" : "dashboard.html";
       }, 2000);
     } catch (error) {
-      Swal.fire({
-        title: error.message,
-        icon: "error",
-        position: "top-end",
-        toast: true,
-        showConfirmButton: false,
-        timer: 3000
-      });
+      showToast("error", error.message);
     }
   });
 </script>
