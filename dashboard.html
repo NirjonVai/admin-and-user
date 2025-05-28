@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@latest/dist/tailwind.min.css" rel="stylesheet" />
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
 </head>
 <body class="bg-white font-sans px-6 py-8 max-w-xl mx-auto">
@@ -46,13 +45,13 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
     import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
-    import { getFirestore, doc, getDoc, updateDoc, collection, addDoc, query, where, getDocs, orderBy } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, updateDoc, collection, addDoc, query, where, getDocs, orderBy, Timestamp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAPF4nGlb9R2osmXUwrPgatwAl1huIAGpg",
       authDomain: "admin-and-user-f50c3.firebaseapp.com",
       projectId: "admin-and-user-f50c3",
-      storageBucket: "admin-and-user-f50c3.firebasestorage.app",
+      storageBucket: "admin-and-user-f50c3.appspot.com",
       messagingSenderId: "926355768153",
       appId: "1:926355768153:web:d52c55b2daf0e85a6e8248",
       measurementId: "G-7FES0VM8S1"
@@ -114,10 +113,10 @@
     }
 
     function renderReferralLink() {
-  const baseUrl = window.location.origin + window.location.pathname.replace(/\/dashboard\.html$/, "/signup.html");
-  const referralUrl = `${baseUrl}?ref=${currentUserId}`;
-  referralLinkInput.value = referralUrl;
-}
+      const baseUrl = window.location.origin + window.location.pathname.replace(/\/dashboard\.html$/, "/signup.html");
+      const referralUrl = `${baseUrl}?ref=${currentUserId}`;
+      referralLinkInput.value = referralUrl;
+    }
 
     copyReferralBtn.onclick = () => {
       referralLinkInput.select();
@@ -204,7 +203,7 @@
           email: userData.email || "",
           amount: amount,
           status: "pending",
-          requestedAt: new Date()
+          requestedAt: Timestamp.now()
         });
 
         messageEl.textContent = "Withdraw request sent to admin.";
@@ -241,20 +240,19 @@
           const dateStr = date.toLocaleDateString() + " " + date.toLocaleTimeString();
 
           li.innerHTML = `
-            <span>৳${data.amount.toFixed(2)} - <strong>${data.status.toUpperCase()}</strong></span>
-            <span class="text-xs text-gray-500">${dateStr}</span>
+            <span>৳${data.amount.toFixed(2)} - <strong>${data.status.toUpperCase()}</strong> - <small>${dateStr}</small></span>
           `;
           withdrawHistoryEl.appendChild(li);
         });
-      } catch (error) {
-        withdrawHistoryEl.textContent = "Error loading history: " + error.message;
+      } catch (err) {
+        withdrawHistoryEl.textContent = "Error loading withdraw history.";
       }
     }
 
-    logoutBtn.onclick = async () => {
-      await signOut(auth);
-      alert("Logged out!");
-      window.location.href = "index.html";
+    logoutBtn.onclick = () => {
+      signOut(auth).then(() => {
+        window.location.href = "index.html";
+      });
     };
   </script>
 </body>
