@@ -1,78 +1,92 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Sign Up</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sign Up</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@latest/dist/tailwind.min.css" rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
 </head>
-<body class="bg-gray-100 min-h-screen flex items-center justify-center p-6">
-  <div class="bg-white p-8 rounded shadow-md w-full max-w-md">
-    <h2 class="text-2xl font-semibold text-gray-800 mb-4">Sign Up</h2>
-    <input id="signupUsername" type="text" placeholder="Username" class="w-full p-3 border border-gray-300 rounded mb-3" />
-    <input id="signupPhone" type="tel" placeholder="Phone Number" class="w-full p-3 border border-gray-300 rounded mb-3" />
-    <input id="signupEmail" type="email" placeholder="Email" class="w-full p-3 border border-gray-300 rounded mb-3" />
-    <input id="signupPassword" type="password" placeholder="Password (min 6 chars)" class="w-full p-3 border border-gray-300 rounded mb-3" />
-    <button id="signupBtn" class="w-full bg-blue-500 text-white py-3 rounded hover:bg-blue-600 transition">Sign Up</button>
-    <p class="mt-4 text-center text-sm">Already have an account? <a href="login.html" class="text-green-500 hover:underline">Login</a></p>
-  </div>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+  <div class="w-full max-w-md bg-white p-8 rounded shadow">
+    <h2 class="text-2xl font-bold mb-6 text-center">Create an Account</h2>
+    <form onsubmit="event.preventDefault(); signupUser();">
+      <input id="username" type="text" placeholder="Username" class="mb-4 w-full px-4 py-2 border rounded" required />
+      <input id="email" type="email" placeholder="Email" class="mb-4 w-full px-4 py-2 border rounded" required />
+      <input id="phone" type="text" placeholder="Phone Number" class="mb-4 w-full px-4 py-2 border rounded" required />
+      <input id="password" type="password" placeholder="Password" class="mb-4 w-full px-4 py-2 border rounded" required />
+      <input id="referralCode" type="text" placeholder="Referral Code (optional)" class="mb-4 w-full px-4 py-2 border rounded" />
+      <button type="submit" class="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600">
+        Sign Up
+      </button>
+    </form>
+    <p class="mt-4 text-center">Already have an account? <a href="index.html" class="text-blue-500">Login</a></p>
+  </div>
 
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
-  import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
-  import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+  <!-- Firebase JS -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
+    import { getFirestore, doc, setDoc, getDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyAPF4nGlb9R2osmXUwrPgatwAl1huIAGpg",
-    authDomain: "admin-and-user-f50c3.firebaseapp.com",
-    projectId: "admin-and-user-f50c3",
-    storageBucket: "admin-and-user-f50c3.appspot.com",
-    messagingSenderId: "926355768153",
-    appId: "1:926355768153:web:d52c55b2daf0e85a6e8248",
-    measurementId: "G-7FES0VM8S1"
-  };
+    const firebaseConfig = {
+      apiKey: "AIzaSyAPF4nGlb9R2osmXUwrPgatwAl1huIAGpg",
+      authDomain: "admin-and-user-f50c3.firebaseapp.com",
+      projectId: "admin-and-user-f50c3",
+      storageBucket: "admin-and-user-f50c3.appspot.com",
+      messagingSenderId: "926355768153",
+      appId: "1:926355768153:web:d52c55b2daf0e85a6e8248",
+      measurementId: "G-7FES0VM8S1"
+    };
 
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getFirestore(app);
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
 
-  const signupBtn = document.getElementById("signupBtn");
+    window.signupUser = async function () {
+      const username = document.getElementById('username').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const phone = document.getElementById('phone').value.trim();
+      const password = document.getElementById('password').value;
+      const referralCode = document.getElementById('referralCode').value.trim();
 
-  signupBtn.addEventListener("click", async () => {
-    const username = document.getElementById("signupUsername").value.trim();
-    const phone = document.getElementById("signupPhone").value.trim();
-    const email = document.getElementById("signupEmail").value.trim();
-    const password = document.getElementById("signupPassword").value;
+      try {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+        const userId = user.uid;
 
-    if (!username || !phone || !email || !password) {
-      Swal.fire("Please fill all fields.", "", "error");
-      return;
-    }
+        const userData = {
+          username,
+          email,
+          phone,
+          role: "user",
+          balance: 0,
+          referralCode: userId
+        };
 
-    if (password.length < 6) {
-      Swal.fire("Password must be at least 6 characters.", "", "error");
-      return;
-    }
+        await setDoc(doc(db, "users", userId), userData);
 
-    try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
+        if (referralCode) {
+          const referrerDoc = await getDoc(doc(db, "users", referralCode));
+          if (referrerDoc.exists()) {
+            await updateDoc(doc(db, "users", referralCode), {
+              balance: increment(100)
+            });
+          }
+        }
 
-      await setDoc(doc(db, "users", user.uid), {
-        email,
-        username,
-        phone,
-        role: "user",
-      });
+        alert("Sign up successful!");
+        window.location.href = "dashboard.html";
+      } catch (error) {
+        alert(error.message);
+      }
+    };
 
-      Swal.fire("Sign-up Successful. Please login.", "", "success");
-      setTimeout(() => window.location.href = "index.html", 1500);
-    } catch (error) {
-      Swal.fire(error.message, "", "error");
-    }
-  });
-</script>
+    // Auto-fill referral from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const ref = urlParams.get('ref');
+    if (ref) document.getElementById('referralCode').value = ref;
+  </script>
 </body>
 </html>
