@@ -40,6 +40,18 @@
 
   const signupBtn = document.getElementById("signupBtn");
 
+  const showToast = (message, icon = "success") => {
+    Swal.fire({
+      toast: true,
+      position: 'top-end',
+      showConfirmButton: false,
+      timer: 3000,
+      timerProgressBar: true,
+      icon: icon,
+      title: message
+    });
+  };
+
   signupBtn.addEventListener("click", async () => {
     const username = document.getElementById("signupUsername").value.trim();
     const phone = document.getElementById("signupPhone").value.trim();
@@ -47,12 +59,12 @@
     const password = document.getElementById("signupPassword").value;
 
     if (!username || !phone || !email || !password) {
-      Swal.fire("Please fill all fields.", "", "error");
+      showToast("Please fill all fields.", "error");
       return;
     }
 
     if (password.length < 6) {
-      Swal.fire("Password must be at least 6 characters.", "", "error");
+      showToast("Password must be at least 6 characters.", "error");
       return;
     }
 
@@ -67,10 +79,10 @@
         role: "user",
       });
 
-      Swal.fire("Sign-up Successful. Please login.", "", "success");
+      showToast("Sign-up Successful. Please login.", "success");
       setTimeout(() => window.location.href = "index.html", 1500);
     } catch (error) {
-      Swal.fire(error.message, "", "error");
+      showToast(error.message, "error");
     }
   });
 </script>
