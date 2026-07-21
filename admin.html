@@ -11,75 +11,117 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
-<body class="bg-gray-100 min-h-screen flex flex-col font-['Plus_Jakarta_Sans']">
+<body class="bg-gray-100 min-h-screen flex font-['Plus_Jakarta_Sans']">
 
-  <!-- Navbar -->
-  <nav class="bg-gray-900 text-white px-6 py-4 flex justify-between items-center shadow-md">
-    <div class="flex items-center space-x-2">
-      <i class="fa-solid fa-user-shield text-orange-500 text-2xl"></i>
-      <span class="text-xl font-bold">BetX Admin Panel</span>
+  <!-- Sidebar Component -->
+  <aside class="w-64 bg-gray-900 text-white min-h-screen flex flex-col justify-between p-4 fixed left-0 top-0 bottom-0 z-40">
+    <div>
+      <!-- Logo / Title -->
+      <div class="flex items-center space-x-3 px-3 py-4 mb-6 border-b border-gray-800">
+        <i class="fa-solid fa-user-shield text-orange-500 text-2xl"></i>
+        <span class="text-xl font-bold tracking-wide">BetX Admin</span>
+      </div>
+
+      <!-- Navigation Links -->
+      <nav class="space-y-1">
+        <a href="#" class="flex items-center gap-3 px-4 py-3 text-sm font-semibold text-gray-300 rounded-xl hover:bg-gray-800 hover:text-white transition">
+          <i class="fa-solid fa-chart-pie text-lg text-gray-400"></i>
+          <span>Dashboard</span>
+        </a>
+        <a href="#" class="flex items-center gap-3 px-4 py-3 text-sm font-semibold bg-orange-500 text-white rounded-xl shadow-lg shadow-orange-500/20 transition">
+          <i class="fa-solid fa-users text-lg"></i>
+          <span>User</span>
+        </a>
+        <a href="#" class="flex items-center gap-3 px-4 py-3 text-sm font-semibold text-gray-300 rounded-xl hover:bg-gray-800 hover:text-white transition">
+          <i class="fa-solid fa-plus-circle text-lg text-gray-400"></i>
+          <span>Add Bet</span>
+        </a>
+        <a href="#" class="flex items-center gap-3 px-4 py-3 text-sm font-semibold text-gray-300 rounded-xl hover:bg-gray-800 hover:text-white transition">
+          <i class="fa-solid fa-tower-broadcast text-lg text-gray-400"></i>
+          <span>Live Bet</span>
+        </a>
+        <a href="#" class="flex items-center gap-3 px-4 py-3 text-sm font-semibold text-gray-300 rounded-xl hover:bg-gray-800 hover:text-white transition">
+          <i class="fa-solid fa-clock-rotate-left text-lg text-gray-400"></i>
+          <span>Bet History</span>
+        </a>
+      </nav>
     </div>
-    <div class="flex items-center gap-4">
-      <span id="admin-status" class="text-xs bg-orange-500/20 text-orange-400 px-3 py-1 rounded-full border border-orange-500/30 font-semibold">Admin Active</span>
+
+    <!-- Bottom Logout Section -->
+    <div class="pt-4 border-t border-gray-800">
       <button 
         id="logout-btn" 
-        class="bg-red-600 hover:bg-red-700 text-white text-xs font-semibold px-3 py-2 rounded-lg transition flex items-center gap-2"
+        class="w-full bg-red-600/10 hover:bg-red-600 text-red-500 hover:text-white text-sm font-semibold px-4 py-3 rounded-xl transition flex items-center gap-3"
       >
-        <i class="fa-solid fa-right-from-bracket"></i> Logout
+        <i class="fa-solid fa-right-from-bracket text-lg"></i> Logout
       </button>
     </div>
-  </nav>
+  </aside>
 
-  <!-- Main Content Area -->
-  <main class="flex-1 p-6 max-w-6xl mx-auto w-full">
-    
-    <!-- Top Stats Bar -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-      <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 flex items-center justify-between">
-        <div>
-          <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Users</p>
-          <h3 id="total-users" class="text-3xl font-extrabold text-gray-800 mt-1">0</h3>
+  <!-- Main Content Wrapper (Margin Left added for Sidebar offset) -->
+  <div class="flex-1 ml-64 flex flex-col min-h-screen">
+
+    <!-- Top Header -->
+    <header class="bg-white border-b border-gray-200 px-8 py-4 flex justify-between items-center shadow-sm">
+      <h1 class="text-xl font-bold text-gray-800">User Management</h1>
+      <div class="flex items-center gap-4">
+        <span id="admin-status" class="text-xs bg-orange-500/10 text-orange-500 px-3 py-1.5 rounded-full border border-orange-500/20 font-semibold">
+          <i class="fa-solid fa-circle text-[8px] mr-1 text-orange-500"></i> Admin Active
+        </span>
+      </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 p-8 max-w-7xl w-full mx-auto">
+      
+      <!-- Top Stats Bar -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 flex items-center justify-between">
+          <div>
+            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Users</p>
+            <h3 id="total-users" class="text-3xl font-extrabold text-gray-800 mt-1">0</h3>
+          </div>
+          <div class="bg-orange-100 text-orange-500 p-4 rounded-xl">
+            <i class="fa-solid fa-users text-2xl"></i>
+          </div>
         </div>
-        <div class="bg-orange-100 text-orange-500 p-4 rounded-xl">
-          <i class="fa-solid fa-users text-2xl"></i>
+      </div>
+
+      <!-- Users Table Section -->
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+        <div class="p-6 border-b border-gray-100 flex justify-between items-center">
+          <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+            <i class="fa-solid fa-list text-orange-500"></i> Registered Users List
+          </h2>
+          <button id="refresh-btn" class="text-sm text-orange-500 hover:text-orange-600 font-semibold flex items-center gap-1 transition">
+            <i class="fa-solid fa-rotate-right"></i> Refresh
+          </button>
+        </div>
+
+        <!-- Table -->
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-gray-50 text-gray-600 text-xs font-semibold uppercase border-b border-gray-100">
+                <th class="py-4 px-6">User ID</th>
+                <th class="py-4 px-6">Username</th>
+                <th class="py-4 px-6">Email</th>
+                <th class="py-4 px-6">Role</th>
+                <th class="py-4 px-6">Created At</th>
+                <th class="py-4 px-6 text-center">Action</th>
+              </tr>
+            </thead>
+            <tbody id="user-table-body" class="divide-y divide-gray-100 text-sm text-gray-700">
+              <tr>
+                <td colspan="6" class="py-6 text-center text-gray-400">Loading user data...</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
-    </div>
 
-    <!-- Users Table Section -->
-    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-      <div class="p-6 border-b border-gray-100 flex justify-between items-center">
-        <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2">
-          <i class="fa-solid fa-list text-orange-500"></i> Registered Users List
-        </h2>
-        <button id="refresh-btn" class="text-sm text-orange-500 hover:text-orange-600 font-semibold flex items-center gap-1">
-          <i class="fa-solid fa-rotate-right"></i> Refresh
-        </button>
-      </div>
-
-      <!-- Table -->
-      <div class="overflow-x-auto">
-        <table class="w-full text-left border-collapse">
-          <thead>
-            <tr class="bg-gray-50 text-gray-600 text-xs font-semibold uppercase border-b border-gray-100">
-              <th class="py-4 px-6">User ID</th>
-              <th class="py-4 px-6">Username</th>
-              <th class="py-4 px-6">Email</th>
-              <th class="py-4 px-6">Role</th>
-              <th class="py-4 px-6">Created At</th>
-              <th class="py-4 px-6 text-center">Action</th>
-            </tr>
-          </thead>
-          <tbody id="user-table-body" class="divide-y divide-gray-100 text-sm text-gray-700">
-            <tr>
-              <td colspan="6" class="py-6 text-center text-gray-400">Loading user data...</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-  </main>
+    </main>
+  </div>
 
   <!-- Edit User Modal (Popup Box) -->
   <div id="edit-modal" class="fixed inset-0 bg-black/50 hidden items-center justify-center p-4 z-50">
