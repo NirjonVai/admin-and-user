@@ -1,56 +1,155 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="bn">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Login</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@latest/dist/tailwind.min.css" rel="stylesheet" />
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Firebase Sign Up - Tailwind CSS</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen">
-  <div class="w-full max-w-md bg-white p-8 rounded shadow">
-    <h2 class="text-2xl font-bold mb-6 text-center">Login to Your Account</h2>
-    <form onsubmit="event.preventDefault(); loginUser();">
-      <input id="email" type="email" placeholder="Email" class="mb-4 w-full px-4 py-2 border rounded" required />
-      <input id="password" type="password" placeholder="Password" class="mb-4 w-full px-4 py-2 border rounded" required />
-      <button type="submit" class="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600">
-        Login
+
+  <!-- Card Container -->
+  <div class="bg-white p-8 rounded-xl shadow-md w-full max-w-sm border border-gray-200">
+    <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">Sign Up</h2>
+    
+    <form id="signup-form" class="space-y-4">
+      <!-- Username Input -->
+      <div>
+        <label for="username" class="block text-sm font-medium text-gray-600 mb-1">Username</label>
+        <input 
+          type="text" 
+          id="username" 
+          required 
+          placeholder="Enter your username" 
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none transition"
+        >
+      </div>
+
+      <!-- Email Input -->
+      <div>
+        <label for="email" class="block text-sm font-medium text-gray-600 mb-1">Email</label>
+        <input 
+          type="email" 
+          id="email" 
+          required 
+          placeholder="Enter your email" 
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none transition"
+        >
+      </div>
+
+      <!-- Password Input -->
+      <div>
+        <label for="password" class="block text-sm font-medium text-gray-600 mb-1">Password</label>
+        <input 
+          type="password" 
+          id="password" 
+          required 
+          placeholder="Enter your password" 
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none transition"
+        >
+      </div>
+
+      <!-- Submit Button -->
+      <button 
+        type="submit" 
+        id="btn-signup" 
+        class="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2.5 rounded-lg shadow transition duration-200"
+      >
+        Sign Up
       </button>
     </form>
-    <p class="mt-4 text-center">Don't have an account? <a href="signup.html" class="text-blue-500">Sign up</a></p>
+
+    <!-- Success/Error Message -->
+    <div id="message" class="mt-4 text-center text-sm font-medium"></div>
+
+    <!-- Login Page Link -->
+    <p class="mt-4 text-center text-sm text-gray-600">
+      Already have an account? 
+      <a href="4.html" class="text-orange-500 font-semibold hover:underline">Login</a>
+    </p>
   </div>
 
-  <!-- Firebase JS -->
+  <!-- Firebase Script -->
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
-    import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
+    // Firebase SDK v10 Import
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword, updateProfile } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
+    // আপনার Firebase Configuration (betx-904da)
     const firebaseConfig = {
-  apiKey: "AIzaSyCkYWvYNsg2-CR88Js6gcP2nXfvwI4TW30",
-  authDomain: "bdwork-346d3.firebaseapp.com",
-  projectId: "bdwork-346d3",
-  storageBucket: "bdwork-346d3.firebasestorage.app",
-  messagingSenderId: "900963179093",
-  appId: "1:900963179093:web:81e42d67bb31d603cc92dc",
-  measurementId: "G-FM1YJ8E5GK"
-};
+      apiKey: "AIzaSyBzQaaXhTtiGpMjRMBUXZaCIrDRoNyEkU4",
+      authDomain: "betx-904da.firebaseapp.com",
+      databaseURL: "https://betx-904da-default-rtdb.firebaseio.com",
+      projectId: "betx-904da",
+      storageBucket: "betx-904da.firebasestorage.app",
+      messagingSenderId: "1076536561200",
+      appId: "1:1076536561200:web:87ddeee59d73ed3a08e7f5",
+      measurementId: "G-ER5HGVL74K"
+    };
 
+    // Firebase Initialize
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
+    const db = getDatabase(app);
 
-    window.loginUser = async function () {
-      const email = document.getElementById('email').value.trim();
+    // Form Handle
+    const signupForm = document.getElementById('signup-form');
+    const messageDiv = document.getElementById('message');
+
+    signupForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const username = document.getElementById('username').value;
+      const email = document.getElementById('email').value;
       const password = document.getElementById('password').value;
 
       try {
-        await signInWithEmailAndPassword(auth, email, password);
-        alert("Login successful!");
-        window.location.href = "dashboard.html";
+        // ১. Auth-এ একাউন্ট তৈরি
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+
+        // ২. Auth প্রোফাইলে Display Name আপডেট
+        await updateProfile(user, { displayName: username });
+
+        // ৩. কাঙ্ক্ষিত ফরম্যাটে সময় বের করা (যেমন: 9:35 : 08 AM)
+        const now = new Date();
+        const formattedTime = now.toLocaleTimeString('en-US', {
+          hour: 'numeric',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: true
+        }).replace(/:(\d{2}) /, ' : $1 ');
+
+        // ৪. Realtime Database-এ ইউজার ডাটা সেভ
+        await set(ref(db, 'users/' + user.uid), {
+          username: username,
+          email: email,
+          createdAt: formattedTime
+        });
+
+        // Success Message
+        messageDiv.className = "mt-4 text-center text-sm font-medium text-green-600 bg-green-50 p-2 rounded-lg border border-green-200";
+        messageDiv.innerText = `Account created successfully! Redirecting to login...`;
+        signupForm.reset();
+
+        // ৫. ২ সেকেন্ড পর Login পেজে রিডাইরেক্ট করা
+        setTimeout(() => {
+          window.location.href = "4.html"; // আপনার লগইন ফাইলের নাম
+        }, 2000);
+
       } catch (error) {
-        alert("Login failed: " + error.message);
+        // Error Message
+        messageDiv.className = "mt-4 text-center text-sm font-medium text-red-600 bg-red-50 p-2 rounded-lg border border-red-200";
+        messageDiv.innerText = "Error: " + error.message;
       }
-    };
+    });
   </script>
+
 </body>
 </html>
