@@ -3,14 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BetX - Premium Betting Platform</title>
+    <title>BetX - Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen selection:bg-amber-400 selection:text-slate-950 pb-20 lg:pb-0">
@@ -22,13 +24,26 @@
                 <span class="text-xl font-black tracking-widest text-white">BET<span class="text-amber-400 bg-gradient-to-r from-yellow-400 to-amber-300 bg-clip-text text-transparent">X</span></span>
             </div>
 
-            <div class="flex items-center space-x-4">
+            <div class="flex items-center space-x-3 sm:space-x-4">
+                <!-- User Profile Display -->
+                <div class="flex items-center space-x-2 bg-slate-800/40 border border-slate-700/60 px-3 py-1.5 rounded-xl text-xs sm:text-sm font-semibold text-slate-200">
+                    <i class="fa-solid fa-user-circle text-amber-400 text-sm sm:text-base"></i>
+                    <span id="user-display-name" class="max-w-[100px] sm:max-w-[150px] truncate">Loading...</span>
+                </div>
+
+                <!-- Balance Box -->
                 <div class="bg-slate-800/40 backdrop-blur-sm px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl flex items-center space-x-2 sm:space-x-3 border border-slate-700/60 shadow-inner">
                     <span class="text-xs sm:text-sm font-extrabold text-amber-400 tracking-wide">৳500.00</span>
                     <button class="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-amber-400/10 hover:bg-amber-400/20 text-amber-400 flex items-center justify-center transition-colors cursor-pointer">
                         <i class="fa-solid fa-plus text-xs"></i>
                     </button>
                 </div>
+
+                <!-- Logout Button -->
+                <button id="btn-logout" title="Logout" class="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 hover:border-red-500/40 p-2 sm:px-3 sm:py-2 rounded-xl flex items-center space-x-1.5 transition cursor-pointer text-xs sm:text-sm font-medium">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                    <span class="hidden sm:inline">Logout</span>
+                </button>
             </div>
         </div>
     </header>
@@ -52,7 +67,7 @@
                         </div>
                         <span class="font-bold text-xs tracking-wide">Football</span>
                     </span>
-                    <span id="football-count" class="bg-amber-400/10 text-amber-400 text-[10px] font-black px-1.5 py-0.5 rounded-md border border-amber-400/20 group-hover:bg-amber-400 group-hover:text-slate-950 transition-all duration-300">0</span>
+                    <span class="bg-amber-400/10 text-amber-400 text-[10px] font-black px-1.5 py-0.5 rounded-md border border-amber-400/20 group-hover:bg-amber-400 group-hover:text-slate-950 transition-all duration-300">42</span>
                 </a>
 
                 <!-- Cricket Button -->
@@ -63,7 +78,7 @@
                         </div>
                         <span class="font-bold text-xs tracking-wide">Cricket</span>
                     </span>
-                    <span id="cricket-count" class="bg-amber-400/10 text-amber-400 text-[10px] font-black px-1.5 py-0.5 rounded-md border border-amber-400/20 group-hover:bg-amber-400 group-hover:text-slate-950 transition-all duration-300">0</span>
+                    <span class="bg-amber-400/10 text-amber-400 text-[10px] font-black px-1.5 py-0.5 rounded-md border border-amber-400/20 group-hover:bg-amber-400 group-hover:text-slate-950 transition-all duration-300">12</span>
                 </a>
             </div>
         </aside>
@@ -83,16 +98,99 @@
                     </a>
                 </div>
 
-                <!-- Matches Container -->
-                <div id="matches-container" class="space-y-4">
-                    <div class="text-center py-8 text-amber-400/70 text-sm animate-pulse">Loading matches...</div>
+                <div class="space-y-4">
+                    
+                    <!-- Football Card -->
+                    <div class="rounded-xl p-2 md:p-4 border border-slate-600 shadow-2xl relative overflow-hidden group max-w-md mx-auto lg:mx-0 bg-cover bg-center" style="background-image: linear-gradient(rgba(30, 23, 42, 0.55), rgba(30, 23, 42, 0.75)), url('stadium-football.jpg');">
+                        <div class="absolute top-0 right-0 bg-amber-400 text-slate-950 font-black px-4 uppercase text-[7px] tracking-wider translate-x-4 translate-y-1.5 rotate-45 flex items-center justify-center shadow-md z-10">
+                            <span class="w-1 h-1 bg-slate-950 rounded-full mr-1 animate-pulse"></span> Live
+                        </div>
+                        
+                        <div class="flex items-center space-x-1.5 text-slate-200 text-[11px] md:text-xs font-bold tracking-wide mb-3 drop-shadow-md">
+                            <i class="fa-solid fa-futbol text-amber-400 text-[11px]"></i>
+                            <span class="uppercase">fifa world cup 2026</span>
+                            <span class="text-slate-300 font-bold text-[11px]">• &nbsp;01:00 AM</span>
+                        </div>
+
+                        <div class="flex items-center justify-start">
+                            <div class="pr-3 flex flex-col items-center justify-center min-w-[40px] md:min-w-[48px] drop-shadow-md self-center">
+                                <span class="text-xl md:text-2xl font-extrabold text-slate-200 leading-none">15</span>
+                                <span class="text-[10px] font-bold text-amber-400 mt-0.5 uppercase">Jul</span>
+                            </div>
+
+                            <div class="h-12 w-[2px] bg-slate-400/80 shadow-[0_0_8px_rgba(255,255,255,0.1)] self-center"></div>
+
+                            <div class="flex-1 flex items-center justify-around pl-3 md:pl-4">
+                                <div class="flex flex-col items-center text-center w-5/12 drop-shadow-[0_2px_3px_rgba(0,0,0,0.8)]">
+                                    <div class="w-10 h-10 md:w-12 md:h-12 bg-white rounded-full flex items-center justify-center shadow-md border border-slate-700/30 overflow-hidden">
+                                        <img src="1662798945019.png" alt="team logo" class="w-full h-full object-cover">
+                                    </div>
+                                    <p class="font-extrabold text-[11px] md:text-xs tracking-wide text-white mt-2 line-clamp-1">England</p>
+                                </div>
+
+                                <span class="text-amber-400 font-black italic text-xl tracking-tighter drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] mx-2 mb-5">
+                                    Vs
+                                </span>
+
+                                <div class="flex flex-col items-center text-center w-5/12 drop-shadow-[0_2px_3px_rgba(0,0,0,0.8)]">
+                                    <div class="w-10 h-10 md:w-12 md:h-12 bg-white rounded-full flex items-center justify-center shadow-md border border-slate-700/30 overflow-hidden">
+                                        <img src="1662792797387.png" alt="team logo" class="w-full h-full object-contain">
+                                    </div>
+                                    <p class="font-extrabold text-[11px] md:text-xs tracking-wide text-white mt-2 line-clamp-1">Argentina</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cricket Card -->
+                    <div class="rounded-xl p-2 md:p-4 border border-slate-600 shadow-2xl relative overflow-hidden group max-w-md mx-auto lg:mx-0 bg-cover bg-center" style="background-image: linear-gradient(rgba(30, 23, 42, 0.55), rgba(30, 23, 42, 0.75)), url('cricket-stadium.jpg');">
+                        <div class="absolute top-0 right-0 bg-amber-400 text-slate-950 font-black px-4 uppercase text-[7px] tracking-wider translate-x-4 translate-y-1.5 rotate-45 flex items-center justify-center shadow-md z-10">
+                            <span class="w-1 h-1 bg-slate-950 rounded-full mr-1 animate-pulse"></span> Live
+                        </div>
+                        
+                        <div class="flex items-center space-x-1.5 text-slate-200 text-[11px] md:text-xs font-bold tracking-wide mb-3 drop-shadow-md">
+                            <i class="fa-solid fa-baseball-bat-ball text-amber-400 text-[11px]"></i>
+                            <span class="uppercase">icc t20 world cup</span>
+                            <span class="text-slate-300 font-bold text-[11px]">• &nbsp;07:30 PM</span>
+                        </div>
+
+                        <div class="flex items-center justify-start">
+                            <div class="pr-3 flex flex-col items-center justify-center min-w-[40px] md:min-w-[48px] drop-shadow-md self-center">
+                                <span class="text-xl md:text-2xl font-extrabold text-slate-200 leading-none">15</span>
+                                <span class="text-[10px] font-bold text-amber-400 mt-0.5 uppercase">Jul</span>
+                            </div>
+
+                            <div class="h-12 w-[2px] bg-slate-400/80 shadow-[0_0_8px_rgba(255,255,255,0.1)] self-center"></div>
+
+                            <div class="flex-1 flex items-center justify-around pl-3 md:pl-4">
+                                <div class="flex flex-col items-center text-center w-5/12 drop-shadow-[0_2px_3px_rgba(0,0,0,0.8)]">
+                                    <div class="w-10 h-10 md:w-12 md:h-12 bg-white rounded-full flex items-center justify-center shadow-md border border-slate-700/30 overflow-hidden">
+                                        <img src="Bangladesh.svg.png" alt="team logo" class="w-full h-full object-cover">
+                                    </div>
+                                    <p class="font-extrabold text-[11px] md:text-xs tracking-wide text-white mt-2 line-clamp-1">Bangladesh</p>
+                                </div>
+
+                                <span class="text-amber-400 font-black italic text-xl tracking-tighter drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] mx-2 mb-5">
+                                    Vs
+                                </span>
+
+                                <div class="flex flex-col items-center text-center w-5/12 drop-shadow-[0_2px_3px_rgba(0,0,0,0.8)]">
+                                    <div class="w-10 h-10 md:w-12 md:h-12 bg-white rounded-full flex items-center justify-center shadow-md border border-slate-700/30 overflow-hidden">
+                                        <img src="India.svg.png" alt="team logo" class="w-full h-full object-cover">
+                                    </div>
+                                    <p class="font-extrabold text-[11px] md:text-xs tracking-wide text-white mt-2 line-clamp-1">India</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </main>
 
     </div>
 
-    <!-- Mobile Navigation -->
+    <!-- Mobile Bottom Navigation -->
     <nav class="lg:hidden fixed bottom-0 left-0 right-0 bg-slate-900/90 backdrop-blur-xl border-t border-slate-800/80 px-2 py-2 z-50 flex justify-around items-center shadow-2xl rounded-t-2xl">
         <a href="#" class="flex flex-col items-center justify-center text-amber-400 px-3 py-1 rounded-xl transition-all">
             <i class="fa-solid fa-fire text-lg mb-1"></i>
@@ -117,118 +215,67 @@
         </a>
     </nav>
 
-    <!-- Database Fetch Engine -->
-    <script>
-        // Fetch full database root
-        const ROOT_DB_URL = "https://betx-904da-default-rtdb.firebaseio.com/.json";
+    <!-- Firebase Script -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getDatabase, ref, get, child } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        async function fetchMatches() {
-            const container = document.getElementById('matches-container');
-            const footballCountEl = document.getElementById('football-count');
-            const cricketCountEl = document.getElementById('cricket-count');
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBzQaaXhTtiGpMjRMBUXZaCIrDRoNyEkU4",
+            authDomain: "betx-904da.firebaseapp.com",
+            databaseURL: "https://betx-904da-default-rtdb.firebaseio.com",
+            projectId: "betx-904da",
+            storageBucket: "betx-904da.firebasestorage.app",
+            messagingSenderId: "1076536561200",
+            appId: "1:1076536561200:web:87ddeee59d73ed3a08e7f5",
+            measurementId: "G-ER5HGVL74K"
+        };
 
-            try {
-                const response = await fetch(ROOT_DB_URL);
-                if (!response.ok) throw new Error("HTTP error " + response.status);
-                
-                const rootData = await response.json();
+        // Firebase Initialize
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
 
-                // Get bots object from root
-                const botsData = rootData?.bots || rootData;
+        const userNameDisplay = document.getElementById('user-display-name');
+        const btnLogout = document.getElementById('btn-logout');
 
-                if (!botsData || typeof botsData !== 'object' || Object.keys(botsData).length === 0) {
-                    container.innerHTML = '<div class="text-center py-8 text-slate-400 text-sm border border-slate-800 rounded-xl bg-slate-900/50">No live events available.</div>';
-                    footballCountEl.innerText = '0';
-                    cricketCountEl.innerText = '0';
-                    return;
-                }
-
-                let htmlContent = '';
-                let footballCount = 0;
-                let cricketCount = 0;
-
-                Object.keys(botsData).forEach((key) => {
-                    const match = botsData[key];
-                    if (!match || typeof match !== 'object') return;
-
-                    const sportType = (match.sport || '').toLowerCase();
-                    if (sportType === 'football') footballCount++;
-                    if (sportType === 'cricket') cricketCount++;
-
-                    // Format match dates
-                    let day = '21', month = 'Jul', time = '10:00 PM';
-                    if (match.matchDate) {
-                        const dateObj = new Date(match.matchDate);
-                        if (!isNaN(dateObj)) {
-                            day = dateObj.getDate();
-                            month = dateObj.toLocaleString('en-US', { month: 'short' });
-                            time = dateObj.toLocaleString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
-                        }
+        // Check Login State
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                try {
+                    // Realtime Database থেকে ইউজারের তথ্য নিয়ে আসা
+                    const dbRef = ref(db);
+                    const snapshot = await get(child(dbRef, `users/${user.uid}`));
+                    
+                    if (snapshot.exists()) {
+                        const userData = snapshot.val();
+                        // ডাটাবেজে username থাকলে তা দেখাবে, না থাকলে নাম বা ইমেইল দেখাবে
+                        userNameDisplay.innerText = userData.username || userData.name || user.email.split('@')[0];
+                    } else {
+                        userNameDisplay.innerText = user.email.split('@')[0];
                     }
-
-                    const iconClass = sportType === 'football' ? 'fa-futbol' : 'fa-baseball-bat-ball';
-                    const league = match.league || 'Tournament';
-                    const team1Name = match.team1?.name || 'Team 1';
-                    const team1Logo = match.team1?.logo || '';
-                    const team2Name = match.team2?.name || 'Team 2';
-                    const team2Logo = match.team2?.logo || '';
-
-                    htmlContent += `
-                        <div class="rounded-xl p-3 md:p-4 border border-slate-700/80 shadow-2xl relative overflow-hidden group max-w-md mx-auto lg:mx-0 bg-slate-900/90 hover:border-amber-500/40 transition-all">
-                            <div class="absolute top-0 right-0 bg-amber-400 text-slate-950 font-black px-4 uppercase text-[7px] tracking-wider translate-x-4 translate-y-1.5 rotate-45 flex items-center justify-center shadow-md z-10">
-                                <span class="w-1 h-1 bg-slate-950 rounded-full mr-1 animate-pulse"></span> ${match.status || 'Live'}
-                            </div>
-                            
-                            <div class="flex items-center space-x-1.5 text-slate-200 text-[11px] md:text-xs font-bold tracking-wide mb-3">
-                                <i class="fa-solid ${iconClass} text-amber-400 text-[11px]"></i>
-                                <span class="uppercase">${league}</span>
-                                <span class="text-slate-400 font-bold text-[11px]">• &nbsp;${time}</span>
-                            </div>
-
-                            <div class="flex items-center justify-start">
-                                <div class="pr-3 flex flex-col items-center justify-center min-w-[40px] md:min-w-[48px] self-center">
-                                    <span class="text-xl md:text-2xl font-extrabold text-slate-100 leading-none">${day}</span>
-                                    <span class="text-[10px] font-bold text-amber-400 mt-0.5 uppercase">${month}</span>
-                                </div>
-
-                                <div class="h-12 w-[2px] bg-slate-700/80 self-center"></div>
-
-                                <div class="flex-1 flex items-center justify-around pl-3 md:pl-4">
-                                    <div class="flex flex-col items-center text-center w-5/12">
-                                        <div class="w-10 h-10 md:w-12 md:h-12 bg-white rounded-full flex items-center justify-center shadow-md border border-slate-700/30 overflow-hidden">
-                                            <img src="${team1Logo}" alt="${team1Name}" class="w-full h-full object-cover" onerror="this.onerror=null; this.src='https://via.placeholder.com/60?text=Logo';">
-                                        </div>
-                                        <p class="font-extrabold text-[11px] md:text-xs tracking-wide text-white mt-2 line-clamp-1">${team1Name}</p>
-                                    </div>
-
-                                    <span class="text-amber-400 font-black italic text-xl tracking-tighter mx-2 mb-4">
-                                        Vs
-                                    </span>
-
-                                    <div class="flex flex-col items-center text-center w-5/12">
-                                        <div class="w-10 h-10 md:w-12 md:h-12 bg-white rounded-full flex items-center justify-center shadow-md border border-slate-700/30 overflow-hidden">
-                                            <img src="${team2Logo}" alt="${team2Name}" class="w-full h-full object-contain" onerror="this.onerror=null; this.src='https://via.placeholder.com/60?text=Logo';">
-                                        </div>
-                                        <p class="font-extrabold text-[11px] md:text-xs tracking-wide text-white mt-2 line-clamp-1">${team2Name}</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                });
-
-                container.innerHTML = htmlContent;
-                footballCountEl.innerText = footballCount;
-                cricketCountEl.innerText = cricketCount;
-
-            } catch (err) {
-                console.error("Fetch Exception:", err);
-                container.innerHTML = `<div class="p-4 rounded-xl bg-rose-950/40 border border-rose-500/50 text-center text-rose-400 text-xs">Error: ${err.message}</div>`;
+                } catch (error) {
+                    console.error("Error fetching user data:", error);
+                    userNameDisplay.innerText = user.email ? user.email.split('@')[0] : "User";
+                }
+            } else {
+                // ইউজার লগইন না থাকলে login.html-এ রিডাইরেক্ট করবে
+                window.location.href = "login.html";
             }
-        }
+        });
 
-        // Run fetch
-        fetchMatches();
+        // Logout Handle
+        btnLogout.addEventListener('click', async () => {
+            try {
+                await signOut(auth);
+                window.location.href = "login.html";
+            } catch (error) {
+                alert("Error logging out: " + error.message);
+            }
+        });
     </script>
+
 </body>
 </html>
