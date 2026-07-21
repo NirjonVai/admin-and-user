@@ -83,16 +83,16 @@
                     </a>
                 </div>
 
-                <!-- Dynamic Container -->
+                <!-- Matches Container -->
                 <div id="matches-container" class="space-y-4">
-                    <div class="text-center py-8 text-amber-400/70 text-sm animate-pulse">Connecting to Database...</div>
+                    <div class="text-center py-8 text-amber-400/70 text-sm animate-pulse">Loading matches...</div>
                 </div>
             </div>
         </main>
 
     </div>
 
-    <!-- Mobile Nav -->
+    <!-- Mobile Navigation -->
     <nav class="lg:hidden fixed bottom-0 left-0 right-0 bg-slate-900/90 backdrop-blur-xl border-t border-slate-800/80 px-2 py-2 z-50 flex justify-around items-center shadow-2xl rounded-t-2xl">
         <a href="#" class="flex flex-col items-center justify-center text-amber-400 px-3 py-1 rounded-xl transition-all">
             <i class="fa-solid fa-fire text-lg mb-1"></i>
@@ -117,72 +117,70 @@
         </a>
     </nav>
 
-    <!-- Reliable REST + Fallback Engine Script -->
+    <!-- Database Fetch Engine -->
     <script>
-        const PRIMARY_URL = "https://betx-904da-default-rtdb.firebaseio.com/bots.json";
+        // Fetch full database root
+        const ROOT_DB_URL = "https://betx-904da-default-rtdb.firebaseio.com/.json";
 
-        async function loadData() {
+        async function fetchMatches() {
             const container = document.getElementById('matches-container');
             const footballCountEl = document.getElementById('football-count');
             const cricketCountEl = document.getElementById('cricket-count');
 
             try {
-                const res = await fetch(PRIMARY_URL, { method: 'GET', mode: 'cors' });
+                const response = await fetch(ROOT_DB_URL);
+                if (!response.ok) throw new Error("HTTP error " + response.status);
                 
-                if(!res.ok) {
-                    throw new Error(`HTTP Error Status: ${res.status}`);
-                }
+                const rootData = await response.json();
 
-                const rawData = await res.json();
+                // Get bots object from root
+                const botsData = rootData?.bots || rootData;
 
-                if (!rawData || typeof rawData !== 'object') {
-                    container.innerHTML = `<div class="text-center py-8 text-amber-400/80 text-sm border border-slate-800 rounded-xl bg-slate-900/50">Database is empty or path doesn't exist.</div>`;
+                if (!botsData || typeof botsData !== 'object' || Object.keys(botsData).length === 0) {
+                    container.innerHTML = '<div class="text-center py-8 text-slate-400 text-sm border border-slate-800 rounded-xl bg-slate-900/50">No live events available.</div>';
                     footballCountEl.innerText = '0';
                     cricketCountEl.innerText = '0';
                     return;
                 }
 
-                let html = '';
-                let fCount = 0;
-                let cCount = 0;
+                let htmlContent = '';
+                let footballCount = 0;
+                let cricketCount = 0;
 
-                // Loop through entries
-                Object.keys(rawData).forEach((key) => {
-                    const item = rawData[key];
-                    if (!item) return;
+                Object.keys(botsData).forEach((key) => {
+                    const match = botsData[key];
+                    if (!match || typeof match !== 'object') return;
 
-                    const sport = String(item.sport || '').toLowerCase();
-                    if (sport === 'football') fCount++;
-                    if (sport === 'cricket') cCount++;
+                    const sportType = (match.sport || '').toLowerCase();
+                    if (sportType === 'football') footballCount++;
+                    if (sportType === 'cricket') cricketCount++;
 
-                    // Format match dates safely
-                    let day = '21', month = 'Jul', time = '09:30 PM';
-                    if (item.matchDate) {
-                        const parsedDate = new Date(item.matchDate);
-                        if (!isNaN(parsedDate)) {
-                            day = parsedDate.getDate();
-                            month = parsedDate.toLocaleString('en-US', { month: 'short' });
-                            time = parsedDate.toLocaleString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+                    // Format match dates
+                    let day = '21', month = 'Jul', time = '10:00 PM';
+                    if (match.matchDate) {
+                        const dateObj = new Date(match.matchDate);
+                        if (!isNaN(dateObj)) {
+                            day = dateObj.getDate();
+                            month = dateObj.toLocaleString('en-US', { month: 'short' });
+                            time = dateObj.toLocaleString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
                         }
                     }
 
-                    const icon = sport === 'football' ? 'fa-futbol' : 'fa-baseball-bat-ball';
-                    const league = item.league || 'Tournament';
-                    const status = item.status || 'Live';
-                    
-                    const t1Name = item.team1?.name || 'Team 1';
-                    const t1Logo = item.team1?.logo || 'https://via.placeholder.com/60?text=T1';
-                    const t2Name = item.team2?.name || 'Team 2';
-                    const t2Logo = item.team2?.logo || 'https://via.placeholder.com/60?text=T2';
+                    const iconClass = sportType === 'football' ? 'fa-futbol' : 'fa-baseball-bat-ball';
+                    const league = match.league || 'Tournament';
+                    const team1Name = match.team1?.name || 'Team 1';
+                    const team1Logo = match.team1?.logo || '';
+                    const team2Name = match.team2?.name || 'Team 2';
+                    const team2Logo = match.team2?.logo || '';
 
-                    html += `
+                    htmlContent += `
                         <div class="rounded-xl p-3 md:p-4 border border-slate-700/80 shadow-2xl relative overflow-hidden group max-w-md mx-auto lg:mx-0 bg-slate-900/90 hover:border-amber-500/40 transition-all">
                             <div class="absolute top-0 right-0 bg-amber-400 text-slate-950 font-black px-4 uppercase text-[7px] tracking-wider translate-x-4 translate-y-1.5 rotate-45 flex items-center justify-center shadow-md z-10">
-                                <span class="w-1 h-1 bg-slate-950 rounded-full mr-1 animate-pulse"></span> ${status}
+                                <span class="w-1 h-1 bg-slate-950 rounded-full mr-1 animate-pulse"></span> ${match.status || 'Live'}
                             </div>
                             
                             <div class="flex items-center space-x-1.5 text-slate-200 text-[11px] md:text-xs font-bold tracking-wide mb-3">
-                                <i class="fa-solid ${icon} text-amber-400 text-[11px]"></i>
+                                <i class="fa-solid ${iconClass} text-amber-400 text-[11px]"></i>
                                 <span class="uppercase">${league}</span>
                                 <span class="text-slate-400 font-bold text-[11px]">• &nbsp;${time}</span>
                             </div>
@@ -198,9 +196,9 @@
                                 <div class="flex-1 flex items-center justify-around pl-3 md:pl-4">
                                     <div class="flex flex-col items-center text-center w-5/12">
                                         <div class="w-10 h-10 md:w-12 md:h-12 bg-white rounded-full flex items-center justify-center shadow-md border border-slate-700/30 overflow-hidden">
-                                            <img src="${t1Logo}" alt="${t1Name}" class="w-full h-full object-cover" onerror="this.onerror=null; this.src='https://via.placeholder.com/60?text=T1';">
+                                            <img src="${team1Logo}" alt="${team1Name}" class="w-full h-full object-cover" onerror="this.onerror=null; this.src='https://via.placeholder.com/60?text=Logo';">
                                         </div>
-                                        <p class="font-extrabold text-[11px] md:text-xs tracking-wide text-white mt-2 line-clamp-1">${t1Name}</p>
+                                        <p class="font-extrabold text-[11px] md:text-xs tracking-wide text-white mt-2 line-clamp-1">${team1Name}</p>
                                     </div>
 
                                     <span class="text-amber-400 font-black italic text-xl tracking-tighter mx-2 mb-4">
@@ -209,9 +207,9 @@
 
                                     <div class="flex flex-col items-center text-center w-5/12">
                                         <div class="w-10 h-10 md:w-12 md:h-12 bg-white rounded-full flex items-center justify-center shadow-md border border-slate-700/30 overflow-hidden">
-                                            <img src="${t2Logo}" alt="${t2Name}" class="w-full h-full object-cover" onerror="this.onerror=null; this.src='https://via.placeholder.com/60?text=T2';">
+                                            <img src="${team2Logo}" alt="${team2Name}" class="w-full h-full object-contain" onerror="this.onerror=null; this.src='https://via.placeholder.com/60?text=Logo';">
                                         </div>
-                                        <p class="font-extrabold text-[11px] md:text-xs tracking-wide text-white mt-2 line-clamp-1">${t2Name}</p>
+                                        <p class="font-extrabold text-[11px] md:text-xs tracking-wide text-white mt-2 line-clamp-1">${team2Name}</p>
                                     </div>
                                 </div>
                             </div>
@@ -219,23 +217,18 @@
                     `;
                 });
 
-                container.innerHTML = html;
-                footballCountEl.innerText = fCount;
-                cricketCountEl.innerText = cCount;
+                container.innerHTML = htmlContent;
+                footballCountEl.innerText = footballCount;
+                cricketCountEl.innerText = cricketCount;
 
             } catch (err) {
                 console.error("Fetch Exception:", err);
-                container.innerHTML = `
-                    <div class="p-4 rounded-xl bg-rose-950/40 border border-rose-500/50 text-center">
-                        <p class="text-rose-400 font-bold text-xs uppercase mb-1">Data Fetch Failed</p>
-                        <p class="text-slate-300 text-[11px]">${err.message}</p>
-                    </div>
-                `;
+                container.innerHTML = `<div class="p-4 rounded-xl bg-rose-950/40 border border-rose-500/50 text-center text-rose-400 text-xs">Error: ${err.message}</div>`;
             }
         }
 
-        // Run Immediately
-        loadData();
+        // Run fetch
+        fetchMatches();
     </script>
 </body>
-    </html>
+</html>
