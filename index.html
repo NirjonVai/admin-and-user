@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Firebase Sign Up - Tailwind CSS</title>
+  <title>Firebase Login - Tailwind CSS</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -15,21 +15,9 @@
 
   <!-- Card Container -->
   <div class="bg-white p-8 rounded-xl shadow-md w-full max-w-sm border border-gray-200">
-    <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">Sign Up</h2>
+    <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">Login</h2>
     
-    <form id="signup-form" class="space-y-4">
-      <!-- Username Input -->
-      <div>
-        <label for="username" class="block text-sm font-medium text-gray-600 mb-1">Username</label>
-        <input 
-          type="text" 
-          id="username" 
-          required 
-          placeholder="Enter your username" 
-          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none transition"
-        >
-      </div>
-
+    <form id="login-form" class="space-y-4">
       <!-- Email Input -->
       <div>
         <label for="email" class="block text-sm font-medium text-gray-600 mb-1">Email</label>
@@ -57,20 +45,20 @@
       <!-- Submit Button -->
       <button 
         type="submit" 
-        id="btn-signup" 
+        id="btn-login" 
         class="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2.5 rounded-lg shadow transition duration-200"
       >
-        Sign Up
+        Login
       </button>
     </form>
 
     <!-- Success/Error Message -->
     <div id="message" class="mt-4 text-center text-sm font-medium"></div>
 
-    <!-- Login Page Link -->
+    <!-- Sign Up Redirect Link -->
     <p class="mt-4 text-center text-sm text-gray-600">
-      Already have an account? 
-      <a href="4.html" class="text-orange-500 font-semibold hover:underline">Login</a>
+      Don't have an account? 
+      <a href="signup.html" class="text-orange-500 font-semibold hover:underline">Sign Up</a>
     </p>
   </div>
 
@@ -78,8 +66,8 @@
   <script type="module">
     // Firebase SDK v10 Import
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getAuth, createUserWithEmailAndPassword, updateProfile } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getDatabase, ref, get, child } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
     // আপনার Firebase Configuration (betx-904da)
     const firebaseConfig = {
@@ -99,54 +87,55 @@
     const db = getDatabase(app);
 
     // Form Handle
-    const signupForm = document.getElementById('signup-form');
+    const loginForm = document.getElementById('login-form');
     const messageDiv = document.getElementById('message');
 
-    signupForm.addEventListener('submit', async (e) => {
+    loginForm.addEventListener('submit', async (e) => {
       e.preventDefault();
 
-      const username = document.getElementById('username').value;
       const email = document.getElementById('email').value;
       const password = document.getElementById('password').value;
 
       try {
-        // ১. Auth-এ একাউন্ট তৈরি
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        // ১. Firebase Auth দিয়ে ইউজার লগইন করা
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
 
-        // ২. Auth প্রোফাইলে Display Name আপডেট
-        await updateProfile(user, { displayName: username });
+        // ২. Realtime Database থেকে ইউজারের ডাটা আনো
+        const dbRef = ref(db);
+        const snapshot = await get(child(dbRef, `users/${user.uid}`));
 
-        // ৩. কাঙ্ক্ষিত ফরম্যাটে সময় বের করা (যেমন: 9:35 : 08 AM)
-        const now = new Date();
-        const formattedTime = now.toLocaleTimeString('en-US', {
-          hour: 'numeric',
-          minute: '2-digit',
-          second: '2-digit',
-          hour12: true
-        }).replace(/:(\d{2}) /, ' : $1 ');
-
-        // ৪. Realtime Database-এ ইউজার ডাটা সেভ
-        await set(ref(db, 'users/' + user.uid), {
-          username: username,
-          email: email,
-          createdAt: formattedTime
-        });
-
-        // Success Message
         messageDiv.className = "mt-4 text-center text-sm font-medium text-green-600 bg-green-50 p-2 rounded-lg border border-green-200";
-        messageDiv.innerText = `Account created successfully! Redirecting to login...`;
-        signupForm.reset();
+        messageDiv.innerText = `Login successful! Redirecting...`;
+        loginForm.reset();
 
-        // ৫. ২ সেকেন্ড পর Login পেজে রিডাইরেক্ট করা
+        // ৩. ডাটাবেজ চেক করে Admin নাকি User তা নির্ধারণ করে রিডাইরেক্ট করা
         setTimeout(() => {
-          window.location.href = "4.html"; // আপনার লগইন ফাইলের নাম
-        }, 2000);
+          if (snapshot.exists()) {
+            const userData = snapshot.val();
+            
+            if (userData.role === "admin") {
+              // ইউজার অ্যাডমিন হলে admin.html এ পাঠাবে
+              window.location.href = "admin.html";
+            } else {
+              // সাধারণ ইউজার হলে dashboard.html এ পাঠাবে
+              window.location.href = "dashboard.html";
+            }
+          } else {
+            // কোনো কারণে ডাটাবেজে ডাটা না পেলে ডিফল্ট ড্যাশবোর্ডে পাঠাবে
+            window.location.href = "dashboard.html";
+          }
+        }, 1000);
 
       } catch (error) {
         // Error Message
         messageDiv.className = "mt-4 text-center text-sm font-medium text-red-600 bg-red-50 p-2 rounded-lg border border-red-200";
-        messageDiv.innerText = "Error: " + error.message;
+        
+        if (error.code === 'auth/invalid-credential') {
+          messageDiv.innerText = "Error: Invalid email or password!";
+        } else {
+          messageDiv.innerText = "Error: " + error.message;
+        }
       }
     });
   </script>
