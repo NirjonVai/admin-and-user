@@ -85,7 +85,7 @@
                     </a>
                 </div>
 
-                <!-- Dynamic Match Cards Container -->
+                <!-- Matches Container -->
                 <div id="matches-container" class="space-y-4">
                     <div class="text-center py-8 text-slate-400 text-sm">Loading matches...</div>
                 </div>
@@ -94,7 +94,7 @@
 
     </div>
 
-    <!-- Mobile Bottom Navigation -->
+    <!-- Mobile Navigation -->
     <nav class="lg:hidden fixed bottom-0 left-0 right-0 bg-slate-900/90 backdrop-blur-xl border-t border-slate-800/80 px-2 py-2 z-50 flex justify-around items-center shadow-2xl rounded-t-2xl">
         <a href="#" class="flex flex-col items-center justify-center text-amber-400 px-3 py-1 rounded-xl transition-all">
             <i class="fa-solid fa-fire text-lg mb-1"></i>
@@ -119,126 +119,114 @@
         </a>
     </nav>
 
-    <!-- Firebase Script -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    <!-- Reliable REST Fetch Script -->
+    <script>
+        const DB_URL = "https://betx-904da-default-rtdb.firebaseio.com/bots.json";
 
-        // Firebase Configuration using your database URL
-        const firebaseConfig = {
-            databaseURL: "https://betx-904da-default-rtdb.firebaseio.com"
-        };
+        async function fetchMatches() {
+            const container = document.getElementById('matches-container');
+            const footballCountEl = document.getElementById('football-count');
+            const cricketCountEl = document.getElementById('cricket-count');
 
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const database = getDatabase(app);
+            try {
+                const response = await fetch(DB_URL);
+                if (!response.ok) throw new Error("HTTP error " + response.status);
+                
+                const data = await response.json();
 
-        const container = document.getElementById('matches-container');
-        const footballCountEl = document.getElementById('football-count');
-        const cricketCountEl = document.getElementById('cricket-count');
-
-        // Reference to 'bots' node in database
-        const botsRef = ref(database, 'bots');
-
-        // Real-time listener for database changes
-        onValue(botsRef, (snapshot) => {
-            const data = snapshot.val();
-            
-            if (!data) {
-                container.innerHTML = '<div class="text-center py-8 text-slate-400 text-sm">No live events available.</div>';
-                footballCountEl.innerText = '0';
-                cricketCountEl.innerText = '0';
-                return;
-            }
-
-            let htmlContent = '';
-            let footballCount = 0;
-            let cricketCount = 0;
-
-            // Iterate over each match key in 'bots'
-            Object.keys(data).forEach((key) => {
-                const match = data[key];
-
-                // Count sports
-                const sportType = match.sport ? match.sport.toLowerCase() : '';
-                if (sportType === 'football') footballCount++;
-                if (sportType === 'cricket') cricketCount++;
-
-                // Format Date & Time
-                let day = '15';
-                let month = 'Jul';
-                let time = '00:00 AM';
-
-                if (match.matchDate) {
-                    const dateObj = new Date(match.matchDate);
-                    if (!isNaN(dateObj)) {
-                        day = dateObj.getDate();
-                        month = dateObj.toLocaleString('en-US', { month: 'short' });
-                        time = dateObj.toLocaleString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
-                    }
+                if (!data) {
+                    container.innerHTML = '<div class="text-center py-8 text-slate-400 text-sm">No live events available.</div>';
+                    footballCountEl.innerText = '0';
+                    cricketCountEl.innerText = '0';
+                    return;
                 }
 
-                // Choose background image and icon based on sport
-                const bgImage = sportType === 'football' ? 'stadium-football.jpg' : 'cricket-stadium.jpg';
-                const iconClass = sportType === 'football' ? 'fa-futbol' : 'fa-baseball-bat-ball';
+                let htmlContent = '';
+                let footballCount = 0;
+                let cricketCount = 0;
 
-                // Safe fallback values
-                const league = match.league || 'Tournament';
-                const team1Name = match.team1?.name || 'Team 1';
-                const team1Logo = match.team1?.logo || '';
-                const team2Name = match.team2?.name || 'Team 2';
-                const team2Logo = match.team2?.logo || '';
+                Object.keys(data).forEach((key) => {
+                    const match = data[key];
+                    const sportType = (match.sport || '').toLowerCase();
 
-                // Build Match Card HTML
-                htmlContent += `
-                    <div class="rounded-xl p-2 md:p-4 border border-slate-600 shadow-2xl relative overflow-hidden group max-w-md mx-auto lg:mx-0 bg-cover bg-center" style="background-image: linear-gradient(rgba(30, 23, 42, 0.55), rgba(30, 23, 42, 0.75)), url('${bgImage}');">
-                        <div class="absolute top-0 right-0 bg-amber-400 text-slate-950 font-black px-4 uppercase text-[7px] tracking-wider translate-x-4 translate-y-1.5 rotate-45 flex items-center justify-center shadow-md z-10">
-                            <span class="w-1 h-1 bg-slate-950 rounded-full mr-1 animate-pulse"></span> ${match.status || 'Live'}
-                        </div>
-                        
-                        <div class="flex items-center space-x-1.5 text-slate-200 text-[11px] md:text-xs font-bold tracking-wide mb-3 drop-shadow-md">
-                            <i class="fa-solid ${iconClass} text-amber-400 text-[11px]"></i>
-                            <span class="uppercase">${league}</span>
-                            <span class="text-slate-300 font-bold text-[11px]">• &nbsp;${time}</span>
-                        </div>
+                    if (sportType === 'football') footballCount++;
+                    if (sportType === 'cricket') cricketCount++;
 
-                        <div class="flex items-center justify-start">
-                            <div class="pr-3 flex flex-col items-center justify-center min-w-[40px] md:min-w-[48px] drop-shadow-md self-center">
-                                <span class="text-xl md:text-2xl font-extrabold text-slate-200 leading-none">${day}</span>
-                                <span class="text-[10px] font-bold text-amber-400 mt-0.5 uppercase">${month}</span>
+                    // Match Date/Time formatting
+                    let day = '15', month = 'Jul', time = '00:00 AM';
+                    if (match.matchDate) {
+                        const dateObj = new Date(match.matchDate);
+                        if (!isNaN(dateObj)) {
+                            day = dateObj.getDate();
+                            month = dateObj.toLocaleString('en-US', { month: 'short' });
+                            time = dateObj.toLocaleString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+                        }
+                    }
+
+                    const iconClass = sportType === 'football' ? 'fa-futbol' : 'fa-baseball-bat-ball';
+                    const league = match.league || 'Tournament';
+                    const team1Name = match.team1?.name || 'Team 1';
+                    const team1Logo = match.team1?.logo || '';
+                    const team2Name = match.team2?.name || 'Team 2';
+                    const team2Logo = match.team2?.logo || '';
+
+                    htmlContent += `
+                        <div class="rounded-xl p-2 md:p-4 border border-slate-600 shadow-2xl relative overflow-hidden group max-w-md mx-auto lg:mx-0 bg-slate-900/90">
+                            <div class="absolute top-0 right-0 bg-amber-400 text-slate-950 font-black px-4 uppercase text-[7px] tracking-wider translate-x-4 translate-y-1.5 rotate-45 flex items-center justify-center shadow-md z-10">
+                                <span class="w-1 h-1 bg-slate-950 rounded-full mr-1 animate-pulse"></span> ${match.status || 'Upcoming'}
+                            </div>
+                            
+                            <div class="flex items-center space-x-1.5 text-slate-200 text-[11px] md:text-xs font-bold tracking-wide mb-3">
+                                <i class="fa-solid ${iconClass} text-amber-400 text-[11px]"></i>
+                                <span class="uppercase">${league}</span>
+                                <span class="text-slate-300 font-bold text-[11px]">• &nbsp;${time}</span>
                             </div>
 
-                            <div class="h-12 w-[2px] bg-slate-400/80 shadow-[0_0_8px_rgba(255,255,255,0.1)] self-center"></div>
-
-                            <div class="flex-1 flex items-center justify-around pl-3 md:pl-4">
-                                <div class="flex flex-col items-center text-center w-5/12 drop-shadow-[0_2px_3px_rgba(0,0,0,0.8)]">
-                                    <div class="w-10 h-10 md:w-12 md:h-12 bg-white rounded-full flex items-center justify-center shadow-md border border-slate-700/30 overflow-hidden">
-                                        <img src="${team1Logo}" alt="${team1Name}" class="w-full h-full object-cover">
-                                    </div>
-                                    <p class="font-extrabold text-[11px] md:text-xs tracking-wide text-white mt-2 line-clamp-1">${team1Name}</p>
+                            <div class="flex items-center justify-start">
+                                <div class="pr-3 flex flex-col items-center justify-center min-w-[40px] md:min-w-[48px] self-center">
+                                    <span class="text-xl md:text-2xl font-extrabold text-slate-200 leading-none">${day}</span>
+                                    <span class="text-[10px] font-bold text-amber-400 mt-0.5 uppercase">${month}</span>
                                 </div>
 
-                                <span class="text-amber-400 font-black italic text-xl tracking-tighter drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] mx-2 mb-5">
-                                    Vs
-                                </span>
+                                <div class="h-12 w-[2px] bg-slate-400/80 self-center"></div>
 
-                                <div class="flex flex-col items-center text-center w-5/12 drop-shadow-[0_2px_3px_rgba(0,0,0,0.8)]">
-                                    <div class="w-10 h-10 md:w-12 md:h-12 bg-white rounded-full flex items-center justify-center shadow-md border border-slate-700/30 overflow-hidden">
-                                        <img src="${team2Logo}" alt="${team2Name}" class="w-full h-full object-contain">
+                                <div class="flex-1 flex items-center justify-around pl-3 md:pl-4">
+                                    <div class="flex flex-col items-center text-center w-5/12">
+                                        <div class="w-10 h-10 md:w-12 md:h-12 bg-white rounded-full flex items-center justify-center shadow-md border border-slate-700/30 overflow-hidden">
+                                            <img src="${team1Logo}" alt="${team1Name}" class="w-full h-full object-cover" onError="this.src='https://via.placeholder.com/50'">
+                                        </div>
+                                        <p class="font-extrabold text-[11px] md:text-xs tracking-wide text-white mt-2 line-clamp-1">${team1Name}</p>
                                     </div>
-                                    <p class="font-extrabold text-[11px] md:text-xs tracking-wide text-white mt-2 line-clamp-1">${team2Name}</p>
+
+                                    <span class="text-amber-400 font-black italic text-xl tracking-tighter mx-2 mb-5">
+                                        Vs
+                                    </span>
+
+                                    <div class="flex flex-col items-center text-center w-5/12">
+                                        <div class="w-10 h-10 md:w-12 md:h-12 bg-white rounded-full flex items-center justify-center shadow-md border border-slate-700/30 overflow-hidden">
+                                            <img src="${team2Logo}" alt="${team2Name}" class="w-full h-full object-contain" onError="this.src='https://via.placeholder.com/50'">
+                                        </div>
+                                        <p class="font-extrabold text-[11px] md:text-xs tracking-wide text-white mt-2 line-clamp-1">${team2Name}</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                `;
-            });
+                    `;
+                });
 
-            // Update DOM with dynamic content
-            container.innerHTML = htmlContent;
-            footballCountEl.innerText = footballCount;
-            cricketCountEl.innerText = cricketCount;
-        });
+                container.innerHTML = htmlContent;
+                footballCountEl.innerText = footballCount;
+                cricketCountEl.innerText = cricketCount;
+
+            } catch (err) {
+                console.error("Error fetching data:", err);
+                container.innerHTML = `<div class="text-center py-8 text-rose-400 text-sm">Failed to load matches: ${err.message}</div>`;
+            }
+        }
+
+        // Auto load and update every 5 seconds
+        fetchMatches();
+        setInterval(fetchMatches, 5000);
     </script>
 </body>
 </html>
