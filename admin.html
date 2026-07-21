@@ -9,17 +9,25 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
-<body class="bg-gray-100 min-h-screen flex font-['Plus_Jakarta_Sans']">
+<body class="bg-gray-100 min-h-screen flex flex-col md:flex-row font-['Plus_Jakarta_Sans']">
+
+  <!-- Mobile Overlay Backdrop -->
+  <div id="sidebar-overlay" class="fixed inset-0 bg-black/50 z-30 hidden md:hidden"></div>
 
   <!-- Sidebar Component -->
-  <aside class="w-64 bg-gray-900 text-white min-h-screen flex flex-col justify-between p-4 fixed left-0 top-0 bottom-0 z-40">
+  <aside id="sidebar" class="w-64 bg-gray-900 text-white min-h-screen flex flex-col justify-between p-4 fixed left-0 top-0 bottom-0 z-40 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out">
     <div>
-      <!-- Logo / Title -->
-      <div class="flex items-center space-x-3 px-3 py-4 mb-6 border-b border-gray-800">
-        <i class="fa-solid fa-user-shield text-orange-500 text-2xl"></i>
-        <span class="text-xl font-bold tracking-wide">BetX Admin</span>
+      <!-- Logo / Title & Close Button for Mobile -->
+      <div class="flex items-center justify-between px-3 py-4 mb-6 border-b border-gray-800">
+        <div class="flex items-center space-x-3">
+          <i class="fa-solid fa-user-shield text-orange-500 text-2xl"></i>
+          <span class="text-xl font-bold tracking-wide">BetX Admin</span>
+        </div>
+        <button id="sidebar-close-btn" class="md:hidden text-gray-400 hover:text-white p-1">
+          <i class="fa-solid fa-xmark text-xl"></i>
+        </button>
       </div>
 
       <!-- Navigation Links -->
@@ -58,12 +66,18 @@
     </div>
   </aside>
 
-  <!-- Main Content Wrapper (Margin Left added for Sidebar offset) -->
-  <div class="flex-1 ml-64 flex flex-col min-h-screen">
+  <!-- Main Content Wrapper (Responsive margin adjustment) -->
+  <div class="flex-1 md:ml-64 flex flex-col min-h-screen">
 
     <!-- Top Header -->
-    <header class="bg-white border-b border-gray-200 px-8 py-4 flex justify-between items-center shadow-sm">
-      <h1 class="text-xl font-bold text-gray-800">User Management</h1>
+    <header class="bg-white border-b border-gray-200 px-6 md:px-8 py-4 flex justify-between items-center shadow-sm sticky top-0 z-20">
+      <div class="flex items-center gap-3">
+        <!-- Sidebar Open (Hamburger) Button for Mobile -->
+        <button id="sidebar-open-btn" class="md:hidden text-gray-700 hover:text-orange-500 text-xl p-1 focus:outline-none">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+        <h1 class="text-lg md:text-xl font-bold text-gray-800">User Management</h1>
+      </div>
       <div class="flex items-center gap-4">
         <span id="admin-status" class="text-xs bg-orange-500/10 text-orange-500 px-3 py-1.5 rounded-full border border-orange-500/20 font-semibold">
           <i class="fa-solid fa-circle text-[8px] mr-1 text-orange-500"></i> Admin Active
@@ -72,7 +86,7 @@
     </header>
 
     <!-- Main Content Area -->
-    <main class="flex-1 p-8 max-w-7xl w-full mx-auto">
+    <main class="flex-1 p-4 md:p-8 max-w-7xl w-full mx-auto">
       
       <!-- Top Stats Bar -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -90,7 +104,7 @@
       <!-- Users Table Section -->
       <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
         <div class="p-6 border-b border-gray-100 flex justify-between items-center">
-          <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+          <h2 class="text-base md:text-lg font-bold text-gray-800 flex items-center gap-2">
             <i class="fa-solid fa-list text-orange-500"></i> Registered Users List
           </h2>
           <button id="refresh-btn" class="text-sm text-orange-500 hover:text-orange-600 font-semibold flex items-center gap-1 transition">
@@ -100,7 +114,7 @@
 
         <!-- Table -->
         <div class="overflow-x-auto">
-          <table class="w-full text-left border-collapse">
+          <table class="w-full text-left border-collapse min-w-[600px]">
             <thead>
               <tr class="bg-gray-50 text-gray-600 text-xs font-semibold uppercase border-b border-gray-100">
                 <th class="py-4 px-6">User ID</th>
@@ -151,7 +165,7 @@
     </div>
   </div>
 
-  <!-- Firebase Script -->
+  <!-- Firebase & UI Scripts -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
@@ -172,6 +186,21 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getDatabase(app);
+
+    // Sidebar & Mobile Controls
+    const sidebar = document.getElementById('sidebar');
+    const sidebarOpenBtn = document.getElementById('sidebar-open-btn');
+    const sidebarCloseBtn = document.getElementById('sidebar-close-btn');
+    const sidebarOverlay = document.getElementById('sidebar-overlay');
+
+    const toggleSidebar = () => {
+      sidebar.classList.toggle('-translate-x-full');
+      sidebarOverlay.classList.toggle('hidden');
+    };
+
+    sidebarOpenBtn.addEventListener('click', toggleSidebar);
+    sidebarCloseBtn.addEventListener('click', toggleSidebar);
+    sidebarOverlay.addEventListener('click', toggleSidebar);
 
     const userTableBody = document.getElementById('user-table-body');
     const totalUsersElem = document.getElementById('total-users');
@@ -244,7 +273,7 @@
         console.error("Error loading users:", error);
         userTableBody.innerHTML = `
           <tr>
-            <td colspan="6" class="py-6 text-center text-red-500">Error: ${error.message}</td>
+            <td colspan="6" class="py-6 text-red-500 text-center">Error: ${error.message}</td>
           </tr>
         `;
       }
