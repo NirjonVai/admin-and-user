@@ -59,38 +59,27 @@
             </h3>
             
             <div class="flex flex-row lg:flex-col gap-2">
-                <!-- All Matches Filter Button -->
-                <button id="filter-all" class="flex-1 flex items-center justify-between bg-gradient-to-b from-slate-900 to-amber-950/20 hover:from-slate-800/80 p-2 rounded-xl border border-amber-500/10 group text-white cursor-pointer transition">
+                <!-- Football Button -->
+                <a href="#" class="flex-1 flex items-center justify-between bg-gradient-to-b from-slate-900 to-amber-950/20 hover:from-slate-800/80 hover:to-amber-900/30 p-2 rounded-xl transition-all duration-300 border border-amber-500/10 hover:border-amber-500/30 group text-white shadow-lg shadow-amber-950/10">
                     <span class="flex items-center space-x-2">
-                        <div class="w-7 h-7 rounded-lg bg-amber-400/10 flex items-center justify-center">
-                            <i class="fa-solid fa-list text-amber-400 text-xs"></i>
-                        </div>
-                        <span class="font-bold text-xs tracking-wide">All Events</span>
-                    </span>
-                    <span id="count-all" class="bg-amber-400/10 text-amber-400 text-[10px] font-black px-1.5 py-0.5 rounded-md border border-amber-400/20">0</span>
-                </button>
-
-                <!-- Football Filter Button -->
-                <button id="filter-football" class="flex-1 flex items-center justify-between bg-gradient-to-b from-slate-900 to-amber-950/20 hover:from-slate-800/80 p-2 rounded-xl border border-amber-500/10 group text-white cursor-pointer transition">
-                    <span class="flex items-center space-x-2">
-                        <div class="w-7 h-7 rounded-lg bg-amber-400/10 flex items-center justify-center">
+                        <div class="w-7 h-7 rounded-lg bg-amber-400/10 flex items-center justify-center group-hover:bg-amber-400/20 transition-colors">
                             <i class="fa-solid fa-futbol text-amber-400 text-xs"></i>
                         </div>
                         <span class="font-bold text-xs tracking-wide">Football</span>
                     </span>
-                    <span id="count-football" class="bg-amber-400/10 text-amber-400 text-[10px] font-black px-1.5 py-0.5 rounded-md border border-amber-400/20">0</span>
-                </button>
+                    <span id="football-count" class="bg-amber-400/10 text-amber-400 text-[10px] font-black px-1.5 py-0.5 rounded-md border border-amber-400/20 group-hover:bg-amber-400 group-hover:text-slate-950 transition-all duration-300">0</span>
+                </a>
 
-                <!-- Cricket Filter Button -->
-                <button id="filter-cricket" class="flex-1 flex items-center justify-between bg-gradient-to-b from-slate-900 to-amber-950/20 hover:from-slate-800/80 p-2 rounded-xl border border-amber-500/10 group text-white cursor-pointer transition">
+                <!-- Cricket Button -->
+                <a href="#" class="flex-1 flex items-center justify-between bg-gradient-to-b from-slate-900 to-amber-950/20 hover:from-slate-800/80 hover:to-amber-900/30 p-2 rounded-xl transition-all duration-300 border border-amber-500/10 hover:border-amber-500/30 group text-white shadow-lg shadow-amber-950/10">
                     <span class="flex items-center space-x-2">
-                        <div class="w-7 h-7 rounded-lg bg-amber-400/10 flex items-center justify-center">
+                        <div class="w-7 h-7 rounded-lg bg-amber-400/10 flex items-center justify-center group-hover:bg-amber-400/20 transition-colors">
                             <i class="fa-solid fa-baseball-bat-ball text-amber-400 text-xs"></i>
                         </div>
                         <span class="font-bold text-xs tracking-wide">Cricket</span>
                     </span>
-                    <span id="count-cricket" class="bg-amber-400/10 text-amber-400 text-[10px] font-black px-1.5 py-0.5 rounded-md border border-amber-400/20">0</span>
-                </button>
+                    <span id="cricket-count" class="bg-amber-400/10 text-amber-400 text-[10px] font-black px-1.5 py-0.5 rounded-md border border-amber-400/20 group-hover:bg-amber-400 group-hover:text-slate-950 transition-all duration-300">0</span>
+                </a>
             </div>
         </aside>
 
@@ -101,17 +90,17 @@
                     <h2 class="text-xs sm:text-sm font-black tracking-widest text-slate-200 flex items-center space-x-2">
                         <span class="w-2 h-2 bg-amber-400 rounded-full animate-ping absolute inline-flex"></span>
                         <span class="w-2 h-2 bg-amber-400 rounded-full relative"></span>
-                        <span id="section-title">TOP LIVE EVENTS</span>
+                        <span>TOP LIVE EVENTS</span>
                     </h2>
+                    <a href="#" class="text-[11px] sm:text-xs font-bold text-amber-400 hover:text-yellow-300 transition-colors flex items-center space-x-1 uppercase tracking-wider">
+                        <span>View All</span>
+                        <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                    </a>
                 </div>
 
-                <!-- Matches Dynamic Container -->
+                <!-- Matches Container (Dynamic Load) -->
                 <div id="matches-container" class="space-y-4">
-                    <!-- Loading Skeleton / Message -->
-                    <div class="text-center py-10 text-slate-500 font-semibold text-sm">
-                        <i class="fa-solid fa-circle-notch animate-spin text-amber-400 text-2xl mb-2"></i>
-                        <p>Loading live matches...</p>
-                    </div>
+                    <p class="text-slate-400 text-xs italic text-center py-4">Loading matches...</p>
                 </div>
             </div>
         </main>
@@ -149,7 +138,7 @@
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getDatabase, ref, get, child, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        // Firebase Config
+        // Firebase Configuration
         const firebaseConfig = {
             apiKey: "AIzaSyBzQaaXhTtiGpMjRMBUXZaCIrDRoNyEkU4",
             authDomain: "betx-904da.firebaseapp.com",
@@ -161,6 +150,7 @@
             measurementId: "G-ER5HGVL74K"
         };
 
+        // Firebase Initialize
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getDatabase(app);
@@ -168,15 +158,16 @@
         const userNameDisplay = document.getElementById('user-display-name');
         const btnLogout = document.getElementById('btn-logout');
         const matchesContainer = document.getElementById('matches-container');
+        const footballCountEl = document.getElementById('football-count');
+        const cricketCountEl = document.getElementById('cricket-count');
 
-        let allMatchesData = []; // Store all fetched matches
-
-        // 1. Authentication Check
+        // Check Login State
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 try {
                     const dbRef = ref(db);
                     const snapshot = await get(child(dbRef, `users/${user.uid}`));
+                    
                     if (snapshot.exists()) {
                         const userData = snapshot.val();
                         userNameDisplay.innerText = userData.username || userData.name || user.email.split('@')[0];
@@ -184,6 +175,7 @@
                         userNameDisplay.innerText = user.email.split('@')[0];
                     }
                 } catch (error) {
+                    console.error("Error fetching user data:", error);
                     userNameDisplay.innerText = user.email ? user.email.split('@')[0] : "User";
                 }
             } else {
@@ -191,7 +183,7 @@
             }
         });
 
-        // 2. Logout Action
+        // Logout Handle
         btnLogout.addEventListener('click', async () => {
             try {
                 await signOut(auth);
@@ -201,117 +193,86 @@
             }
         });
 
-        // 3. Fetch Matches from Realtime Database (`/bets`)
+        // Fetch Matches Realtime from DB (`bets` node)
         const betsRef = ref(db, 'bets');
         onValue(betsRef, (snapshot) => {
             if (snapshot.exists()) {
                 const data = snapshot.val();
-                allMatchesData = Object.keys(data).map(key => ({
-                    id: key,
-                    ...data[key]
-                }));
-                
-                updateCounters(allMatchesData);
-                renderMatches(allMatchesData);
+                let matchesHTML = '';
+                let footballCount = 0;
+                let cricketCount = 0;
+
+                Object.keys(data).forEach((key) => {
+                    const match = data[key];
+                    
+                    // Count sports
+                    const sportLower = (match.sport || '').toLowerCase();
+                    if (sportLower === 'football') footballCount++;
+                    if (sportLower === 'cricket') cricketCount++;
+
+                    // Date & Time Formatting
+                    const dateObj = new Date(match.matchDate);
+                    const day = !isNaN(dateObj.getDate()) ? dateObj.getDate() : '--';
+                    const month = !isNaN(dateObj.getMonth()) ? dateObj.toLocaleString('default', { month: 'short' }) : '---';
+                    const time = !isNaN(dateObj.valueOf()) ? dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--';
+
+                    // Icons & Backgrounds based on sport
+                    const isFootball = sportLower === 'football';
+                    const sportIcon = isFootball ? 'fa-futbol' : 'fa-baseball-bat-ball';
+                    const bgUrl = isFootball ? 'stadium-football.jpg' : 'cricket-stadium.jpg';
+
+                    matchesHTML += `
+                        <div class="rounded-xl p-2 md:p-4 border border-slate-600 shadow-2xl relative overflow-hidden group max-w-md mx-auto lg:mx-0 bg-cover bg-center" style="background-image: linear-gradient(rgba(30, 23, 42, 0.55), rgba(30, 23, 42, 0.75)), url('${bgUrl}');">
+                            <div class="absolute top-0 right-0 bg-amber-400 text-slate-950 font-black px-4 uppercase text-[7px] tracking-wider translate-x-4 translate-y-1.5 rotate-45 flex items-center justify-center shadow-md z-10">
+                                <span class="w-1 h-1 bg-slate-950 rounded-full mr-1 animate-pulse"></span> ${match.status || 'Live'}
+                            </div>
+                            
+                            <div class="flex items-center space-x-1.5 text-slate-200 text-[11px] md:text-xs font-bold tracking-wide mb-3 drop-shadow-md">
+                                <i class="fa-solid ${sportIcon} text-amber-400 text-[11px]"></i>
+                                <span class="uppercase">${match.league || 'Tournament'}</span>
+                                <span class="text-slate-300 font-bold text-[11px]">• &nbsp;${time}</span>
+                            </div>
+
+                            <div class="flex items-center justify-start">
+                                <div class="pr-3 flex flex-col items-center justify-center min-w-[40px] md:min-w-[48px] drop-shadow-md self-center">
+                                    <span class="text-xl md:text-2xl font-extrabold text-slate-200 leading-none">${day}</span>
+                                    <span class="text-[10px] font-bold text-amber-400 mt-0.5 uppercase">${month}</span>
+                                </div>
+
+                                <div class="h-12 w-[2px] bg-slate-400/80 shadow-[0_0_8px_rgba(255,255,255,0.1)] self-center"></div>
+
+                                <div class="flex-1 flex items-center justify-around pl-3 md:pl-4">
+                                    <div class="flex flex-col items-center text-center w-5/12 drop-shadow-[0_2px_3px_rgba(0,0,0,0.8)]">
+                                        <div class="w-10 h-10 md:w-12 md:h-12 bg-white rounded-full flex items-center justify-center shadow-md border border-slate-700/30 overflow-hidden">
+                                            <img src="${match.team1?.logo || ''}" alt="team logo" class="w-full h-full object-cover" onError="this.src='https://via.placeholder.com/50'">
+                                        </div>
+                                        <p class="font-extrabold text-[11px] md:text-xs tracking-wide text-white mt-2 line-clamp-1">${match.team1?.name || 'Team 1'}</p>
+                                    </div>
+
+                                    <span class="text-amber-400 font-black italic text-xl tracking-tighter drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] mx-2 mb-5">
+                                        Vs
+                                    </span>
+
+                                    <div class="flex flex-col items-center text-center w-5/12 drop-shadow-[0_2px_3px_rgba(0,0,0,0.8)]">
+                                        <div class="w-10 h-10 md:w-12 md:h-12 bg-white rounded-full flex items-center justify-center shadow-md border border-slate-700/30 overflow-hidden">
+                                            <img src="${match.team2?.logo || ''}" alt="team logo" class="w-full h-full object-cover" onError="this.src='https://via.placeholder.com/50'">
+                                        </div>
+                                        <p class="font-extrabold text-[11px] md:text-xs tracking-wide text-white mt-2 line-clamp-1">${match.team2?.name || 'Team 2'}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                matchesContainer.innerHTML = matchesHTML;
+                footballCountEl.innerText = footballCount;
+                cricketCountEl.innerText = cricketCount;
             } else {
-                matchesContainer.innerHTML = `<div class="text-center py-10 text-slate-500 font-semibold text-sm">No live events found.</div>`;
+                matchesContainer.innerHTML = '<p class="text-slate-400 text-xs italic text-center py-4">No live matches available right now.</p>';
+                footballCountEl.innerText = '0';
+                cricketCountEl.innerText = '0';
             }
-        });
-
-        // Helper: Date & Time Formatter
-        function parseMatchDate(dateString) {
-            if(!dateString) return { day: '--', month: '---', time: '--:--' };
-            const d = new Date(dateString);
-            const day = d.getDate();
-            const month = d.toLocaleString('en-US', { month: 'short' });
-            const time = d.toLocaleString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
-            return { day, month, time };
-        }
-
-        // 4. Render Matches Function
-        function renderMatches(matches) {
-            if (matches.length === 0) {
-                matchesContainer.innerHTML = `<div class="text-center py-10 text-slate-500 font-semibold text-sm">No matches available in this category.</div>`;
-                return;
-            }
-
-            matchesContainer.innerHTML = matches.map(match => {
-                const isFootball = match.sport?.toLowerCase() === 'football';
-                const sportIcon = isFootball ? 'fa-futbol' : 'fa-baseball-bat-ball';
-                const { day, month, time } = parseMatchDate(match.matchDate);
-                const isLive = match.status === 'upcoming' || match.status === 'live';
-
-                return `
-                    <div class="rounded-xl p-2 md:p-4 border border-slate-600/80 shadow-2xl relative overflow-hidden group max-w-md mx-auto lg:mx-0 bg-slate-900/90 border-slate-700">
-                        ${isLive ? `
-                        <div class="absolute top-0 right-0 bg-amber-400 text-slate-950 font-black px-4 uppercase text-[7px] tracking-wider translate-x-4 translate-y-1.5 rotate-45 flex items-center justify-center shadow-md z-10">
-                            <span class="w-1 h-1 bg-slate-950 rounded-full mr-1 animate-pulse"></span> ${match.status}
-                        </div>` : ''}
-                        
-                        <div class="flex items-center space-x-1.5 text-slate-200 text-[11px] md:text-xs font-bold tracking-wide mb-3 drop-shadow-md">
-                            <i class="fa-solid ${sportIcon} text-amber-400 text-[11px]"></i>
-                            <span class="uppercase">${match.league || 'Tournament'}</span>
-                            <span class="text-slate-400 font-bold text-[11px]">• &nbsp;${time}</span>
-                        </div>
-
-                        <div class="flex items-center justify-start">
-                            <div class="pr-3 flex flex-col items-center justify-center min-w-[40px] md:min-w-[48px] drop-shadow-md self-center">
-                                <span class="text-xl md:text-2xl font-extrabold text-slate-200 leading-none">${day}</span>
-                                <span class="text-[10px] font-bold text-amber-400 mt-0.5 uppercase">${month}</span>
-                            </div>
-
-                            <div class="h-12 w-[2px] bg-slate-700 shadow-[0_0_8px_rgba(255,255,255,0.1)] self-center"></div>
-
-                            <div class="flex-1 flex items-center justify-around pl-3 md:pl-4">
-                                <!-- Team 1 -->
-                                <div class="flex flex-col items-center text-center w-5/12 drop-shadow-[0_2px_3px_rgba(0,0,0,0.8)]">
-                                    <div class="w-10 h-10 md:w-12 md:h-12 bg-white rounded-full flex items-center justify-center shadow-md border border-slate-700/30 overflow-hidden p-1">
-                                        <img src="${match.team1?.logo || 'https://via.placeholder.com/50'}" alt="${match.team1?.name}" class="w-full h-full object-contain">
-                                    </div>
-                                    <p class="font-extrabold text-[11px] md:text-xs tracking-wide text-white mt-2 line-clamp-1">${match.team1?.name || 'Team A'}</p>
-                                </div>
-
-                                <span class="text-amber-400 font-black italic text-xl tracking-tighter drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] mx-2 mb-5">
-                                    Vs
-                                </span>
-
-                                <!-- Team 2 -->
-                                <div class="flex flex-col items-center text-center w-5/12 drop-shadow-[0_2px_3px_rgba(0,0,0,0.8)]">
-                                    <div class="w-10 h-10 md:w-12 md:h-12 bg-white rounded-full flex items-center justify-center shadow-md border border-slate-700/30 overflow-hidden p-1">
-                                        <img src="${match.team2?.logo || 'https://via.placeholder.com/50'}" alt="${match.team2?.name}" class="w-full h-full object-contain">
-                                    </div>
-                                    <p class="font-extrabold text-[11px] md:text-xs tracking-wide text-white mt-2 line-clamp-1">${match.team2?.name || 'Team B'}</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        // 5. Update Side Counters
-        function updateCounters(matches) {
-            document.getElementById('count-all').innerText = matches.length;
-            document.getElementById('count-football').innerText = matches.filter(m => m.sport?.toLowerCase() === 'football').length;
-            document.getElementById('count-cricket').innerText = matches.filter(m => m.sport?.toLowerCase() === 'cricket').length;
-        }
-
-        // 6. Filter Handlers
-        document.getElementById('filter-all').addEventListener('click', () => {
-            renderMatches(allMatchesData);
-            document.getElementById('section-title').innerText = "TOP LIVE EVENTS";
-        });
-
-        document.getElementById('filter-football').addEventListener('click', () => {
-            const fb = allMatchesData.filter(m => m.sport?.toLowerCase() === 'football');
-            renderMatches(fb);
-            document.getElementById('section-title').innerText = "FOOTBALL EVENTS";
-        });
-
-        document.getElementById('filter-cricket').addEventListener('click', () => {
-            const ck = allMatchesData.filter(m => m.sport?.toLowerCase() === 'cricket');
-            renderMatches(ck);
-            document.getElementById('section-title').innerText = "CRICKET EVENTS";
         });
     </script>
 
