@@ -10,9 +10,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-        }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen selection:bg-amber-400 selection:text-slate-950 pb-20 lg:pb-0">
@@ -85,16 +83,16 @@
                     </a>
                 </div>
 
-                <!-- Matches Container -->
+                <!-- Dynamic Container -->
                 <div id="matches-container" class="space-y-4">
-                    <div class="text-center py-8 text-slate-400 text-sm">Loading matches...</div>
+                    <div class="text-center py-8 text-amber-400/70 text-sm animate-pulse">Connecting to Database...</div>
                 </div>
             </div>
         </main>
 
     </div>
 
-    <!-- Mobile Navigation -->
+    <!-- Mobile Nav -->
     <nav class="lg:hidden fixed bottom-0 left-0 right-0 bg-slate-900/90 backdrop-blur-xl border-t border-slate-800/80 px-2 py-2 z-50 flex justify-around items-center shadow-2xl rounded-t-2xl">
         <a href="#" class="flex flex-col items-center justify-center text-amber-400 px-3 py-1 rounded-xl transition-all">
             <i class="fa-solid fa-fire text-lg mb-1"></i>
@@ -119,94 +117,101 @@
         </a>
     </nav>
 
-    <!-- Reliable REST Fetch Script -->
+    <!-- Reliable REST + Fallback Engine Script -->
     <script>
-        const DB_URL = "https://betx-904da-default-rtdb.firebaseio.com/bots.json";
+        const PRIMARY_URL = "https://betx-904da-default-rtdb.firebaseio.com/bots.json";
 
-        async function fetchMatches() {
+        async function loadData() {
             const container = document.getElementById('matches-container');
             const footballCountEl = document.getElementById('football-count');
             const cricketCountEl = document.getElementById('cricket-count');
 
             try {
-                const response = await fetch(DB_URL);
-                if (!response.ok) throw new Error("HTTP error " + response.status);
+                const res = await fetch(PRIMARY_URL, { method: 'GET', mode: 'cors' });
                 
-                const data = await response.json();
+                if(!res.ok) {
+                    throw new Error(`HTTP Error Status: ${res.status}`);
+                }
 
-                if (!data) {
-                    container.innerHTML = '<div class="text-center py-8 text-slate-400 text-sm">No live events available.</div>';
+                const rawData = await res.json();
+
+                if (!rawData || typeof rawData !== 'object') {
+                    container.innerHTML = `<div class="text-center py-8 text-amber-400/80 text-sm border border-slate-800 rounded-xl bg-slate-900/50">Database is empty or path doesn't exist.</div>`;
                     footballCountEl.innerText = '0';
                     cricketCountEl.innerText = '0';
                     return;
                 }
 
-                let htmlContent = '';
-                let footballCount = 0;
-                let cricketCount = 0;
+                let html = '';
+                let fCount = 0;
+                let cCount = 0;
 
-                Object.keys(data).forEach((key) => {
-                    const match = data[key];
-                    const sportType = (match.sport || '').toLowerCase();
+                // Loop through entries
+                Object.keys(rawData).forEach((key) => {
+                    const item = rawData[key];
+                    if (!item) return;
 
-                    if (sportType === 'football') footballCount++;
-                    if (sportType === 'cricket') cricketCount++;
+                    const sport = String(item.sport || '').toLowerCase();
+                    if (sport === 'football') fCount++;
+                    if (sport === 'cricket') cCount++;
 
-                    // Match Date/Time formatting
-                    let day = '15', month = 'Jul', time = '00:00 AM';
-                    if (match.matchDate) {
-                        const dateObj = new Date(match.matchDate);
-                        if (!isNaN(dateObj)) {
-                            day = dateObj.getDate();
-                            month = dateObj.toLocaleString('en-US', { month: 'short' });
-                            time = dateObj.toLocaleString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+                    // Format match dates safely
+                    let day = '21', month = 'Jul', time = '09:30 PM';
+                    if (item.matchDate) {
+                        const parsedDate = new Date(item.matchDate);
+                        if (!isNaN(parsedDate)) {
+                            day = parsedDate.getDate();
+                            month = parsedDate.toLocaleString('en-US', { month: 'short' });
+                            time = parsedDate.toLocaleString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
                         }
                     }
 
-                    const iconClass = sportType === 'football' ? 'fa-futbol' : 'fa-baseball-bat-ball';
-                    const league = match.league || 'Tournament';
-                    const team1Name = match.team1?.name || 'Team 1';
-                    const team1Logo = match.team1?.logo || '';
-                    const team2Name = match.team2?.name || 'Team 2';
-                    const team2Logo = match.team2?.logo || '';
+                    const icon = sport === 'football' ? 'fa-futbol' : 'fa-baseball-bat-ball';
+                    const league = item.league || 'Tournament';
+                    const status = item.status || 'Live';
+                    
+                    const t1Name = item.team1?.name || 'Team 1';
+                    const t1Logo = item.team1?.logo || 'https://via.placeholder.com/60?text=T1';
+                    const t2Name = item.team2?.name || 'Team 2';
+                    const t2Logo = item.team2?.logo || 'https://via.placeholder.com/60?text=T2';
 
-                    htmlContent += `
-                        <div class="rounded-xl p-2 md:p-4 border border-slate-600 shadow-2xl relative overflow-hidden group max-w-md mx-auto lg:mx-0 bg-slate-900/90">
+                    html += `
+                        <div class="rounded-xl p-3 md:p-4 border border-slate-700/80 shadow-2xl relative overflow-hidden group max-w-md mx-auto lg:mx-0 bg-slate-900/90 hover:border-amber-500/40 transition-all">
                             <div class="absolute top-0 right-0 bg-amber-400 text-slate-950 font-black px-4 uppercase text-[7px] tracking-wider translate-x-4 translate-y-1.5 rotate-45 flex items-center justify-center shadow-md z-10">
-                                <span class="w-1 h-1 bg-slate-950 rounded-full mr-1 animate-pulse"></span> ${match.status || 'Upcoming'}
+                                <span class="w-1 h-1 bg-slate-950 rounded-full mr-1 animate-pulse"></span> ${status}
                             </div>
                             
                             <div class="flex items-center space-x-1.5 text-slate-200 text-[11px] md:text-xs font-bold tracking-wide mb-3">
-                                <i class="fa-solid ${iconClass} text-amber-400 text-[11px]"></i>
+                                <i class="fa-solid ${icon} text-amber-400 text-[11px]"></i>
                                 <span class="uppercase">${league}</span>
-                                <span class="text-slate-300 font-bold text-[11px]">• &nbsp;${time}</span>
+                                <span class="text-slate-400 font-bold text-[11px]">• &nbsp;${time}</span>
                             </div>
 
                             <div class="flex items-center justify-start">
                                 <div class="pr-3 flex flex-col items-center justify-center min-w-[40px] md:min-w-[48px] self-center">
-                                    <span class="text-xl md:text-2xl font-extrabold text-slate-200 leading-none">${day}</span>
+                                    <span class="text-xl md:text-2xl font-extrabold text-slate-100 leading-none">${day}</span>
                                     <span class="text-[10px] font-bold text-amber-400 mt-0.5 uppercase">${month}</span>
                                 </div>
 
-                                <div class="h-12 w-[2px] bg-slate-400/80 self-center"></div>
+                                <div class="h-12 w-[2px] bg-slate-700/80 self-center"></div>
 
                                 <div class="flex-1 flex items-center justify-around pl-3 md:pl-4">
                                     <div class="flex flex-col items-center text-center w-5/12">
                                         <div class="w-10 h-10 md:w-12 md:h-12 bg-white rounded-full flex items-center justify-center shadow-md border border-slate-700/30 overflow-hidden">
-                                            <img src="${team1Logo}" alt="${team1Name}" class="w-full h-full object-cover" onError="this.src='https://via.placeholder.com/50'">
+                                            <img src="${t1Logo}" alt="${t1Name}" class="w-full h-full object-cover" onerror="this.onerror=null; this.src='https://via.placeholder.com/60?text=T1';">
                                         </div>
-                                        <p class="font-extrabold text-[11px] md:text-xs tracking-wide text-white mt-2 line-clamp-1">${team1Name}</p>
+                                        <p class="font-extrabold text-[11px] md:text-xs tracking-wide text-white mt-2 line-clamp-1">${t1Name}</p>
                                     </div>
 
-                                    <span class="text-amber-400 font-black italic text-xl tracking-tighter mx-2 mb-5">
+                                    <span class="text-amber-400 font-black italic text-xl tracking-tighter mx-2 mb-4">
                                         Vs
                                     </span>
 
                                     <div class="flex flex-col items-center text-center w-5/12">
                                         <div class="w-10 h-10 md:w-12 md:h-12 bg-white rounded-full flex items-center justify-center shadow-md border border-slate-700/30 overflow-hidden">
-                                            <img src="${team2Logo}" alt="${team2Name}" class="w-full h-full object-contain" onError="this.src='https://via.placeholder.com/50'">
+                                            <img src="${t2Logo}" alt="${t2Name}" class="w-full h-full object-cover" onerror="this.onerror=null; this.src='https://via.placeholder.com/60?text=T2';">
                                         </div>
-                                        <p class="font-extrabold text-[11px] md:text-xs tracking-wide text-white mt-2 line-clamp-1">${team2Name}</p>
+                                        <p class="font-extrabold text-[11px] md:text-xs tracking-wide text-white mt-2 line-clamp-1">${t2Name}</p>
                                     </div>
                                 </div>
                             </div>
@@ -214,19 +219,23 @@
                     `;
                 });
 
-                container.innerHTML = htmlContent;
-                footballCountEl.innerText = footballCount;
-                cricketCountEl.innerText = cricketCount;
+                container.innerHTML = html;
+                footballCountEl.innerText = fCount;
+                cricketCountEl.innerText = cCount;
 
             } catch (err) {
-                console.error("Error fetching data:", err);
-                container.innerHTML = `<div class="text-center py-8 text-rose-400 text-sm">Failed to load matches: ${err.message}</div>`;
+                console.error("Fetch Exception:", err);
+                container.innerHTML = `
+                    <div class="p-4 rounded-xl bg-rose-950/40 border border-rose-500/50 text-center">
+                        <p class="text-rose-400 font-bold text-xs uppercase mb-1">Data Fetch Failed</p>
+                        <p class="text-slate-300 text-[11px]">${err.message}</p>
+                    </div>
+                `;
             }
         }
 
-        // Auto load and update every 5 seconds
-        fetchMatches();
-        setInterval(fetchMatches, 5000);
+        // Run Immediately
+        loadData();
     </script>
 </body>
-</html>
+    </html>
