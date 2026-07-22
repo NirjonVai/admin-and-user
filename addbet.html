@@ -100,8 +100,8 @@
 
         <form id="add-bet-form" class="p-6 space-y-6">
           
-          <!-- Row 1: Sport & League -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Row 1: Sport, Match Type & League -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
               <label class="block text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide">Select Sport</label>
               <div class="relative">
@@ -109,6 +109,18 @@
                   <option value="" disabled selected>Choose a sport...</option>
                   <option value="Cricket">🏏 Cricket</option>
                   <option value="Football">⚽ Football</option>
+                </select>
+                <i class="fa-solid fa-chevron-down absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide">Match Category</label>
+              <div class="relative">
+                <select id="match-category" required class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:outline-none appearance-none font-medium text-gray-700">
+                  <option value="" disabled selected>Select category...</option>
+                  <option value="Real Match">🏟️ Real Match</option>
+                  <option value="AI Match">🤖 AI Match</option>
                 </select>
                 <i class="fa-solid fa-chevron-down absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"></i>
               </div>
@@ -219,6 +231,7 @@
 
       // Get values
       const sportType = document.getElementById('sport-type').value;
+      const matchCategory = document.getElementById('match-category').value;
       const leagueTitle = document.getElementById('league-title').value.trim();
       const team1Name = document.getElementById('team1-name').value.trim();
       const team1Logo = document.getElementById('team1-logo').value.trim();
@@ -233,6 +246,7 @@
 
         await set(newBetRef, {
           sport: sportType,
+          category: matchCategory, // Real Match or AI Match
           league: leagueTitle,
           team1: {
             name: team1Name,
@@ -286,4 +300,4 @@
   </script>
 
 </body>
-</html>
+    </html>
