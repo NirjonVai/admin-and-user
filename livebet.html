@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Live Bet - BetX Admin</title>
+  <title>Real Match - BetX Admin</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -19,7 +19,6 @@
   <!-- Sidebar Component -->
   <aside id="sidebar" class="w-64 bg-gray-900 text-white min-h-screen flex flex-col justify-between p-4 fixed left-0 top-0 bottom-0 z-40 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out">
     <div>
-      <!-- Logo / Title & Close Button for Mobile -->
       <div class="flex items-center justify-between px-3 py-4 mb-6 border-b border-gray-800">
         <div class="flex items-center space-x-3">
           <i class="fa-solid fa-user-shield text-orange-500 text-2xl"></i>
@@ -44,10 +43,15 @@
           <i class="fa-solid fa-plus-circle text-lg text-gray-400"></i>
           <span>Add Bet</span>
         </a>
-        <!-- Active Menu -->
+        <!-- Active Real Bet Menu -->
         <a href="live-bet.html" class="flex items-center gap-3 px-4 py-3 text-sm font-semibold bg-orange-500 text-white rounded-xl shadow-lg shadow-orange-500/20 transition">
-          <i class="fa-solid fa-tower-broadcast text-lg"></i>
-          <span>Live Bet</span>
+          <i class="fa-solid fa-trophy text-lg"></i>
+          <span>Real Match</span>
+        </a>
+        <!-- AI Bet Menu -->
+        <a href="ai-bet.html" class="flex items-center gap-3 px-4 py-3 text-sm font-semibold text-gray-300 rounded-xl hover:bg-gray-800 hover:text-white transition">
+          <i class="fa-solid fa-robot text-lg text-gray-400"></i>
+          <span>AI Match</span>
         </a>
         <a href="bet-history.html" class="flex items-center gap-3 px-4 py-3 text-sm font-semibold text-gray-300 rounded-xl hover:bg-gray-800 hover:text-white transition">
           <i class="fa-solid fa-clock-rotate-left text-lg text-gray-400"></i>
@@ -76,7 +80,7 @@
         <button id="sidebar-open-btn" class="md:hidden text-gray-700 hover:text-orange-500 text-xl p-1 focus:outline-none cursor-pointer">
           <i class="fa-solid fa-bars"></i>
         </button>
-        <h1 class="text-lg md:text-xl font-bold text-gray-800">Live & Active Matches</h1>
+        <h1 class="text-lg md:text-xl font-bold text-gray-800">🏟️ Real Matches Panel</h1>
       </div>
       <div class="flex items-center gap-4">
         <span id="admin-status" class="text-xs bg-orange-500/10 text-orange-500 px-3 py-1.5 rounded-full border border-orange-500/20 font-semibold flex items-center">
@@ -88,49 +92,35 @@
     <!-- Main Content Area -->
     <main class="flex-1 p-4 md:p-8 max-w-6xl w-full mx-auto">
       
-      <!-- Action Bar & Filter -->
+      <!-- Action Bar -->
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
-          <h2 class="text-xl font-bold text-gray-800">Manage Matches & Odds</h2>
-          <p class="text-xs text-gray-500">Real-time status, categories, and betting odds control</p>
+          <h2 class="text-xl font-bold text-gray-800">Real Matches & Odds</h2>
+          <p class="text-xs text-gray-500">Live status and odds management for actual sports events</p>
         </div>
         
-        <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
-          <!-- Filter by Category -->
-          <div class="relative min-w-[140px]">
-            <select id="category-filter" class="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl text-xs font-semibold text-gray-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 appearance-none">
-              <option value="all">All Categories</option>
-              <option value="Real Match">🏟️ Real Match</option>
-              <option value="AI Match">🤖 AI Match</option>
-            </select>
-            <i class="fa-solid fa-chevron-down absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs pointer-events-none"></i>
-          </div>
-
-          <a href="add-bet.html" class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold shadow-md transition flex items-center gap-2">
-            <i class="fa-solid fa-plus"></i> Add New Match
-          </a>
-        </div>
+        <a href="add-bet.html" class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold shadow-md transition flex items-center gap-2">
+          <i class="fa-solid fa-plus"></i> Add New Match
+        </a>
       </div>
 
       <!-- Live Matches Grid Container -->
       <div id="matches-container" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <!-- Loading State Placeholder -->
         <div class="col-span-full text-center py-12 bg-white rounded-2xl border border-gray-200">
           <i class="fa-solid fa-spinner fa-spin text-3xl text-orange-500 mb-3"></i>
-          <p class="text-gray-500 font-medium text-sm">Loading live matches...</p>
+          <p class="text-gray-500 font-medium text-sm">Loading Real Matches...</p>
         </div>
       </div>
 
     </main>
   </div>
 
-  <!-- Firebase & UI Scripts -->
+  <!-- Firebase Scripts -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
     import { getDatabase, ref, get, child, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-    // Firebase Config
     const firebaseConfig = {
       apiKey: "AIzaSyBzQaaXhTtiGpMjRMBUXZaCIrDRoNyEkU4",
       authDomain: "betx-904da.firebaseapp.com",
@@ -146,7 +136,6 @@
     const auth = getAuth(app);
     const db = getDatabase(app);
 
-    // Sidebar Controls
     const sidebar = document.getElementById('sidebar');
     const sidebarOpenBtn = document.getElementById('sidebar-open-btn');
     const sidebarCloseBtn = document.getElementById('sidebar-close-btn');
@@ -163,66 +152,54 @@
 
     const logoutBtn = document.getElementById('logout-btn');
     const matchesContainer = document.getElementById('matches-container');
-    const categoryFilter = document.getElementById('category-filter');
 
     let allMatchesData = {};
 
-    // Strictly convert Bengali digits and illegal characters to English digits
     const toEngNum = (num) => {
       if (num === undefined || num === null) return '';
       let str = String(num);
       const banglaNums = {'০':'0', '১':'1', '২':'2', '৩':'3', '৪':'4', '৫':'5', '৬':'6', '৭':'7', '৮':'8', '৯':'9'};
       str = str.replace(/[০-৯]/g, match => banglaNums[match]);
-      // Remove everything except numbers and decimal point
       str = str.replace(/[^0-9.]/g, '');
       return str;
     };
 
-    // Fetch and Display Realtime Matches
     const betsRef = ref(db, 'bets');
     onValue(betsRef, (snapshot) => {
       if (!snapshot.exists()) {
         allMatchesData = {};
-        renderAllMatches();
+        renderRealMatches();
         return;
       }
-
       allMatchesData = snapshot.val();
-      renderAllMatches();
+      renderRealMatches();
     });
 
-    // Render matches based on selected category filter
-    function renderAllMatches() {
+    function renderRealMatches() {
       matchesContainer.innerHTML = '';
-      const selectedCategory = categoryFilter.value;
-
       const keys = Object.keys(allMatchesData);
-      const filteredKeys = keys.filter(id => {
-        if (selectedCategory === 'all') return true;
-        const matchCategory = allMatchesData[id].category || 'Real Match';
-        return matchCategory === selectedCategory;
+      
+      // Filter ONLY Real Matches
+      const realMatchKeys = keys.filter(id => {
+        const cat = allMatchesData[id].category || 'Real Match';
+        return cat === 'Real Match';
       });
 
-      if (filteredKeys.length === 0) {
+      if (realMatchKeys.length === 0) {
         matchesContainer.innerHTML = `
           <div class="col-span-full text-center py-12 bg-white rounded-2xl border border-gray-200">
             <i class="fa-solid fa-folder-open text-4xl text-gray-300 mb-3"></i>
-            <p class="text-gray-500 font-medium">No matches found for selected category.</p>
+            <p class="text-gray-500 font-medium">No Real Matches found.</p>
           </div>
         `;
         return;
       }
 
-      filteredKeys.forEach((matchId) => {
-        const match = allMatchesData[matchId];
-        renderMatchCard(matchId, match);
+      realMatchKeys.forEach((matchId) => {
+        renderMatchCard(matchId, allMatchesData[matchId]);
       });
     }
 
-    // Filter change event listener
-    categoryFilter.addEventListener('change', renderAllMatches);
-
-    // Render Card UI Function
     function renderMatchCard(id, data) {
       const isLive = data.status === 'live';
       const statusBadgeClass = isLive 
@@ -231,12 +208,6 @@
           ? 'bg-gray-500/10 text-gray-500 border-gray-500/20' 
           : 'bg-blue-500/10 text-blue-500 border-blue-500/20';
 
-      const matchCategory = data.category || 'Real Match';
-      const categoryBadgeClass = matchCategory === 'AI Match' 
-        ? 'bg-purple-100 text-purple-600 border-purple-200' 
-        : 'bg-emerald-100 text-emerald-600 border-emerald-200';
-
-      // Default Odds Values with strictly forced English format
       const rawOdds = data.odds || {};
       const odds = {
         team1: toEngNum(rawOdds.team1 || '1.50'),
@@ -249,14 +220,13 @@
       
       card.innerHTML = `
         <div>
-          <!-- Header info -->
           <div class="flex justify-between items-center mb-4 pb-3 border-b border-gray-100 gap-2">
             <div class="flex items-center gap-1.5 flex-wrap">
               <span class="text-xs font-bold uppercase tracking-wider text-orange-500 bg-orange-50 px-2.5 py-1 rounded-lg">
                 ${data.sport || 'Match'}
               </span>
-              <span class="text-[10px] font-bold px-2 py-0.5 rounded-md border ${categoryBadgeClass}">
-                ${matchCategory === 'AI Match' ? '🤖 AI' : '🏟️ Real'}
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-md border bg-emerald-100 text-emerald-600 border-emerald-200">
+                🏟️ Real
               </span>
             </div>
             <span class="text-xs px-3 py-1 rounded-full border font-semibold capitalize ${statusBadgeClass}">
@@ -266,20 +236,16 @@
 
           <p class="text-xs font-medium text-gray-400 mb-4">${data.league || 'Standard League'}</p>
 
-          <!-- Teams Layout -->
           <div class="flex items-center justify-between my-4 gap-2">
-            <!-- Team 1 -->
             <div class="flex flex-col items-center text-center w-1/3">
               <img src="${data.team1.logo}" alt="${data.team1.name}" class="w-12 h-12 object-contain mb-2 rounded-full bg-gray-50 p-1 border border-gray-100" onerror="this.src='https://via.placeholder.com/50?text=T1'">
               <span class="text-xs font-bold text-gray-800 line-clamp-1">${data.team1.name}</span>
             </div>
 
-            <!-- VS Badge -->
             <div class="text-center">
               <span class="text-xs font-black text-gray-300 bg-gray-100 px-2 py-1 rounded-md">VS</span>
             </div>
 
-            <!-- Team 2 -->
             <div class="flex flex-col items-center text-center w-1/3">
               <img src="${data.team2.logo}" alt="${data.team2.name}" class="w-12 h-12 object-contain mb-2 rounded-full bg-gray-50 p-1 border border-gray-100" onerror="this.src='https://via.placeholder.com/50?text=T2'">
               <span class="text-xs font-bold text-gray-800 line-clamp-1">${data.team2.name}</span>
@@ -290,7 +256,6 @@
             <i class="fa-regular fa-clock mr-1"></i> ${new Date(data.matchDate).toLocaleString('en-US')}
           </div>
 
-          <!-- Odds Section (FORCED ENGLISH INPUTS & ENGLIGH FONTS) -->
           <div class="bg-orange-50/60 border border-orange-100 rounded-xl p-3 my-4">
             <div class="flex items-center justify-between mb-2">
               <span class="text-[11px] font-bold text-gray-700 flex items-center gap-1">
@@ -298,21 +263,18 @@
               </span>
               <span class="text-[10px] text-gray-400">Multiplier (x)</span>
             </div>
-            <p>Team Wins 1X2 </p> 
+            <p class="text-xs font-semibold mb-2">Team Wins 1X2</p> 
             <div class="grid grid-cols-3 gap-2">
-              <!-- Team 1 Odds -->
               <div>
                 <label class="block text-[9px] font-semibold text-gray-500 uppercase truncate">${data.team1.name}</label>
                 <input type="text" inputmode="decimal" lang="en" data-id="${id}" data-type="team1" value="${odds.team1}" class="odds-input w-full px-2 py-1.5 text-xs font-bold text-gray-800 bg-white border border-gray-200 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-orange-500 font-sans">
               </div>
 
-              <!-- Draw Odds -->
               <div>
                 <label class="block text-[9px] font-semibold text-gray-500 uppercase truncate">Draw</label>
                 <input type="text" inputmode="decimal" lang="en" data-id="${id}" data-type="draw" value="${odds.draw}" class="odds-input w-full px-2 py-1.5 text-xs font-bold text-gray-800 bg-white border border-gray-200 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-orange-500 font-sans">
               </div>
 
-              <!-- Team 2 Odds -->
               <div>
                 <label class="block text-[9px] font-semibold text-gray-500 uppercase truncate">${data.team2.name}</label>
                 <input type="text" inputmode="decimal" lang="en" data-id="${id}" data-type="team2" value="${odds.team2}" class="odds-input w-full px-2 py-1.5 text-xs font-bold text-gray-800 bg-white border border-gray-200 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-orange-500 font-sans">
@@ -321,19 +283,16 @@
           </div>
         </div>
 
-        <!-- Admin Controls -->
         <div class="pt-3 border-t border-gray-100 flex flex-col gap-2">
           <div class="grid grid-cols-2 gap-2">
-            <!-- Update Category -->
             <div>
               <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Category</label>
               <select data-id="${id}" class="category-select w-full px-2 py-1.5 text-xs font-medium bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500">
-                <option value="Real Match" ${matchCategory === 'Real Match' ? 'selected' : ''}>Real Match</option>
-                <option value="AI Match" ${matchCategory === 'AI Match' ? 'selected' : ''}>AI Match</option>
+                <option value="Real Match" selected>Real Match</option>
+                <option value="AI Match">AI Match</option>
               </select>
             </div>
 
-            <!-- Update Status -->
             <div>
               <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Status</label>
               <select data-id="${id}" class="status-select w-full px-2 py-1.5 text-xs font-medium bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500">
@@ -345,7 +304,7 @@
           </div>
 
           <div class="flex justify-end pt-1">
-            <button data-id="${id}" class="delete-btn text-xs text-red-500 hover:bg-red-50 px-3 py-1.5 rounded-xl transition cursor-pointer flex items-center gap-1 font-semibold" title="Delete Match">
+            <button data-id="${id}" class="delete-btn text-xs text-red-500 hover:bg-red-50 px-3 py-1.5 rounded-xl transition cursor-pointer flex items-center gap-1 font-semibold">
               <i class="fa-solid fa-trash-can"></i> Delete
             </button>
           </div>
@@ -355,80 +314,43 @@
       matchesContainer.appendChild(card);
     }
 
-    // Live typing interceptor to keep input strictly English digits
     matchesContainer.addEventListener('input', (e) => {
       if (e.target.classList.contains('odds-input')) {
-        const cleaned = toEngNum(e.target.value);
-        e.target.value = cleaned;
+        e.target.value = toEngNum(e.target.value);
       }
     });
 
-    // Event Delegation for Dynamic Actions
     matchesContainer.addEventListener('change', async (e) => {
-      // Update Status
       if (e.target.classList.contains('status-select')) {
         const matchId = e.target.getAttribute('data-id');
-        const newStatus = e.target.value;
-
-        try {
-          await update(ref(db, `bets/${matchId}`), { status: newStatus });
-        } catch (err) {
-          alert('Failed to update status: ' + err.message);
-        }
+        await update(ref(db, `bets/${matchId}`), { status: e.target.value });
       }
 
-      // Update Category
       if (e.target.classList.contains('category-select')) {
         const matchId = e.target.getAttribute('data-id');
-        const newCategory = e.target.value;
-
-        try {
-          await update(ref(db, `bets/${matchId}`), { category: newCategory });
-        } catch (err) {
-          alert('Failed to update category: ' + err.message);
-        }
+        await update(ref(db, `bets/${matchId}`), { category: e.target.value });
       }
 
-      // Update Odds
       if (e.target.classList.contains('odds-input')) {
         const matchId = e.target.getAttribute('data-id');
         const oddsType = e.target.getAttribute('data-type');
-        const newOddsValue = toEngNum(e.target.value);
-
-        try {
-          await update(ref(db, `bets/${matchId}/odds`), { [oddsType]: newOddsValue });
-        } catch (err) {
-          alert('Failed to update odds: ' + err.message);
-        }
+        await update(ref(db, `bets/${matchId}/odds`), { [oddsType]: toEngNum(e.target.value) });
       }
     });
 
     matchesContainer.addEventListener('click', async (e) => {
       const deleteBtn = e.target.closest('.delete-btn');
-      if (deleteBtn) {
+      if (deleteBtn && confirm('Are you sure you want to delete this match?')) {
         const matchId = deleteBtn.getAttribute('data-id');
-        if (confirm('Are you sure you want to delete this match?')) {
-          try {
-            await remove(ref(db, `bets/${matchId}`));
-          } catch (err) {
-            alert('Failed to delete match: ' + err.message);
-          }
-        }
+        await remove(ref(db, `bets/${matchId}`));
       }
     });
 
-    // Auth Protection
     onAuthStateChanged(auth, async (user) => {
       if (user) {
-        try {
-          const dbRef = ref(db);
-          const userSnapshot = await get(child(dbRef, `users/${user.uid}`));
-
-          if (!userSnapshot.exists() || userSnapshot.val().role !== "admin") {
-            alert("Access Denied!");
-            window.location.href = "login.html";
-          }
-        } catch (err) {
+        const dbRef = ref(db);
+        const userSnapshot = await get(child(dbRef, `users/${user.uid}`));
+        if (!userSnapshot.exists() || userSnapshot.val().role !== "admin") {
           window.location.href = "login.html";
         }
       } else {
@@ -436,13 +358,9 @@
       }
     });
 
-    // Logout
     logoutBtn.addEventListener('click', () => {
-      signOut(auth).then(() => {
-        window.location.href = "login.html";
-      });
+      signOut(auth).then(() => window.location.href = "login.html");
     });
   </script>
-
 </body>
 </html>
