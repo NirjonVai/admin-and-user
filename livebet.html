@@ -167,6 +167,12 @@
 
     let allMatchesData = {};
 
+    // Helper function to force English numbers
+    const toEngNum = (num) => {
+      if (num === undefined || num === null) return '';
+      return String(num).replace(/[০-৯]/g, d => "০১২৩৪৫৬৭৮৯".indexOf(d));
+    };
+
     // Fetch and Display Realtime Matches
     const betsRef = ref(db, 'bets');
     onValue(betsRef, (snapshot) => {
@@ -225,8 +231,13 @@
         ? 'bg-purple-100 text-purple-600 border-purple-200' 
         : 'bg-emerald-100 text-emerald-600 border-emerald-200';
 
-      // Default Odds Values
-      const odds = data.odds || { team1: '1.50', team2: '1.50', draw: '2.00' };
+      // Default Odds Values with forced English format
+      const rawOdds = data.odds || {};
+      const odds = {
+        team1: toEngNum(rawOdds.team1 || '1.50'),
+        team2: toEngNum(rawOdds.team2 || '1.50'),
+        draw: toEngNum(rawOdds.draw || '2.00')
+      };
 
       const card = document.createElement('div');
       card.className = "bg-white rounded-2xl shadow-sm border border-gray-200 p-6 flex flex-col justify-between";
@@ -271,10 +282,10 @@
           </div>
 
           <div class="text-center text-xs text-gray-500 my-3 bg-gray-50 py-2 rounded-lg">
-            <i class="fa-regular fa-clock mr-1"></i> ${new Date(data.matchDate).toLocaleString()}
+            <i class="fa-regular fa-clock mr-1"></i> ${new Date(data.matchDate).toLocaleString('en-US')}
           </div>
 
-          <!-- Odds Section (NEW) -->
+          <!-- Odds Section (FORCED ENGLISH NUMBERS) -->
           <div class="bg-orange-50/60 border border-orange-100 rounded-xl p-3 my-4">
             <div class="flex items-center justify-between mb-2">
               <span class="text-[11px] font-bold text-gray-700 flex items-center gap-1">
@@ -287,19 +298,19 @@
               <!-- Team 1 Odds -->
               <div>
                 <label class="block text-[9px] font-semibold text-gray-500 uppercase truncate">${data.team1.name}</label>
-                <input type="number" step="0.01" data-id="${id}" data-type="team1" value="${odds.team1 || '1.50'}" class="odds-input w-full px-2 py-1.5 text-xs font-bold text-gray-800 bg-white border border-gray-200 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-orange-500">
+                <input type="number" step="0.01" data-id="${id}" data-type="team1" value="${odds.team1}" class="odds-input w-full px-2 py-1.5 text-xs font-bold text-gray-800 bg-white border border-gray-200 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-orange-500">
               </div>
 
               <!-- Draw Odds -->
               <div>
                 <label class="block text-[9px] font-semibold text-gray-500 uppercase truncate">Draw</label>
-                <input type="number" step="0.01" data-id="${id}" data-type="draw" value="${odds.draw || '2.00'}" class="odds-input w-full px-2 py-1.5 text-xs font-bold text-gray-800 bg-white border border-gray-200 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-orange-500">
+                <input type="number" step="0.01" data-id="${id}" data-type="draw" value="${odds.draw}" class="odds-input w-full px-2 py-1.5 text-xs font-bold text-gray-800 bg-white border border-gray-200 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-orange-500">
               </div>
 
               <!-- Team 2 Odds -->
               <div>
                 <label class="block text-[9px] font-semibold text-gray-500 uppercase truncate">${data.team2.name}</label>
-                <input type="number" step="0.01" data-id="${id}" data-type="team2" value="${odds.team2 || '1.50'}" class="odds-input w-full px-2 py-1.5 text-xs font-bold text-gray-800 bg-white border border-gray-200 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-orange-500">
+                <input type="number" step="0.01" data-id="${id}" data-type="team2" value="${odds.team2}" class="odds-input w-full px-2 py-1.5 text-xs font-bold text-gray-800 bg-white border border-gray-200 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-orange-500">
               </div>
             </div>
           </div>
@@ -365,11 +376,11 @@
         }
       }
 
-      // Update Odds (NEW)
+      // Update Odds
       if (e.target.classList.contains('odds-input')) {
         const matchId = e.target.getAttribute('data-id');
         const oddsType = e.target.getAttribute('data-type');
-        const newOddsValue = e.target.value;
+        const newOddsValue = toEngNum(e.target.value);
 
         try {
           await update(ref(db, `bets/${matchId}/odds`), { [oddsType]: newOddsValue });
