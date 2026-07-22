@@ -88,15 +88,28 @@
     <!-- Main Content Area -->
     <main class="flex-1 p-4 md:p-8 max-w-6xl w-full mx-auto">
       
-      <!-- Action Bar -->
-      <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
+      <!-- Action Bar & Filter -->
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
           <h2 class="text-xl font-bold text-gray-800">Manage Matches</h2>
           <p class="text-xs text-gray-500">Real-time status and match control</p>
         </div>
-        <a href="add-bet.html" class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2.5 rounded-xl text-sm font-semibold shadow-md transition flex items-center gap-2">
-          <i class="fa-solid fa-plus"></i> Add New Match
-        </a>
+        
+        <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
+          <!-- Filter by Category -->
+          <div class="relative min-w-[140px]">
+            <select id="category-filter" class="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl text-xs font-semibold text-gray-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 appearance-none">
+              <option value="all">All Categories</option>
+              <option value="Real Match">🏟️ Real Match</option>
+              <option value="AI Match">🤖 AI Match</option>
+            </select>
+            <i class="fa-solid fa-chevron-down absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs pointer-events-none"></i>
+          </div>
+
+          <a href="add-bet.html" class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold shadow-md transition flex items-center gap-2">
+            <i class="fa-solid fa-plus"></i> Add New Match
+          </a>
+        </div>
       </div>
 
       <!-- Live Matches Grid Container -->
@@ -150,28 +163,53 @@
 
     const logoutBtn = document.getElementById('logout-btn');
     const matchesContainer = document.getElementById('matches-container');
+    const categoryFilter = document.getElementById('category-filter');
+
+    let allMatchesData = {};
 
     // Fetch and Display Realtime Matches
     const betsRef = ref(db, 'bets');
     onValue(betsRef, (snapshot) => {
-      matchesContainer.innerHTML = '';
-
       if (!snapshot.exists()) {
+        allMatchesData = {};
+        renderAllMatches();
+        return;
+      }
+
+      allMatchesData = snapshot.val();
+      renderAllMatches();
+    });
+
+    // Render matches based on selected category filter
+    function renderAllMatches() {
+      matchesContainer.innerHTML = '';
+      const selectedCategory = categoryFilter.value;
+
+      const keys = Object.keys(allMatchesData);
+      const filteredKeys = keys.filter(id => {
+        if (selectedCategory === 'all') return true;
+        const matchCategory = allMatchesData[id].category || 'Real Match';
+        return matchCategory === selectedCategory;
+      });
+
+      if (filteredKeys.length === 0) {
         matchesContainer.innerHTML = `
           <div class="col-span-full text-center py-12 bg-white rounded-2xl border border-gray-200">
             <i class="fa-solid fa-folder-open text-4xl text-gray-300 mb-3"></i>
-            <p class="text-gray-500 font-medium">No active or upcoming matches found.</p>
+            <p class="text-gray-500 font-medium">No matches found for selected category.</p>
           </div>
         `;
         return;
       }
 
-      const matches = snapshot.val();
-      Object.keys(matches).forEach((matchId) => {
-        const match = matches[matchId];
+      filteredKeys.forEach((matchId) => {
+        const match = allMatchesData[matchId];
         renderMatchCard(matchId, match);
       });
-    });
+    }
+
+    // Filter change event listener
+    categoryFilter.addEventListener('change', renderAllMatches);
 
     // Render Card UI Function
     function renderMatchCard(id, data) {
@@ -182,16 +220,26 @@
           ? 'bg-gray-500/10 text-gray-500 border-gray-500/20' 
           : 'bg-blue-500/10 text-blue-500 border-blue-500/20';
 
+      const matchCategory = data.category || 'Real Match';
+      const categoryBadgeClass = matchCategory === 'AI Match' 
+        ? 'bg-purple-100 text-purple-600 border-purple-200' 
+        : 'bg-emerald-100 text-emerald-600 border-emerald-200';
+
       const card = document.createElement('div');
       card.className = "bg-white rounded-2xl shadow-sm border border-gray-200 p-6 flex flex-col justify-between";
       
       card.innerHTML = `
         <div>
           <!-- Header info -->
-          <div class="flex justify-between items-center mb-4 pb-3 border-b border-gray-100">
-            <span class="text-xs font-bold uppercase tracking-wider text-orange-500 bg-orange-50 px-2.5 py-1 rounded-lg">
-              ${data.sport || 'Match'}
-            </span>
+          <div class="flex justify-between items-center mb-4 pb-3 border-b border-gray-100 gap-2">
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <span class="text-xs font-bold uppercase tracking-wider text-orange-500 bg-orange-50 px-2.5 py-1 rounded-lg">
+                ${data.sport || 'Match'}
+              </span>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-md border ${categoryBadgeClass}">
+                ${matchCategory === 'AI Match' ? '🤖 AI' : '🏟️ Real'}
+              </span>
+            </div>
             <span class="text-xs px-3 py-1 rounded-full border font-semibold capitalize ${statusBadgeClass}">
               ${data.status === 'live' ? '<i class="fa-solid fa-circle text-[8px] mr-1 animate-pulse"></i>' : ''} ${data.status}
             </span>
@@ -225,16 +273,33 @@
         </div>
 
         <!-- Admin Controls -->
-        <div class="pt-4 border-t border-gray-100 flex items-center gap-2">
-          <select data-id="${id}" class="status-select flex-1 px-3 py-2 text-xs font-medium bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500">
-            <option value="upcoming" ${data.status === 'upcoming' ? 'selected' : ''}>Upcoming</option>
-            <option value="live" ${data.status === 'live' ? 'selected' : ''}>Live Now</option>
-            <option value="finished" ${data.status === 'finished' ? 'selected' : ''}>Finished</option>
-          </select>
+        <div class="pt-4 border-t border-gray-100 flex flex-col gap-2">
+          <div class="grid grid-cols-2 gap-2">
+            <!-- Update Category -->
+            <div>
+              <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Category</label>
+              <select data-id="${id}" class="category-select w-full px-2 py-1.5 text-xs font-medium bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500">
+                <option value="Real Match" ${matchCategory === 'Real Match' ? 'selected' : ''}>Real Match</option>
+                <option value="AI Match" ${matchCategory === 'AI Match' ? 'selected' : ''}>AI Match</option>
+              </select>
+            </div>
 
-          <button data-id="${id}" class="delete-btn text-red-500 hover:bg-red-50 p-2 rounded-xl transition cursor-pointer" title="Delete Match">
-            <i class="fa-solid fa-trash-can"></i>
-          </button>
+            <!-- Update Status -->
+            <div>
+              <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Status</label>
+              <select data-id="${id}" class="status-select w-full px-2 py-1.5 text-xs font-medium bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500">
+                <option value="upcoming" ${data.status === 'upcoming' ? 'selected' : ''}>Upcoming</option>
+                <option value="live" ${data.status === 'live' ? 'selected' : ''}>Live Now</option>
+                <option value="finished" ${data.status === 'finished' ? 'selected' : ''}>Finished</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="flex justify-end pt-1">
+            <button data-id="${id}" class="delete-btn text-xs text-red-500 hover:bg-red-50 px-3 py-1.5 rounded-xl transition cursor-pointer flex items-center gap-1 font-semibold" title="Delete Match">
+              <i class="fa-solid fa-trash-can"></i> Delete
+            </button>
+          </div>
         </div>
       `;
 
@@ -243,6 +308,7 @@
 
     // Event Delegation for Dynamic Actions
     matchesContainer.addEventListener('change', async (e) => {
+      // Update Status
       if (e.target.classList.contains('status-select')) {
         const matchId = e.target.getAttribute('data-id');
         const newStatus = e.target.value;
@@ -251,6 +317,18 @@
           await update(ref(db, `bets/${matchId}`), { status: newStatus });
         } catch (err) {
           alert('Failed to update status: ' + err.message);
+        }
+      }
+
+      // Update Category
+      if (e.target.classList.contains('category-select')) {
+        const matchId = e.target.getAttribute('data-id');
+        const newCategory = e.target.value;
+
+        try {
+          await update(ref(db, `bets/${matchId}`), { category: newCategory });
+        } catch (err) {
+          alert('Failed to update category: ' + err.message);
         }
       }
     });
