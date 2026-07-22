@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="bn">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -91,8 +91,8 @@
       <!-- Action Bar & Filter -->
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
-          <h2 class="text-xl font-bold text-gray-800">Manage Matches & Odds</h2>
-          <p class="text-xs text-gray-500">Real-time status, categories, and custom betting odds control</p>
+          <h2 class="text-xl font-bold text-gray-800">Manage Matches & Dynamic Odds</h2>
+          <p class="text-xs text-gray-500">Real-time status, categories, and unlimited betting options control</p>
         </div>
         
         <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
@@ -128,7 +128,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { getDatabase, ref, get, child, onValue, update, remove, push, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    import { getDatabase, ref, get, child, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
     // Firebase Config
     const firebaseConfig = {
@@ -235,29 +235,35 @@
         ? 'bg-purple-100 text-purple-600 border-purple-200' 
         : 'bg-emerald-100 text-emerald-600 border-emerald-200';
 
+      // Parse Odds dynamically
       const rawOdds = data.odds || {};
       
-      // Separate base odds from custom dynamic odds
-      const baseOddsKeys = ['team1', 'draw', 'team2'];
-      const customOddsKeys = Object.keys(rawOdds).filter(k => !baseOddsKeys.includes(k));
+      // Default fallbacks if empty
+      if (Object.keys(rawOdds).length === 0) {
+        rawOdds['team1'] = '1.50';
+        rawOdds['team2'] = '1.50';
+        rawOdds['draw'] = '2.00';
+      }
 
-      let customOddsHTML = '';
-      customOddsKeys.forEach(key => {
-        const item = rawOdds[key];
-        const title = typeof item === 'object' ? item.title : key;
-        const val = typeof item === 'object' ? item.val : item;
+      let oddsHTML = '';
+      Object.keys(rawOdds).forEach(key => {
+        const val = toEngNum(rawOdds[key]);
+        let labelText = key;
+        
+        // Pretty labels for standard keys
+        if (key === 'team1') labelText = data.team1.name;
+        if (key === 'team2') labelText = data.team2.name;
+        if (key === 'draw') labelText = 'Draw';
 
-        customOddsHTML += `
-          <div class="flex items-center gap-1.5 bg-white p-1.5 rounded-lg border border-gray-200 shadow-xs">
-            <div class="flex-1 min-w-0">
-              <input type="text" data-id="${id}" data-key="${key}" data-field="title" value="${title}" placeholder="Option Title" class="custom-title-input w-full text-[10px] font-semibold text-gray-700 focus:outline-none truncate">
+        oddsHTML += `
+          <div class="bg-white p-2 rounded-lg border border-gray-200 relative group">
+            <div class="flex justify-between items-center mb-1">
+              <label class="block text-[9px] font-bold text-gray-600 uppercase truncate max-w-[80%]">${labelText}</label>
+              <button data-id="${id}" data-key="${key}" class="delete-odd-btn text-gray-300 hover:text-red-500 text-[10px] transition cursor-pointer" title="Remove Odd">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
             </div>
-            <div class="w-16">
-              <input type="text" inputmode="decimal" lang="en" data-id="${id}" data-key="${key}" data-field="val" value="${toEngNum(val)}" placeholder="1.50" class="custom-val-input w-full px-1.5 py-1 text-xs font-bold text-gray-800 border border-gray-200 rounded text-center focus:outline-none focus:ring-1 focus:ring-orange-500 font-sans">
-            </div>
-            <button data-id="${id}" data-key="${key}" class="delete-odd-btn text-red-400 hover:text-red-600 p-1 cursor-pointer" title="Remove Option">
-              <i class="fa-solid fa-xmark text-xs"></i>
-            </button>
+            <input type="text" inputmode="decimal" lang="en" data-id="${id}" data-type="${key}" value="${val}" class="odds-input w-full px-2 py-1 text-xs font-bold text-gray-800 bg-gray-50 border border-gray-200 rounded text-center focus:outline-none focus:ring-2 focus:ring-orange-500 font-sans">
           </div>
         `;
       });
@@ -308,48 +314,27 @@
             <i class="fa-regular fa-clock mr-1"></i> ${new Date(data.matchDate).toLocaleString('en-US')}
           </div>
 
-          <!-- Odds Section -->
+          <!-- Dynamic Odds Section -->
           <div class="bg-orange-50/60 border border-orange-100 rounded-xl p-3 my-4">
             <div class="flex items-center justify-between mb-2">
               <span class="text-[11px] font-bold text-gray-700 flex items-center gap-1">
-                <i class="fa-solid fa-chart-line text-orange-500"></i> Match Odds
+                <i class="fa-solid fa-chart-line text-orange-500"></i> Match Odds Multipliers
               </span>
               <span class="text-[10px] text-gray-400">Multiplier (x)</span>
             </div>
 
-            <!-- Base 1X2 Odds -->
-            <p class="text-[10px] font-bold text-gray-500 mb-1">Standard 1X2</p> 
-            <div class="grid grid-cols-3 gap-2 mb-3">
-              <div>
-                <label class="block text-[9px] font-semibold text-gray-500 uppercase truncate">${data.team1.name}</label>
-                <input type="text" inputmode="decimal" lang="en" data-id="${id}" data-type="team1" value="${toEngNum(rawOdds.team1 || '1.50')}" class="base-odds-input w-full px-2 py-1.5 text-xs font-bold text-gray-800 bg-white border border-gray-200 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-orange-500 font-sans">
-              </div>
-
-              <div>
-                <label class="block text-[9px] font-semibold text-gray-500 uppercase truncate">Draw</label>
-                <input type="text" inputmode="decimal" lang="en" data-id="${id}" data-type="draw" value="${toEngNum(rawOdds.draw || '2.00')}" class="base-odds-input w-full px-2 py-1.5 text-xs font-bold text-gray-800 bg-white border border-gray-200 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-orange-500 font-sans">
-              </div>
-
-              <div>
-                <label class="block text-[9px] font-semibold text-gray-500 uppercase truncate">${data.team2.name}</label>
-                <input type="text" inputmode="decimal" lang="en" data-id="${id}" data-type="team2" value="${toEngNum(rawOdds.team2 || '1.50')}" class="base-odds-input w-full px-2 py-1.5 text-xs font-bold text-gray-800 bg-white border border-gray-200 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-orange-500 font-sans">
-              </div>
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-3">
+              ${oddsHTML}
             </div>
 
-            <!-- Dynamic Custom Odds -->
-            <div class="border-t border-orange-200/60 pt-2 mt-2">
-              <div class="flex justify-between items-center mb-2">
-                <p class="text-[10px] font-bold text-gray-500">Custom Options</p>
-                <button data-id="${id}" class="add-odd-btn text-[10px] font-bold bg-orange-500 text-white px-2 py-0.5 rounded-md hover:bg-orange-600 transition flex items-center gap-1 cursor-pointer">
-                  <i class="fa-solid fa-plus text-[8px]"></i> Add Option
-                </button>
-              </div>
-
-              <div class="space-y-2">
-                ${customOddsHTML || '<p class="text-[10px] text-gray-400 italic text-center py-1">No custom options added yet</p>'}
-              </div>
+            <!-- Add Custom Odd Input Form -->
+            <div class="pt-2 border-t border-orange-200/60 flex items-center gap-1.5">
+              <input type="text" placeholder="Odd Name (e.g. Over 2.5)" class="new-odd-name-${id} text-xs px-2.5 py-1.5 bg-white border border-gray-200 rounded-lg flex-1 focus:outline-none focus:ring-1 focus:ring-orange-500">
+              <input type="text" inputmode="decimal" placeholder="1.85" class="new-odd-val-${id} text-xs px-2.5 py-1.5 bg-white border border-gray-200 rounded-lg w-16 text-center focus:outline-none focus:ring-1 focus:ring-orange-500 font-sans">
+              <button data-id="${id}" class="add-odd-btn bg-orange-500 hover:bg-orange-600 text-white text-xs px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1 cursor-pointer whitespace-nowrap">
+                <i class="fa-solid fa-plus"></i> Add
+              </button>
             </div>
-
           </div>
         </div>
 
@@ -378,7 +363,7 @@
 
           <div class="flex justify-end pt-1">
             <button data-id="${id}" class="delete-btn text-xs text-red-500 hover:bg-red-50 px-3 py-1.5 rounded-xl transition cursor-pointer flex items-center gap-1 font-semibold" title="Delete Match">
-              <i class="fa-solid fa-trash-can"></i> Delete
+              <i class="fa-solid fa-trash-can"></i> Delete Match
             </button>
           </div>
         </div>
@@ -387,10 +372,11 @@
       matchesContainer.appendChild(card);
     }
 
-    // Live typing interceptor for decimal values
+    // Live typing interceptor to keep numeric inputs strictly in English digits
     matchesContainer.addEventListener('input', (e) => {
-      if (e.target.classList.contains('base-odds-input') || e.target.classList.contains('custom-val-input')) {
-        e.target.value = toEngNum(e.target.value);
+      if (e.target.classList.contains('odds-input') || e.target.className.includes('new-odd-val')) {
+        const cleaned = toEngNum(e.target.value);
+        e.target.value = cleaned;
       }
     });
 
@@ -400,6 +386,7 @@
       if (e.target.classList.contains('status-select')) {
         const matchId = e.target.getAttribute('data-id');
         const newStatus = e.target.value;
+
         try {
           await update(ref(db, `bets/${matchId}`), { status: newStatus });
         } catch (err) {
@@ -411,6 +398,7 @@
       if (e.target.classList.contains('category-select')) {
         const matchId = e.target.getAttribute('data-id');
         const newCategory = e.target.value;
+
         try {
           await update(ref(db, `bets/${matchId}`), { category: newCategory });
         } catch (err) {
@@ -418,8 +406,8 @@
         }
       }
 
-      // Update Base Odds (team1, team2, draw)
-      if (e.target.classList.contains('base-odds-input')) {
+      // Update Existing Odds
+      if (e.target.classList.contains('odds-input')) {
         const matchId = e.target.getAttribute('data-id');
         const oddsType = e.target.getAttribute('data-type');
         const newOddsValue = toEngNum(e.target.value);
@@ -430,25 +418,51 @@
           alert('Failed to update odds: ' + err.message);
         }
       }
-
-      // Update Custom Option Title or Value
-      if (e.target.classList.contains('custom-title-input') || e.target.classList.contains('custom-val-input')) {
-        const matchId = e.target.getAttribute('data-id');
-        const key = e.target.getAttribute('data-key');
-        const field = e.target.getAttribute('data-field');
-        const value = field === 'val' ? toEngNum(e.target.value) : e.target.value;
-
-        try {
-          await update(ref(db, `bets/${matchId}/odds/${key}`), { [field]: value });
-        } catch (err) {
-          alert('Failed to update option: ' + err.message);
-        }
-      }
     });
 
-    // Button Click Interactions
+    // Dynamic Odds Insertion & Deletion Handling
     matchesContainer.addEventListener('click', async (e) => {
-      // Delete Match
+      // Add New Custom Odds
+      const addOddBtn = e.target.closest('.add-odd-btn');
+      if (addOddBtn) {
+        const matchId = addOddBtn.getAttribute('data-id');
+        const nameInput = document.querySelector(`.new-odd-name-${matchId}`);
+        const valInput = document.querySelector(`.new-odd-val-${matchId}`);
+
+        const oddName = nameInput.value.trim();
+        const oddVal = toEngNum(valInput.value.trim());
+
+        if (!oddName || !oddVal) {
+          alert('Please enter both Odd Name and Multiplier Value!');
+          return;
+        }
+
+        // Key sanitized for Firebase
+        const safeKey = oddName.replace(/[.#$/[\]]/g, "_");
+
+        try {
+          await update(ref(db, `bets/${matchId}/odds`), { [safeKey]: oddVal });
+          nameInput.value = '';
+          valInput.value = '';
+        } catch (err) {
+          alert('Failed to add new odd: ' + err.message);
+        }
+      }
+
+      // Delete Individual Odd
+      const deleteOddBtn = e.target.closest('.delete-odd-btn');
+      if (deleteOddBtn) {
+        const matchId = deleteOddBtn.getAttribute('data-id');
+        const key = deleteOddBtn.getAttribute('data-key');
+
+        try {
+          await remove(ref(db, `bets/${matchId}/odds/${key}`));
+        } catch (err) {
+          alert('Failed to delete odd: ' + err.message);
+        }
+      }
+
+      // Delete Entire Match
       const deleteBtn = e.target.closest('.delete-btn');
       if (deleteBtn) {
         const matchId = deleteBtn.getAttribute('data-id');
@@ -459,36 +473,6 @@
             alert('Failed to delete match: ' + err.message);
           }
         }
-        return;
-      }
-
-      // Add New Dynamic Odds Option
-      const addOddBtn = e.target.closest('.add-odd-btn');
-      if (addOddBtn) {
-        const matchId = addOddBtn.getAttribute('data-id');
-        try {
-          const newOddRef = push(ref(db, `bets/${matchId}/odds`));
-          await set(newOddRef, {
-            title: 'Over 2.5 Goals',
-            val: '1.85'
-          });
-        } catch (err) {
-          alert('Failed to add new option: ' + err.message);
-        }
-        return;
-      }
-
-      // Delete Dynamic Odds Option
-      const deleteOddBtn = e.target.closest('.delete-odd-btn');
-      if (deleteOddBtn) {
-        const matchId = deleteOddBtn.getAttribute('data-id');
-        const key = deleteOddBtn.getAttribute('data-key');
-        try {
-          await remove(ref(db, `bets/${matchId}/odds/${key}`));
-        } catch (err) {
-          alert('Failed to remove option: ' + err.message);
-        }
-        return;
       }
     });
 
