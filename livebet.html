@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Live Bet - BetX Admin</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col md:flex-row font-['Plus_Jakarta_Sans']">
+
+  <!-- Mobile Overlay Backdrop -->
+  <div id="sidebar-overlay" class="fixed inset-0 bg-black/50 z-30 hidden md:hidden"></div>
+
+  <!-- Sidebar Component -->
+  <aside id="sidebar" class="w-64 bg-gray-900 text-white min-h-screen flex flex-col justify-between p-4 fixed left-0 top-0 bottom-0 z-40 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out">
+    <div>
+      <!-- Logo / Title & Close Button for Mobile -->
+      <div class="flex items-center justify-between px-3 py-4 mb-6 border-b border-gray-800">
+        <div class="flex items-center space-x-3">
+          <i class="fa-solid fa-user-shield text-orange-500 text-2xl"></i>
+          <span class="text-xl font-bold tracking-wide">BetX Admin</span>
+        </div>
+        <button id="sidebar-close-btn" class="md:hidden text-gray-400 hover:text-white p-1">
+          <i class="fa-solid fa-xmark text-xl"></i>
+        </button>
+      </div>
+
+      <!-- Navigation Links -->
+      <nav class="space-y-1">
+        <a href="dashboard.html" class="flex items-center gap-3 px-4 py-3 text-sm font-semibold text-gray-300 rounded-xl hover:bg-gray-800 hover:text-white transition">
+          <i class="fa-solid fa-chart-pie text-lg text-gray-400"></i>
+          <span>Dashboard</span>
+        </a>
+        <a href="users.html" class="flex items-center gap-3 px-4 py-3 text-sm font-semibold text-gray-300 rounded-xl hover:bg-gray-800 hover:text-white transition">
+          <i class="fa-solid fa-users text-lg text-gray-400"></i>
+          <span>User</span>
+        </a>
+        <a href="add-bet.html" class="flex items-center gap-3 px-4 py-3 text-sm font-semibold text-gray-300 rounded-xl hover:bg-gray-800 hover:text-white transition">
+          <i class="fa-solid fa-plus-circle text-lg text-gray-400"></i>
+          <span>Add Bet</span>
+        </a>
+        <!-- Active Menu -->
+        <a href="live-bet.html" class="flex items-center gap-3 px-4 py-3 text-sm font-semibold bg-orange-500 text-white rounded-xl shadow-lg shadow-orange-500/20 transition">
+          <i class="fa-solid fa-tower-broadcast text-lg"></i>
+          <span>Live Bet</span>
+        </a>
+        <a href="bet-history.html" class="flex items-center gap-3 px-4 py-3 text-sm font-semibold text-gray-300 rounded-xl hover:bg-gray-800 hover:text-white transition">
+          <i class="fa-solid fa-clock-rotate-left text-lg text-gray-400"></i>
+          <span>Bet History</span>
+        </a>
+      </nav>
+    </div>
+
+    <!-- Bottom Logout Section -->
+    <div class="pt-4 border-t border-gray-800">
+      <button 
+        id="logout-btn" 
+        class="w-full bg-red-600/10 hover:bg-red-600 text-red-500 hover:text-white text-sm font-semibold px-4 py-3 rounded-xl transition flex items-center gap-3 cursor-pointer"
+      >
+        <i class="fa-solid fa-right-from-bracket text-lg"></i> Logout
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main Content Wrapper -->
+  <div class="flex-1 md:ml-64 flex flex-col min-h-screen">
+
+    <!-- Top Header -->
+    <header class="bg-white border-b border-gray-200 px-6 md:px-8 py-4 flex justify-between items-center shadow-sm sticky top-0 z-20">
+      <div class="flex items-center gap-3">
+        <button id="sidebar-open-btn" class="md:hidden text-gray-700 hover:text-orange-500 text-xl p-1 focus:outline-none cursor-pointer">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+        <h1 class="text-lg md:text-xl font-bold text-gray-800">Live & Active Matches</h1>
+      </div>
+      <div class="flex items-center gap-4">
+        <span id="admin-status" class="text-xs bg-orange-500/10 text-orange-500 px-3 py-1.5 rounded-full border border-orange-500/20 font-semibold flex items-center">
+          <i class="fa-solid fa-circle text-[8px] mr-1.5 text-orange-500 animate-pulse"></i> Admin Active
+        </span>
+      </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 p-4 md:p-8 max-w-6xl w-full mx-auto">
+      
+      <!-- Action Bar -->
+      <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
+        <div>
+          <h2 class="text-xl font-bold text-gray-800">Manage Matches</h2>
+          <p class="text-xs text-gray-500">Real-time status and match control</p>
+        </div>
+        <a href="add-bet.html" class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2.5 rounded-xl text-sm font-semibold shadow-md transition flex items-center gap-2">
+          <i class="fa-solid fa-plus"></i> Add New Match
+        </a>
+      </div>
+
+      <!-- Live Matches Grid Container -->
+      <div id="matches-container" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Loading State Placeholder -->
+        <div class="col-span-full text-center py-12 bg-white rounded-2xl border border-gray-200">
+          <i class="fa-solid fa-spinner fa-spin text-3xl text-orange-500 mb-3"></i>
+          <p class="text-gray-500 font-medium text-sm">Loading live matches...</p>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Firebase & UI Scripts -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getDatabase, ref, get, child, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+    // Firebase Config
+    const firebaseConfig = {
+      apiKey: "AIzaSyBzQaaXhTtiGpMjRMBUXZaCIrDRoNyEkU4",
+      authDomain: "betx-904da.firebaseapp.com",
+      databaseURL: "https://betx-904da-default-rtdb.firebaseio.com",
+      projectId: "betx-904da",
+      storageBucket: "betx-904da.firebasestorage.app",
+      messagingSenderId: "1076536561200",
+      appId: "1:1076536561200:web:87ddeee59d73ed3a08e7f5",
+      measurementId: "G-ER5HGVL74K"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+
+    // Sidebar Controls
+    const sidebar = document.getElementById('sidebar');
+    const sidebarOpenBtn = document.getElementById('sidebar-open-btn');
+    const sidebarCloseBtn = document.getElementById('sidebar-close-btn');
+    const sidebarOverlay = document.getElementById('sidebar-overlay');
+
+    const toggleSidebar = () => {
+      sidebar.classList.toggle('-translate-x-full');
+      sidebarOverlay.classList.toggle('hidden');
+    };
+
+    sidebarOpenBtn.addEventListener('click', toggleSidebar);
+    sidebarCloseBtn.addEventListener('click', toggleSidebar);
+    sidebarOverlay.addEventListener('click', toggleSidebar);
+
+    const logoutBtn = document.getElementById('logout-btn');
+    const matchesContainer = document.getElementById('matches-container');
+
+    // Fetch and Display Realtime Matches
+    const betsRef = ref(db, 'bets');
+    onValue(betsRef, (snapshot) => {
+      matchesContainer.innerHTML = '';
+
+      if (!snapshot.exists()) {
+        matchesContainer.innerHTML = `
+          <div class="col-span-full text-center py-12 bg-white rounded-2xl border border-gray-200">
+            <i class="fa-solid fa-folder-open text-4xl text-gray-300 mb-3"></i>
+            <p class="text-gray-500 font-medium">No active or upcoming matches found.</p>
+          </div>
+        `;
+        return;
+      }
+
+      const matches = snapshot.val();
+      Object.keys(matches).forEach((matchId) => {
+        const match = matches[matchId];
+        renderMatchCard(matchId, match);
+      });
+    });
+
+    // Render Card UI Function
+    function renderMatchCard(id, data) {
+      const isLive = data.status === 'live';
+      const statusBadgeClass = isLive 
+        ? 'bg-red-500/10 text-red-500 border-red-500/20' 
+        : data.status === 'finished' 
+          ? 'bg-gray-500/10 text-gray-500 border-gray-500/20' 
+          : 'bg-blue-500/10 text-blue-500 border-blue-500/20';
+
+      const card = document.createElement('div');
+      card.className = "bg-white rounded-2xl shadow-sm border border-gray-200 p-6 flex flex-col justify-between";
+      
+      card.innerHTML = `
+        <div>
+          <!-- Header info -->
+          <div class="flex justify-between items-center mb-4 pb-3 border-b border-gray-100">
+            <span class="text-xs font-bold uppercase tracking-wider text-orange-500 bg-orange-50 px-2.5 py-1 rounded-lg">
+              ${data.sport || 'Match'}
+            </span>
+            <span class="text-xs px-3 py-1 rounded-full border font-semibold capitalize ${statusBadgeClass}">
+              ${data.status === 'live' ? '<i class="fa-solid fa-circle text-[8px] mr-1 animate-pulse"></i>' : ''} ${data.status}
+            </span>
+          </div>
+
+          <p class="text-xs font-medium text-gray-400 mb-4">${data.league || 'Standard League'}</p>
+
+          <!-- Teams Layout -->
+          <div class="flex items-center justify-between my-4 gap-2">
+            <!-- Team 1 -->
+            <div class="flex flex-col items-center text-center w-1/3">
+              <img src="${data.team1.logo}" alt="${data.team1.name}" class="w-12 h-12 object-contain mb-2 rounded-full bg-gray-50 p-1 border border-gray-100" onerror="this.src='https://via.placeholder.com/50?text=T1'">
+              <span class="text-xs font-bold text-gray-800 line-clamp-1">${data.team1.name}</span>
+            </div>
+
+            <!-- VS Badge -->
+            <div class="text-center">
+              <span class="text-xs font-black text-gray-300 bg-gray-100 px-2 py-1 rounded-md">VS</span>
+            </div>
+
+            <!-- Team 2 -->
+            <div class="flex flex-col items-center text-center w-1/3">
+              <img src="${data.team2.logo}" alt="${data.team2.name}" class="w-12 h-12 object-contain mb-2 rounded-full bg-gray-50 p-1 border border-gray-100" onerror="this.src='https://via.placeholder.com/50?text=T2'">
+              <span class="text-xs font-bold text-gray-800 line-clamp-1">${data.team2.name}</span>
+            </div>
+          </div>
+
+          <div class="text-center text-xs text-gray-500 my-3 bg-gray-50 py-2 rounded-lg">
+            <i class="fa-regular fa-clock mr-1"></i> ${new Date(data.matchDate).toLocaleString()}
+          </div>
+        </div>
+
+        <!-- Admin Controls -->
+        <div class="pt-4 border-t border-gray-100 flex items-center gap-2">
+          <select data-id="${id}" class="status-select flex-1 px-3 py-2 text-xs font-medium bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500">
+            <option value="upcoming" ${data.status === 'upcoming' ? 'selected' : ''}>Upcoming</option>
+            <option value="live" ${data.status === 'live' ? 'selected' : ''}>Live Now</option>
+            <option value="finished" ${data.status === 'finished' ? 'selected' : ''}>Finished</option>
+          </select>
+
+          <button data-id="${id}" class="delete-btn text-red-500 hover:bg-red-50 p-2 rounded-xl transition cursor-pointer" title="Delete Match">
+            <i class="fa-solid fa-trash-can"></i>
+          </button>
+        </div>
+      `;
+
+      matchesContainer.appendChild(card);
+    }
+
+    // Event Delegation for Dynamic Actions
+    matchesContainer.addEventListener('change', async (e) => {
+      if (e.target.classList.contains('status-select')) {
+        const matchId = e.target.getAttribute('data-id');
+        const newStatus = e.target.value;
+
+        try {
+          await update(ref(db, `bets/${matchId}`), { status: newStatus });
+        } catch (err) {
+          alert('Failed to update status: ' + err.message);
+        }
+      }
+    });
+
+    matchesContainer.addEventListener('click', async (e) => {
+      const deleteBtn = e.target.closest('.delete-btn');
+      if (deleteBtn) {
+        const matchId = deleteBtn.getAttribute('data-id');
+        if (confirm('Are you sure you want to delete this match?')) {
+          try {
+            await remove(ref(db, `bets/${matchId}`));
+          } catch (err) {
+            alert('Failed to delete match: ' + err.message);
+          }
+        }
+      }
+    });
+
+    // Auth Protection
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        try {
+          const dbRef = ref(db);
+          const userSnapshot = await get(child(dbRef, `users/${user.uid}`));
+
+          if (!userSnapshot.exists() || userSnapshot.val().role !== "admin") {
+            alert("Access Denied!");
+            window.location.href = "login.html";
+          }
+        } catch (err) {
+          window.location.href = "login.html";
+        }
+      } else {
+        window.location.href = "login.html";
+      }
+    });
+
+    // Logout
+    logoutBtn.addEventListener('click', () => {
+      signOut(auth).then(() => {
+        window.location.href = "login.html";
+      });
+    });
+  </script>
+
+</body>
+</html>
