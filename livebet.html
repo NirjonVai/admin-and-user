@@ -167,10 +167,15 @@
 
     let allMatchesData = {};
 
-    // Helper function to force English numbers
+    // Strictly convert Bengali digits and illegal characters to English digits
     const toEngNum = (num) => {
       if (num === undefined || num === null) return '';
-      return String(num).replace(/[০-৯]/g, d => "০১২৩৪৫৬৭৮৯".indexOf(d));
+      let str = String(num);
+      const banglaNums = {'০':'0', '১':'1', '২':'2', '৩':'3', '৪':'4', '৫':'5', '৬':'6', '৭':'7', '৮':'8', '৯':'9'};
+      str = str.replace(/[০-৯]/g, match => banglaNums[match]);
+      // Remove everything except numbers and decimal point
+      str = str.replace(/[^0-9.]/g, '');
+      return str;
     };
 
     // Fetch and Display Realtime Matches
@@ -231,7 +236,7 @@
         ? 'bg-purple-100 text-purple-600 border-purple-200' 
         : 'bg-emerald-100 text-emerald-600 border-emerald-200';
 
-      // Default Odds Values with forced English format
+      // Default Odds Values with strictly forced English format
       const rawOdds = data.odds || {};
       const odds = {
         team1: toEngNum(rawOdds.team1 || '1.50'),
@@ -285,7 +290,7 @@
             <i class="fa-regular fa-clock mr-1"></i> ${new Date(data.matchDate).toLocaleString('en-US')}
           </div>
 
-          <!-- Odds Section (FORCED ENGLISH NUMBERS) -->
+          <!-- Odds Section (FORCED ENGLISH INPUTS & ENGLIGH FONTS) -->
           <div class="bg-orange-50/60 border border-orange-100 rounded-xl p-3 my-4">
             <div class="flex items-center justify-between mb-2">
               <span class="text-[11px] font-bold text-gray-700 flex items-center gap-1">
@@ -298,19 +303,19 @@
               <!-- Team 1 Odds -->
               <div>
                 <label class="block text-[9px] font-semibold text-gray-500 uppercase truncate">${data.team1.name}</label>
-                <input type="number" step="0.01" data-id="${id}" data-type="team1" value="${odds.team1}" class="odds-input w-full px-2 py-1.5 text-xs font-bold text-gray-800 bg-white border border-gray-200 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-orange-500">
+                <input type="text" inputmode="decimal" lang="en" data-id="${id}" data-type="team1" value="${odds.team1}" class="odds-input w-full px-2 py-1.5 text-xs font-bold text-gray-800 bg-white border border-gray-200 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-orange-500 font-sans">
               </div>
 
               <!-- Draw Odds -->
               <div>
                 <label class="block text-[9px] font-semibold text-gray-500 uppercase truncate">Draw</label>
-                <input type="number" step="0.01" data-id="${id}" data-type="draw" value="${odds.draw}" class="odds-input w-full px-2 py-1.5 text-xs font-bold text-gray-800 bg-white border border-gray-200 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-orange-500">
+                <input type="text" inputmode="decimal" lang="en" data-id="${id}" data-type="draw" value="${odds.draw}" class="odds-input w-full px-2 py-1.5 text-xs font-bold text-gray-800 bg-white border border-gray-200 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-orange-500 font-sans">
               </div>
 
               <!-- Team 2 Odds -->
               <div>
                 <label class="block text-[9px] font-semibold text-gray-500 uppercase truncate">${data.team2.name}</label>
-                <input type="number" step="0.01" data-id="${id}" data-type="team2" value="${odds.team2}" class="odds-input w-full px-2 py-1.5 text-xs font-bold text-gray-800 bg-white border border-gray-200 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-orange-500">
+                <input type="text" inputmode="decimal" lang="en" data-id="${id}" data-type="team2" value="${odds.team2}" class="odds-input w-full px-2 py-1.5 text-xs font-bold text-gray-800 bg-white border border-gray-200 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-orange-500 font-sans">
               </div>
             </div>
           </div>
@@ -349,6 +354,14 @@
 
       matchesContainer.appendChild(card);
     }
+
+    // Live typing interceptor to keep input strictly English digits
+    matchesContainer.addEventListener('input', (e) => {
+      if (e.target.classList.contains('odds-input')) {
+        const cleaned = toEngNum(e.target.value);
+        e.target.value = cleaned;
+      }
+    });
 
     // Event Delegation for Dynamic Actions
     matchesContainer.addEventListener('change', async (e) => {
@@ -432,4 +445,4 @@
   </script>
 
 </body>
-  </html>
+</html>
