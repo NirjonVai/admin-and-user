@@ -43,12 +43,10 @@
           <i class="fa-solid fa-plus-circle text-lg text-gray-400"></i>
           <span>Add Bet</span>
         </a>
-        <!-- Real Bet Menu -->
         <a href="live-bet.html" class="flex items-center gap-3 px-4 py-3 text-sm font-semibold text-gray-300 rounded-xl hover:bg-gray-800 hover:text-white transition">
           <i class="fa-solid fa-trophy text-lg text-gray-400"></i>
           <span>Real Match</span>
         </a>
-        <!-- Active AI Bet Menu -->
         <a href="ai-bet.html" class="flex items-center gap-3 px-4 py-3 text-sm font-semibold bg-purple-600 text-white rounded-xl shadow-lg shadow-purple-600/20 transition">
           <i class="fa-solid fa-robot text-lg"></i>
           <span>AI Match</span>
@@ -60,7 +58,6 @@
       </nav>
     </div>
 
-    <!-- Bottom Logout Section -->
     <div class="pt-4 border-t border-gray-800">
       <button 
         id="logout-btn" 
@@ -92,7 +89,6 @@
     <!-- Main Content Area -->
     <main class="flex-1 p-4 md:p-8 max-w-6xl w-full mx-auto">
       
-      <!-- Action Bar -->
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
           <h2 class="text-xl font-bold text-gray-800">AI Matches & Odds</h2>
@@ -218,26 +214,8 @@
       }
     }
 
-    function catchUpOfflineBalls(s, matchId) {
-      if (!s.lastUpdated || s.isMatchOver) return;
-
-      const now = Date.now();
-      const elapsedSeconds = Math.floor((now - s.lastUpdated) / 1000);
-      const missedBalls = Math.floor(elapsedSeconds / 5);
-
-      if (missedBalls > 0) {
-        const ballsToSimulate = Math.min(missedBalls, 300);
-        for (let i = 0; i < ballsToSimulate; i++) {
-          if (s.isMatchOver) break;
-          processSingleBallLogic(s);
-        }
-        s.lastUpdated = now;
-        saveScoreToDatabase(matchId, s);
-      }
-    }
-
     function getAIScoreData(matchId, team1Name, team2Name, dbScore) {
-      if (!simulatedScores[matchId]) {
+      if (!simulatedScores[matchId] || dbScore) {
         if (dbScore) {
           simulatedScores[matchId] = {
             innings: dbScore.innings || 1,
@@ -252,8 +230,7 @@
             isMatchOver: Boolean(dbScore.isMatchOver),
             lastUpdated: Number(dbScore.lastUpdated) || Date.now()
           };
-          catchUpOfflineBalls(simulatedScores[matchId], matchId);
-        } else {
+        } else if (!simulatedScores[matchId]) {
           simulatedScores[matchId] = {
             innings: 1,
             battingTeam: team1Name || 'TM1',
@@ -290,13 +267,16 @@
         lastUpdated: scoreObj.lastUpdated || Date.now()
       };
 
-      // Direct Set Path to ensure persistence
       set(ref(db, `bets/${matchId}/aiScore`), payload)
-        .then(() => console.log(`[Success] Updated match: ${matchId}`))
-        .catch((err) => console.error(`[Firebase Error]:`, err));
+        .then(() => console.log(`[Score Saved]: Match ${matchId}`))
+        .catch((err) => console.error(`[Firebase Write Error]:`, err));
     }
 
     function updateMatchStateByOneBall(matchId) {
+      const matchObj = allMatchesData[matchId];
+      // শুধুমাত্র 'live' স্ট্যাটাস থাকলে এবং ম্যাচ শেষ না হলে স্কোর বাড়বে
+      if (!matchObj || matchObj.status !== 'live') return;
+
       const s = simulatedScores[matchId];
       if (!s || s.isMatchOver) return;
 
@@ -415,11 +395,11 @@
             </div>
           </div>
 
-          <!-- Dynamic Ball-By-Ball Real Cricket Scoreboard -->
+          <!-- Dynamic Ball-By-Ball Scoreboard -->
           <div class="bg-gray-900 text-white p-3.5 rounded-xl my-3 shadow-inner">
             <div class="flex justify-between items-center border-b border-gray-800 pb-2 mb-2">
               <div class="flex items-center gap-2">
-                <span class="inline-block w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                <span class="inline-block w-2 h-2 rounded-full ${isLive ? 'bg-red-500 animate-pulse' : 'bg-gray-500'}"></span>
                 <span class="text-xs font-bold tracking-wider text-gray-200">${aiScore.battingTeam} ${aiScore.runs}/${aiScore.wickets}</span>
                 <span class="text-[9px] bg-gray-800 text-gray-400 px-1.5 py-0.5 rounded font-mono">${aiScore.innings === 1 ? '1st Inn' : '2nd Inn'}</span>
               </div>
@@ -498,15 +478,12 @@
       matchesContainer.appendChild(card);
     }
 
-    // প্রতি ৫ সেকেন্ডে স্কোর আপডেট
+    // প্রতি ৪ সেকেন্ড পর পর লাইভ ম্যাচগুলোর বল আপডেট হবে
     setInterval(() => {
       Object.keys(simulatedScores).forEach(id => {
         updateMatchStateByOneBall(id);
       });
-      if (Object.keys(allMatchesData).length > 0) {
-        renderAIMatches();
-      }
-    }, 5000);
+    }, 4000);
 
     matchesContainer.addEventListener('input', (e) => {
       if (e.target.classList.contains('odds-input')) {
