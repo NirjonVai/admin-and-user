@@ -154,104 +154,128 @@
     const matchesContainer = document.getElementById('matches-container');
 
     let allMatchesData = {};
-    let simulatedScores = {};
 
-    // Helper: Random integer generator
-    const getRandomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+    // PRNG (Pseudo-Random Number Generator) for deterministic identical random values per ball index
+    function pseudoRandom(seed) {
+      const x = Math.sin(seed++) * 10000;
+      return x - Math.floor(x);
+    }
 
-    // AI Dynamic Target Score Calculator (Low: 120-140, Avg: 160-180, High: 230-250)
-    function generateAITargetScore() {
-      const rand = Math.random();
+    // Convert string to numeric hash seed
+    function stringToSeed(str) {
+      let hash = 0;
+      for (let i = 0; i < str.length; i++) {
+        hash = (hash << 5) - hash + str.charCodeAt(i);
+        hash |= 0;
+      }
+      return Math.abs(hash);
+    }
+
+    // Get Target score deterministically based on Match ID
+    function getDeterministicTargetScore(matchId) {
+      const baseSeed = stringToSeed(matchId + "_target");
+      const rand = pseudoRandom(baseSeed);
       if (rand < 0.15) {
-        return getRandomInt(120, 140); // Low Score Range
+        return Math.floor(120 + pseudoRandom(baseSeed + 1) * 21);
       } else if (rand < 0.85) {
-        return getRandomInt(160, 180); // Average Score Range
+        return Math.floor(160 + pseudoRandom(baseSeed + 1) * 21);
       } else {
-        return getRandomInt(230, 250); // High Score Range
+        return Math.floor(230 + pseudoRandom(baseSeed + 1) * 21);
       }
     }
 
-    // Initialize or Get Real-time Match State
-    function getAIScoreData(matchId, team1Name, team2Name) {
-      if (!simulatedScores[matchId]) {
-        simulatedScores[matchId] = {
-          innings: 1, // Starts from 1st Innings
-          battingTeam: team1Name || 'BAN',
-          bowlingTeam: team2Name || 'OPP',
-          runs: 0, // Starts from 0 Runs
-          wickets: 0,
-          over: 0, // Current over count (0 to 19)
-          ball: 0, // Current ball count (0 to 5)
-          recentBalls: [], // Over history
-          target: 0, // Target set after 1st innings
-          isMatchOver: false
-        };
-      }
-      return simulatedScores[matchId];
-    }
+    // Time-based deterministic calculation (Device/Network state independent)
+    function calculateDeterministicAIScore(matchData, matchId) {
+      const team1 = matchData.team1?.name?.substring(0, 3).toUpperCase() || 'TM1';
+      const team2 = matchData.team2?.name?.substring(0, 3).toUpperCase() || 'TM2';
 
-    // Advance Match state by 1 Ball realistically
-    function updateMatchStateByOneBall(matchId) {
-      const s = simulatedScores[matchId];
-      if (!s || s.isMatchOver) return;
+      let state = {
+        innings: 1,
+        battingTeam: team1,
+        bowlingTeam: team2,
+        runs: 0,
+        wickets: 0,
+        over: 0,
+        ball: 0,
+        recentBalls: [],
+        target: 0,
+        isMatchOver: false
+      };
+
+      if (!matchData.matchDate) return state;
+
+      const startTime = new Date(matchData.matchDate).getTime();
+      const currentTime = Date.now();
+      
+      // Calculate total balls transpired based on 5-second interval per ball
+      const elapsedSeconds = Math.max(0, Math.floor((currentTime - startTime) / 1000));
+      const totalBallsTranspired = Math.floor(elapsedSeconds / 5);
+
+      if (totalBallsTranspired <= 0) return state;
 
       const outcomes = ['0', '1', '2', '4', '6', 'wd', 'W'];
-      // Realistic probability selection
-      const rand = Math.random();
-      let event = '0';
-      if (rand < 0.35) event = '0';
-      else if (rand < 0.65) event = '1';
-      else if (rand < 0.78) event = '2';
-      else if (rand < 0.88) event = '4';
-      else if (rand < 0.94) event = '6';
-      else if (rand < 0.97) event = 'wd';
-      else event = 'W';
+      const matchSeed = stringToSeed(matchId);
 
-      // Update score based on ball outcome
-      if (event === 'wd') {
-        s.runs += 1;
-      } else if (event === 'W') {
-        s.wickets += 1;
-        s.ball += 1;
-      } else {
-        s.runs += parseInt(event);
-        s.ball += 1;
-      }
+      for (let i = 0; i < totalBallsTranspired; i++) {
+        if (state.isMatchOver) break;
 
-      s.recentBalls.push(event);
+        // Deterministic probability selection for ball event
+        const rand = pseudoRandom(matchSeed + i);
+        let event = '0';
+        if (rand < 0.35) event = '0';
+        else if (rand < 0.65) event = '1';
+        else if (rand < 0.78) event = '2';
+        else if (rand < 0.88) event = '4';
+        else if (rand < 0.94) event = '6';
+        else if (rand < 0.97) event = 'wd';
+        else event = 'W';
 
-      // Reset recent balls list if over completes
-      if (s.recentBalls.length > 6) {
-        s.recentBalls.shift();
-      }
-
-      // Over finish logic
-      if (s.ball >= 6) {
-        s.over += 1;
-        s.ball = 0;
-      }
-
-      // Check 1st Innings End Condition (20 Overs or 10 Wickets)
-      if (s.innings === 1) {
-        if (s.over >= 20 || s.wickets >= 10) {
-          // Set Target and switch to 2nd Innings
-          s.target = s.runs + 1; // Real target based on 1st innings
-          if (s.target < 120) s.target = generateAITargetScore(); // Ensure target falls in expected brackets
-          s.innings = 2;
-          s.battingTeam = s.bowlingTeam; // 2nd team bats
-          s.runs = 0; // Starts from 0 for 2nd innings
-          s.wickets = 0;
-          s.over = 0;
-          s.ball = 0;
-          s.recentBalls = [];
+        // Process Ball outcome
+        if (event === 'wd') {
+          state.runs += 1;
+        } else if (event === 'W') {
+          state.wickets += 1;
+          state.ball += 1;
+        } else {
+          state.runs += parseInt(event);
+          state.ball += 1;
         }
-      } 
-      // Check 2nd Innings End Condition
-      else if (s.innings === 2) {
-        if (s.runs >= s.target || s.over >= 20 || s.wickets >= 10) {
-          s.isMatchOver = true; // Match Finished
+
+        state.recentBalls.push(event);
+        if (state.recentBalls.length > 6) {
+          state.recentBalls.shift();
+        }
+
+        // Over finish logic
+        if (state.ball >= 6) {
+          state.over += 1;
+          state.ball = 0;
+        }
+
+        // 1st Innings End Logic (20 Overs or 10 Wickets)
+        if (state.innings === 1) {
+          if (state.over >= 20 || state.wickets >= 10) {
+            state.target = state.runs + 1;
+            if (state.target < 120) state.target = getDeterministicTargetScore(matchId);
+            state.innings = 2;
+            state.battingTeam = team2;
+            state.bowlingTeam = team1;
+            state.runs = 0;
+            state.wickets = 0;
+            state.over = 0;
+            state.ball = 0;
+            state.recentBalls = [];
+          }
+        } 
+        // 2nd Innings End Logic
+        else if (state.innings === 2) {
+          if (state.runs >= state.target || state.over >= 20 || state.wickets >= 10) {
+            state.isMatchOver = true;
+          }
         }
       }
+
+      return state;
     }
 
     const toEngNum = (num) => {
@@ -311,10 +335,8 @@
         draw: toEngNum(rawOdds.draw || '2.00')
       };
 
-      // Get simulated real-time 1-ball step score
-      const t1 = data.team1?.name?.substring(0, 3).toUpperCase() || 'TM1';
-      const t2 = data.team2?.name?.substring(0, 3).toUpperCase() || 'TM2';
-      const aiScore = getAIScoreData(id, t1, t2);
+      // Calculate state seamlessly using elapsed match timestamp
+      const aiScore = calculateDeterministicAIScore(data, id);
 
       const card = document.createElement('div');
       card.className = "bg-white rounded-2xl shadow-sm border border-gray-200 p-6 flex flex-col justify-between";
@@ -436,11 +458,8 @@
       matchesContainer.appendChild(card);
     }
 
-    // Interval: Step 1 ball every 5 seconds for realistic live ball-by-ball updates
+    // Refresh display UI regularly; deterministic mathematical engine handles actual score state
     setInterval(() => {
-      Object.keys(simulatedScores).forEach(id => {
-        updateMatchStateByOneBall(id);
-      });
       if (Object.keys(allMatchesData).length > 0) {
         renderAIMatches();
       }
