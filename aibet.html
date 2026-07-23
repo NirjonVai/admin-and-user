@@ -280,27 +280,17 @@
           </div>
         </div>
 
-        <div class="pt-3 border-t border-gray-100 flex flex-col gap-2">
-          <div class="grid grid-cols-2 gap-2">
-            <div>
-              <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Category</label>
-              <select data-id="${id}" class="category-select w-full px-2 py-1.5 text-xs font-medium bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500">
-                <option value="Real Match">Real Match</option>
-                <option value="AI Match" selected>AI Match</option>
-              </select>
-            </div>
-
-            <div>
-              <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Status</label>
-              <select data-id="${id}" class="status-select w-full px-2 py-1.5 text-xs font-medium bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500">
-                <option value="upcoming" ${data.status === 'upcoming' ? 'selected' : ''}>Upcoming</option>
-                <option value="live" ${data.status === 'live' ? 'selected' : ''}>Live Now</option>
-                <option value="finished" ${data.status === 'finished' ? 'selected' : ''}>Finished</option>
-              </select>
-            </div>
+        <div class="pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
+          <div class="flex-1">
+            <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Status</label>
+            <select data-id="${id}" class="status-select w-full px-2 py-1.5 text-xs font-medium bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500">
+              <option value="upcoming" ${data.status === 'upcoming' ? 'selected' : ''}>Upcoming</option>
+              <option value="live" ${data.status === 'live' ? 'selected' : ''}>Live Now</option>
+              <option value="finished" ${data.status === 'finished' ? 'selected' : ''}>Finished</option>
+            </select>
           </div>
 
-          <div class="flex justify-end pt-1">
+          <div class="pt-4">
             <button data-id="${id}" class="delete-btn text-xs text-red-500 hover:bg-red-50 px-3 py-1.5 rounded-xl transition cursor-pointer flex items-center gap-1 font-semibold">
               <i class="fa-solid fa-trash-can"></i> Delete
             </button>
@@ -321,11 +311,6 @@
       if (e.target.classList.contains('status-select')) {
         const matchId = e.target.getAttribute('data-id');
         await update(ref(db, `bets/${matchId}`), { status: e.target.value });
-      }
-
-      if (e.target.classList.contains('category-select')) {
-        const matchId = e.target.getAttribute('data-id');
-        await update(ref(db, `bets/${matchId}`), { category: e.target.value });
       }
 
       if (e.target.classList.contains('odds-input')) {
