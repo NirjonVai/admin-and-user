@@ -154,6 +154,58 @@
     const matchesContainer = document.getElementById('matches-container');
 
     let allMatchesData = {};
+    let simulatedScores = {};
+
+    // Helper: Random integer generator
+    const getRandomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+
+    // AI Dynamic Target Score Calculator (Low: 120-140, Avg: 160-180, High: 230-250)
+    function generateAITargetScore() {
+      const rand = Math.random();
+      if (rand < 0.15) {
+        return getRandomInt(120, 140); // Low Score Range (15% Probability)
+      } else if (rand < 0.85) {
+        return getRandomInt(160, 180); // Average Score Range (70% Probability)
+      } else {
+        return getRandomInt(230, 250); // High Score Range (15% Probability)
+      }
+    }
+
+    // Dynamic Ball Events simulation
+    function generateRecentBalls() {
+      const possibleEvents = ['0', '1', '2', '4', '6', 'wd', 'W'];
+      const balls = [];
+      for (let i = 0; i < 6; i++) {
+        const randEvent = possibleEvents[getRandomInt(0, possibleEvents.length - 1)];
+        balls.push(randEvent);
+      }
+      return balls;
+    }
+
+    // Get or initialize AI match score simulation
+    function getAIScoreData(matchId, teamName) {
+      if (!simulatedScores[matchId]) {
+        const target = generateAITargetScore();
+        const currentOver = getRandomInt(1, 19);
+        const currentBall = getRandomInt(1, 5);
+        
+        // Dynamic Runs relative to Overs & Target
+        const runRateProgress = (currentOver + (currentBall / 6)) / 20;
+        const currentRuns = Math.min(target - 1, Math.floor(target * runRateProgress));
+        const wickets = getRandomInt(1, 7);
+
+        simulatedScores[matchId] = {
+          team: teamName || 'BAN',
+          runs: currentRuns,
+          wickets: wickets,
+          over: `${currentOver}.${currentBall}`,
+          overNum: currentOver,
+          recentBalls: generateRecentBalls(),
+          target: target
+        };
+      }
+      return simulatedScores[matchId];
+    }
 
     const toEngNum = (num) => {
       if (num === undefined || num === null) return '';
@@ -212,6 +264,10 @@
         draw: toEngNum(rawOdds.draw || '2.00')
       };
 
+      // Get simulated dynamic AI score
+      const team1Code = data.team1?.name?.substring(0, 3).toUpperCase() || 'BAN';
+      const aiScore = getAIScoreData(id, team1Code);
+
       const card = document.createElement('div');
       card.className = "bg-white rounded-2xl shadow-sm border border-gray-200 p-6 flex flex-col justify-between";
       
@@ -249,29 +305,31 @@
             </div>
           </div>
 
-          <!-- Live Scoreboard Display -->
+          <!-- Dynamic Automatic AI Scoreboard Display -->
           <div class="bg-gray-900 text-white p-3.5 rounded-xl my-3 shadow-inner">
             <div class="flex justify-between items-center border-b border-gray-800 pb-2 mb-2">
               <div class="flex items-center gap-2">
                 <span class="inline-block w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
-                <span class="text-xs font-bold tracking-wider text-gray-200">BAN 186/3</span>
+                <span class="text-xs font-bold tracking-wider text-gray-200">${aiScore.team} ${aiScore.runs}/${aiScore.wickets}</span>
               </div>
               <span class="text-[11px] font-semibold text-purple-400 bg-purple-950/80 px-2 py-0.5 rounded-md border border-purple-800/40">
-                14.4 Ov
+                ${aiScore.over} Ov
               </span>
             </div>
             <div class="flex flex-wrap items-center justify-between text-[11px] text-gray-300 gap-1.5">
-              <div class="flex items-center gap-1.5 flex-wrap">
-                <span class="font-medium text-gray-400">Over 13:</span>
-                <span class="bg-gray-800 px-1.5 py-0.5 rounded font-mono text-[10px]">1</span>
-                <span class="bg-gray-800 px-1.5 py-0.5 rounded font-mono text-[10px]">0</span>
-                <span class="bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded font-mono text-[10px] font-bold">wd</span>
-                <span class="bg-blue-500/20 text-blue-300 px-1.5 py-0.5 rounded font-mono text-[10px] font-bold">4</span>
-                <span class="bg-gray-800 px-1.5 py-0.5 rounded font-mono text-[10px]">2</span>
-                <span class="bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded font-mono text-[10px] font-bold">6</span>
+              <div class="flex items-center gap-1 flex-wrap">
+                <span class="font-medium text-gray-400">Over ${aiScore.overNum}:</span>
+                ${aiScore.recentBalls.map(ball => {
+                  let badgeStyle = "bg-gray-800 text-gray-200";
+                  if (ball === '4') badgeStyle = "bg-blue-500/20 text-blue-300 font-bold";
+                  if (ball === '6') badgeStyle = "bg-emerald-500/20 text-emerald-300 font-bold";
+                  if (ball === 'wd') badgeStyle = "bg-amber-500/20 text-amber-300 font-bold";
+                  if (ball === 'W') badgeStyle = "bg-red-500/20 text-red-400 font-bold";
+                  return `<span class="${badgeStyle} px-1.5 py-0.5 rounded font-mono text-[10px]">${ball}</span>`;
+                }).join('')}
               </div>
               <div class="text-xs font-bold text-amber-400 ml-auto">
-                Target: 187
+                Target: ${aiScore.target}
               </div>
             </div>
           </div>
@@ -327,6 +385,20 @@
 
       matchesContainer.appendChild(card);
     }
+
+    // Auto update live runs periodically for AI simulation
+    setInterval(() => {
+      Object.keys(simulatedScores).forEach(id => {
+        const scoreObj = simulatedScores[id];
+        if (scoreObj.runs < scoreObj.target) {
+          scoreObj.runs += getRandomInt(0, 3);
+          scoreObj.recentBalls = generateRecentBalls();
+        }
+      });
+      if (Object.keys(allMatchesData).length > 0) {
+        renderAIMatches();
+      }
+    }, 5000);
 
     matchesContainer.addEventListener('input', (e) => {
       if (e.target.classList.contains('odds-input')) {
