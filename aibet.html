@@ -115,7 +115,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { getDatabase, ref, get, child, onValue, update, remove, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    import { getDatabase, ref, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyBzQaaXhTtiGpMjRMBUXZaCIrDRoNyEkU4",
@@ -150,142 +150,8 @@
     const matchesContainer = document.getElementById('matches-container');
 
     let allMatchesData = {};
-    let simulatedScores = {};
 
-    const getRandomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
-
-    function generateAITargetScore() {
-      const rand = Math.random();
-      if (rand < 0.15) return getRandomInt(120, 140);
-      else if (rand < 0.85) return getRandomInt(160, 180);
-      else return getRandomInt(230, 250);
-    }
-
-    function processSingleBallLogic(s) {
-      const rand = Math.random();
-      let event = '0';
-      if (rand < 0.35) event = '0';
-      else if (rand < 0.65) event = '1';
-      else if (rand < 0.78) event = '2';
-      else if (rand < 0.88) event = '4';
-      else if (rand < 0.94) event = '6';
-      else if (rand < 0.97) event = 'wd';
-      else event = 'W';
-
-      if (event === 'wd') {
-        s.runs += 1;
-      } else if (event === 'W') {
-        s.wickets += 1;
-        s.ball += 1;
-      } else {
-        s.runs += parseInt(event);
-        s.ball += 1;
-      }
-
-      if (!Array.isArray(s.recentBalls)) s.recentBalls = [];
-      s.recentBalls.push(event);
-      if (s.recentBalls.length > 6) s.recentBalls.shift();
-
-      if (s.ball >= 6) {
-        s.over += 1;
-        s.ball = 0;
-      }
-
-      if (s.innings === 1) {
-        if (s.over >= 20 || s.wickets >= 10) {
-          s.target = s.runs + 1;
-          if (s.target < 120) s.target = generateAITargetScore();
-          s.innings = 2;
-          
-          const tempTeam = s.battingTeam;
-          s.battingTeam = s.bowlingTeam; 
-          s.bowlingTeam = tempTeam;
-
-          s.runs = 0;
-          s.wickets = 0;
-          s.over = 0;
-          s.ball = 0;
-          s.recentBalls = [];
-        }
-      } else if (s.innings === 2) {
-        if (s.runs >= s.target || s.over >= 20 || s.wickets >= 10) {
-          s.isMatchOver = true;
-        }
-      }
-    }
-
-    function getAIScoreData(matchId, team1Name, team2Name, dbScore) {
-      if (!simulatedScores[matchId] || dbScore) {
-        if (dbScore) {
-          simulatedScores[matchId] = {
-            innings: dbScore.innings || 1,
-            battingTeam: dbScore.battingTeam || team1Name || 'TM1',
-            bowlingTeam: dbScore.bowlingTeam || team2Name || 'TM2',
-            runs: Number(dbScore.runs) || 0,
-            wickets: Number(dbScore.wickets) || 0,
-            over: Number(dbScore.over) || 0,
-            ball: Number(dbScore.ball) || 0,
-            recentBalls: Array.isArray(dbScore.recentBalls) ? dbScore.recentBalls : [],
-            target: Number(dbScore.target) || 0,
-            isMatchOver: Boolean(dbScore.isMatchOver),
-            lastUpdated: Number(dbScore.lastUpdated) || Date.now()
-          };
-        } else if (!simulatedScores[matchId]) {
-          simulatedScores[matchId] = {
-            innings: 1,
-            battingTeam: team1Name || 'TM1',
-            bowlingTeam: team2Name || 'TM2',
-            runs: 0,
-            wickets: 0,
-            over: 0,
-            ball: 0,
-            recentBalls: [],
-            target: 0,
-            isMatchOver: false,
-            lastUpdated: Date.now()
-          };
-          saveScoreToDatabase(matchId, simulatedScores[matchId]);
-        }
-      }
-      return simulatedScores[matchId];
-    }
-
-    function saveScoreToDatabase(matchId, scoreObj) {
-      if (!matchId || !scoreObj) return;
-
-      const payload = {
-        innings: scoreObj.innings || 1,
-        battingTeam: scoreObj.battingTeam || 'TM1',
-        bowlingTeam: scoreObj.bowlingTeam || 'TM2',
-        runs: scoreObj.runs || 0,
-        wickets: scoreObj.wickets || 0,
-        over: scoreObj.over || 0,
-        ball: scoreObj.ball || 0,
-        recentBalls: scoreObj.recentBalls || [],
-        target: scoreObj.target || 0,
-        isMatchOver: !!scoreObj.isMatchOver,
-        lastUpdated: scoreObj.lastUpdated || Date.now()
-      };
-
-      set(ref(db, `bets/${matchId}/aiScore`), payload)
-        .then(() => console.log(`[Score Saved]: Match ${matchId}`))
-        .catch((err) => console.error(`[Firebase Write Error]:`, err));
-    }
-
-    function updateMatchStateByOneBall(matchId) {
-      const matchObj = allMatchesData[matchId];
-      // শুধুমাত্র 'live' স্ট্যাটাস থাকলে এবং ম্যাচ শেষ না হলে স্কোর বাড়বে
-      if (!matchObj || matchObj.status !== 'live') return;
-
-      const s = simulatedScores[matchId];
-      if (!s || s.isMatchOver) return;
-
-      processSingleBallLogic(s);
-      s.lastUpdated = Date.now();
-
-      saveScoreToDatabase(matchId, s);
-    }
-
+    // বাংলা সংখ্যা থেকে ইংরেজি সংখ্যায় কনভার্ট
     const toEngNum = (num) => {
       if (num === undefined || num === null) return '';
       let str = String(num);
@@ -294,6 +160,90 @@
       str = str.replace(/[^0-9.]/g, '');
       return str;
     };
+
+    // ⚡ টাইমস্ট্যাম্পের ভিত্তিতে পিওর অ্যালগরিদম নির্ভর অটো-স্কোর ক্যালকুলেশন
+    function calculateScoreFromTimestamp(match, currentTime = Date.now()) {
+      const startTime = match.startTime || currentTime;
+      const status = match.status;
+
+      let team1Name = match.team1?.name?.substring(0, 3).toUpperCase() || 'TM1';
+      let team2Name = match.team2?.name?.substring(0, 3).toUpperCase() || 'TM2';
+
+      if (status !== 'live') {
+        return {
+          innings: 1,
+          battingTeam: team1Name,
+          bowlingTeam: team2Name,
+          runs: 0, wickets: 0, over: 0, ball: 0,
+          recentBalls: [], target: 0, isMatchOver: false
+        };
+      }
+
+      // কত সেকেন্ড পার হয়েছে (প্রতি ৪ সেকেন্ডে ১ বল)
+      const elapsedSeconds = Math.max(0, Math.floor((currentTime - startTime) / 1000));
+      const totalBallsPlayed = Math.floor(elapsedSeconds / 4);
+
+      // Deterministic Random Generator (সব জায়গায় একই স্কোর দেবে)
+      const seedRandom = (seed) => {
+        let x = Math.sin(seed) * 10000;
+        return x - Math.floor(x);
+      };
+
+      let s = {
+        innings: 1,
+        battingTeam: team1Name,
+        bowlingTeam: team2Name,
+        runs: 0, wickets: 0, over: 0, ball: 0,
+        recentBalls: [], target: 0, isMatchOver: false
+      };
+
+      for (let currentBall = 1; currentBall <= totalBallsPlayed; currentBall++) {
+        if (s.isMatchOver) break;
+
+        const rand = seedRandom(startTime + currentBall);
+        let event = '0';
+        if (rand < 0.35) event = '0';
+        else if (rand < 0.65) event = '1';
+        else if (rand < 0.78) event = '2';
+        else if (rand < 0.88) event = '4';
+        else if (rand < 0.94) event = '6';
+        else if (rand < 0.97) event = 'wd';
+        else event = 'W';
+
+        if (event === 'wd') {
+          s.runs += 1;
+        } else if (event === 'W') {
+          s.wickets += 1;
+          s.ball += 1;
+        } else {
+          s.runs += parseInt(event);
+          s.ball += 1;
+        }
+
+        s.recentBalls.push(event);
+        if (s.recentBalls.length > 6) s.recentBalls.shift();
+
+        if (s.ball >= 6) {
+          s.over += 1;
+          s.ball = 0;
+        }
+
+        // ২য় ইনিংস লজিক
+        if (s.innings === 1 && (s.over >= 20 || s.wickets >= 10)) {
+          s.target = s.runs + 1;
+          if (s.target < 120) s.target = 165; // Defalut target fallback
+          s.innings = 2;
+          s.battingTeam = team2Name;
+          s.bowlingTeam = team1Name;
+          s.runs = 0; s.wickets = 0; s.over = 0; s.ball = 0;
+          s.recentBalls = [];
+        } else if (s.innings === 2 && (s.runs >= s.target || s.over >= 20 || s.wickets >= 10)) {
+          s.isMatchOver = true;
+        }
+      }
+
+      return s;
+    }
 
     function listenToBets() {
       const betsRef = ref(db, 'bets');
@@ -304,16 +254,6 @@
           return;
         }
         allMatchesData = snapshot.val();
-        
-        Object.keys(allMatchesData).forEach(id => {
-          const m = allMatchesData[id];
-          if (m && m.category === 'AI Match') {
-            const t1 = m.team1?.name?.substring(0, 3).toUpperCase() || 'TM1';
-            const t2 = m.team2?.name?.substring(0, 3).toUpperCase() || 'TM2';
-            getAIScoreData(id, t1, t2, m.aiScore);
-          }
-        });
-
         renderAIMatches();
       });
     }
@@ -335,11 +275,13 @@
       }
 
       aiMatchKeys.forEach((matchId) => {
-        renderMatchCard(matchId, allMatchesData[matchId]);
+        const matchData = allMatchesData[matchId];
+        const computedScore = calculateScoreFromTimestamp(matchData);
+        renderMatchCard(matchId, matchData, computedScore);
       });
     }
 
-    function renderMatchCard(id, data) {
+    function renderMatchCard(id, data, aiScore) {
       const isLive = data.status === 'live';
       const statusBadgeClass = isLive 
         ? 'bg-red-500/10 text-red-500 border-red-500/20' 
@@ -353,10 +295,6 @@
         team2: toEngNum(rawOdds.team2 || '1.50'),
         draw: toEngNum(rawOdds.draw || '2.00')
       };
-
-      const t1 = data.team1?.name?.substring(0, 3).toUpperCase() || 'TM1';
-      const t2 = data.team2?.name?.substring(0, 3).toUpperCase() || 'TM2';
-      const aiScore = getAIScoreData(id, t1, t2, data.aiScore);
 
       const card = document.createElement('div');
       card.className = "bg-white rounded-2xl shadow-sm border border-gray-200 p-6 flex flex-col justify-between";
@@ -478,11 +416,11 @@
       matchesContainer.appendChild(card);
     }
 
-    // প্রতি ৪ সেকেন্ড পর পর লাইভ ম্যাচগুলোর বল আপডেট হবে
+    // প্রতি ৪ সেকেন্ড পর পর স্ক্রিনের UI অটো-রিফ্রেশ হবে (ফায়ারবেসে বার বার ডাটা রাইট করার দরকার নেই)
     setInterval(() => {
-      Object.keys(simulatedScores).forEach(id => {
-        updateMatchStateByOneBall(id);
-      });
+      if (allMatchesData && Object.keys(allMatchesData).length > 0) {
+        renderAIMatches();
+      }
     }, 4000);
 
     matchesContainer.addEventListener('input', (e) => {
@@ -492,11 +430,20 @@
     });
 
     matchesContainer.addEventListener('change', async (e) => {
+      // স্ট্যাটাস লাইভ করার সময় startTime সেভ হবে
       if (e.target.classList.contains('status-select')) {
         const matchId = e.target.getAttribute('data-id');
-        await update(ref(db, `bets/${matchId}`), { status: e.target.value });
+        const newStatus = e.target.value;
+        
+        const updateData = { status: newStatus };
+        if (newStatus === 'live') {
+          updateData.startTime = Date.now();
+        }
+
+        await update(ref(db, `bets/${matchId}`), updateData);
       }
 
+      // Odds আপডেট
       if (e.target.classList.contains('odds-input')) {
         const matchId = e.target.getAttribute('data-id');
         const oddsType = e.target.getAttribute('data-type');
@@ -508,7 +455,6 @@
       const deleteBtn = e.target.closest('.delete-btn');
       if (deleteBtn && confirm('Are you sure you want to delete this match?')) {
         const matchId = deleteBtn.getAttribute('data-id');
-        delete simulatedScores[matchId];
         await remove(ref(db, `bets/${matchId}`));
       }
     });
