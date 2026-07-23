@@ -249,6 +249,33 @@
             </div>
           </div>
 
+          <!-- Live Scoreboard Display -->
+          <div class="bg-gray-900 text-white p-3.5 rounded-xl my-3 shadow-inner">
+            <div class="flex justify-between items-center border-b border-gray-800 pb-2 mb-2">
+              <div class="flex items-center gap-2">
+                <span class="inline-block w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                <span class="text-xs font-bold tracking-wider text-gray-200">BAN 186/3</span>
+              </div>
+              <span class="text-[11px] font-semibold text-purple-400 bg-purple-950/80 px-2 py-0.5 rounded-md border border-purple-800/40">
+                14.4 Ov
+              </span>
+            </div>
+            <div class="flex flex-wrap items-center justify-between text-[11px] text-gray-300 gap-1.5">
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <span class="font-medium text-gray-400">Over 13:</span>
+                <span class="bg-gray-800 px-1.5 py-0.5 rounded font-mono text-[10px]">1</span>
+                <span class="bg-gray-800 px-1.5 py-0.5 rounded font-mono text-[10px]">0</span>
+                <span class="bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded font-mono text-[10px] font-bold">wd</span>
+                <span class="bg-blue-500/20 text-blue-300 px-1.5 py-0.5 rounded font-mono text-[10px] font-bold">4</span>
+                <span class="bg-gray-800 px-1.5 py-0.5 rounded font-mono text-[10px]">2</span>
+                <span class="bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded font-mono text-[10px] font-bold">6</span>
+              </div>
+              <div class="text-xs font-bold text-amber-400 ml-auto">
+                Target: 187
+              </div>
+            </div>
+          </div>
+
           <div class="text-center text-xs text-gray-500 my-3 bg-gray-50 py-2 rounded-lg">
             <i class="fa-regular fa-clock mr-1"></i> ${new Date(data.matchDate).toLocaleString('en-US')}
           </div>
