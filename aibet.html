@@ -119,7 +119,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { getDatabase, ref, get, child, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    import { getDatabase, ref, get, child, onValue, update, remove, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyBzQaaXhTtiGpMjRMBUXZaCIrDRoNyEkU4",
@@ -155,7 +155,6 @@
 
     let allMatchesData = {};
     let simulatedScores = {};
-    let isAuthenticated = false;
 
     const getRandomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
 
@@ -164,24 +163,6 @@
       if (rand < 0.15) return getRandomInt(120, 140);
       else if (rand < 0.85) return getRandomInt(160, 180);
       else return getRandomInt(230, 250);
-    }
-
-    function catchUpOfflineBalls(s, matchId) {
-      if (!s.lastUpdated || s.isMatchOver) return;
-
-      const now = Date.now();
-      const elapsedSeconds = Math.floor((now - s.lastUpdated) / 1000);
-      const missedBalls = Math.floor(elapsedSeconds / 5);
-
-      if (missedBalls > 0) {
-        const ballsToSimulate = Math.min(missedBalls, 300);
-        for (let i = 0; i < ballsToSimulate; i++) {
-          if (s.isMatchOver) break;
-          processSingleBallLogic(s);
-        }
-        s.lastUpdated = now;
-        saveScoreToDatabase(matchId, s);
-      }
     }
 
     function processSingleBallLogic(s) {
@@ -237,6 +218,24 @@
       }
     }
 
+    function catchUpOfflineBalls(s, matchId) {
+      if (!s.lastUpdated || s.isMatchOver) return;
+
+      const now = Date.now();
+      const elapsedSeconds = Math.floor((now - s.lastUpdated) / 1000);
+      const missedBalls = Math.floor(elapsedSeconds / 5);
+
+      if (missedBalls > 0) {
+        const ballsToSimulate = Math.min(missedBalls, 300);
+        for (let i = 0; i < ballsToSimulate; i++) {
+          if (s.isMatchOver) break;
+          processSingleBallLogic(s);
+        }
+        s.lastUpdated = now;
+        saveScoreToDatabase(matchId, s);
+      }
+    }
+
     function getAIScoreData(matchId, team1Name, team2Name, dbScore) {
       if (!simulatedScores[matchId]) {
         if (dbScore) {
@@ -244,14 +243,14 @@
             innings: dbScore.innings || 1,
             battingTeam: dbScore.battingTeam || team1Name || 'TM1',
             bowlingTeam: dbScore.bowlingTeam || team2Name || 'TM2',
-            runs: dbScore.runs || 0,
-            wickets: dbScore.wickets || 0,
-            over: dbScore.over || 0,
-            ball: dbScore.ball || 0,
+            runs: Number(dbScore.runs) || 0,
+            wickets: Number(dbScore.wickets) || 0,
+            over: Number(dbScore.over) || 0,
+            ball: Number(dbScore.ball) || 0,
             recentBalls: Array.isArray(dbScore.recentBalls) ? dbScore.recentBalls : [],
-            target: dbScore.target || 0,
-            isMatchOver: dbScore.isMatchOver || false,
-            lastUpdated: dbScore.lastUpdated || Date.now()
+            target: Number(dbScore.target) || 0,
+            isMatchOver: Boolean(dbScore.isMatchOver),
+            lastUpdated: Number(dbScore.lastUpdated) || Date.now()
           };
           catchUpOfflineBalls(simulatedScores[matchId], matchId);
         } else {
@@ -274,30 +273,30 @@
       return simulatedScores[matchId];
     }
 
-    async function saveScoreToDatabase(matchId, scoreObj) {
-      if (!isAuthenticated || !matchId) return;
-      try {
-        const updates = {};
-        updates[`bets/${matchId}/aiScore`] = {
-          innings: scoreObj.innings,
-          battingTeam: scoreObj.battingTeam,
-          bowlingTeam: scoreObj.bowlingTeam,
-          runs: scoreObj.runs,
-          wickets: scoreObj.wickets,
-          over: scoreObj.over,
-          ball: scoreObj.ball,
-          recentBalls: scoreObj.recentBalls || [],
-          target: scoreObj.target,
-          isMatchOver: scoreObj.isMatchOver,
-          lastUpdated: scoreObj.lastUpdated
-        };
-        await update(ref(db), updates);
-      } catch (err) {
-        console.error("Firebase Sync Failed:", err);
-      }
+    function saveScoreToDatabase(matchId, scoreObj) {
+      if (!matchId || !scoreObj) return;
+
+      const payload = {
+        innings: scoreObj.innings || 1,
+        battingTeam: scoreObj.battingTeam || 'TM1',
+        bowlingTeam: scoreObj.bowlingTeam || 'TM2',
+        runs: scoreObj.runs || 0,
+        wickets: scoreObj.wickets || 0,
+        over: scoreObj.over || 0,
+        ball: scoreObj.ball || 0,
+        recentBalls: scoreObj.recentBalls || [],
+        target: scoreObj.target || 0,
+        isMatchOver: !!scoreObj.isMatchOver,
+        lastUpdated: scoreObj.lastUpdated || Date.now()
+      };
+
+      // Direct Set Path to ensure persistence
+      set(ref(db, `bets/${matchId}/aiScore`), payload)
+        .then(() => console.log(`[Success] Updated match: ${matchId}`))
+        .catch((err) => console.error(`[Firebase Error]:`, err));
     }
 
-    async function updateMatchStateByOneBall(matchId) {
+    function updateMatchStateByOneBall(matchId) {
       const s = simulatedScores[matchId];
       if (!s || s.isMatchOver) return;
 
@@ -328,7 +327,7 @@
         
         Object.keys(allMatchesData).forEach(id => {
           const m = allMatchesData[id];
-          if (m.category === 'AI Match') {
+          if (m && m.category === 'AI Match') {
             const t1 = m.team1?.name?.substring(0, 3).toUpperCase() || 'TM1';
             const t2 = m.team2?.name?.substring(0, 3).toUpperCase() || 'TM2';
             getAIScoreData(id, t1, t2, m.aiScore);
@@ -343,7 +342,7 @@
       matchesContainer.innerHTML = '';
       const keys = Object.keys(allMatchesData);
       
-      const aiMatchKeys = keys.filter(id => allMatchesData[id].category === 'AI Match');
+      const aiMatchKeys = keys.filter(id => allMatchesData[id] && allMatchesData[id].category === 'AI Match');
 
       if (aiMatchKeys.length === 0) {
         matchesContainer.innerHTML = `
@@ -402,8 +401,8 @@
 
           <div class="flex items-center justify-between my-4 gap-2">
             <div class="flex flex-col items-center text-center w-1/3">
-              <img src="${data.team1.logo}" alt="${data.team1.name}" class="w-12 h-12 object-contain mb-2 rounded-full bg-gray-50 p-1 border border-gray-100" onerror="this.src='https://via.placeholder.com/50?text=T1'">
-              <span class="text-xs font-bold text-gray-800 line-clamp-1">${data.team1.name}</span>
+              <img src="${data.team1?.logo || ''}" alt="${data.team1?.name || ''}" class="w-12 h-12 object-contain mb-2 rounded-full bg-gray-50 p-1 border border-gray-100" onerror="this.src='https://via.placeholder.com/50?text=T1'">
+              <span class="text-xs font-bold text-gray-800 line-clamp-1">${data.team1?.name || 'Team 1'}</span>
             </div>
 
             <div class="text-center">
@@ -411,8 +410,8 @@
             </div>
 
             <div class="flex flex-col items-center text-center w-1/3">
-              <img src="${data.team2.logo}" alt="${data.team2.name}" class="w-12 h-12 object-contain mb-2 rounded-full bg-gray-50 p-1 border border-gray-100" onerror="this.src='https://via.placeholder.com/50?text=T2'">
-              <span class="text-xs font-bold text-gray-800 line-clamp-1">${data.team2.name}</span>
+              <img src="${data.team2?.logo || ''}" alt="${data.team2?.name || ''}" class="w-12 h-12 object-contain mb-2 rounded-full bg-gray-50 p-1 border border-gray-100" onerror="this.src='https://via.placeholder.com/50?text=T2'">
+              <span class="text-xs font-bold text-gray-800 line-clamp-1">${data.team2?.name || 'Team 2'}</span>
             </div>
           </div>
 
@@ -448,7 +447,7 @@
           </div>
 
           <div class="text-center text-xs text-gray-500 my-3 bg-gray-50 py-2 rounded-lg">
-            <i class="fa-regular fa-clock mr-1"></i> ${new Date(data.matchDate).toLocaleString('en-US')}
+            <i class="fa-regular fa-clock mr-1"></i> ${new Date(data.matchDate || Date.now()).toLocaleString('en-US')}
           </div>
 
           <div class="bg-purple-50/60 border border-purple-100 rounded-xl p-3 my-4">
@@ -461,7 +460,7 @@
             <p class="text-xs font-semibold mb-2">Team Wins 1X2</p> 
             <div class="grid grid-cols-3 gap-2">
               <div>
-                <label class="block text-[9px] font-semibold text-gray-500 uppercase truncate">${data.team1.name}</label>
+                <label class="block text-[9px] font-semibold text-gray-500 uppercase truncate">${data.team1?.name || 'TM1'}</label>
                 <input type="text" inputmode="decimal" lang="en" data-id="${id}" data-type="team1" value="${odds.team1}" class="odds-input w-full px-2 py-1.5 text-xs font-bold text-gray-800 bg-white border border-gray-200 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-purple-500 font-sans">
               </div>
 
@@ -471,7 +470,7 @@
               </div>
 
               <div>
-                <label class="block text-[9px] font-semibold text-gray-500 uppercase truncate">${data.team2.name}</label>
+                <label class="block text-[9px] font-semibold text-gray-500 uppercase truncate">${data.team2?.name || 'TM2'}</label>
                 <input type="text" inputmode="decimal" lang="en" data-id="${id}" data-type="team2" value="${odds.team2}" class="odds-input w-full px-2 py-1.5 text-xs font-bold text-gray-800 bg-white border border-gray-200 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-purple-500 font-sans">
               </div>
             </div>
@@ -499,6 +498,7 @@
       matchesContainer.appendChild(card);
     }
 
+    // প্রতি ৫ সেকেন্ডে স্কোর আপডেট
     setInterval(() => {
       Object.keys(simulatedScores).forEach(id => {
         updateMatchStateByOneBall(id);
@@ -538,14 +538,7 @@
 
     onAuthStateChanged(auth, async (user) => {
       if (user) {
-        const dbRef = ref(db);
-        const userSnapshot = await get(child(dbRef, `users/${user.uid}`));
-        if (userSnapshot.exists() && userSnapshot.val().role === "admin") {
-          isAuthenticated = true;
-          listenToBets();
-        } else {
-          window.location.href = "login.html";
-        }
+        listenToBets();
       } else {
         window.location.href = "login.html";
       }
