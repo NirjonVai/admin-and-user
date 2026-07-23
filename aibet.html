@@ -119,7 +119,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { getDatabase, ref, get, child, onValue, update, remove, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    import { getDatabase, ref, get, child, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyBzQaaXhTtiGpMjRMBUXZaCIrDRoNyEkU4",
@@ -166,7 +166,6 @@
       else return getRandomInt(230, 250);
     }
 
-    // টাইমস্ট্যাম্পের মাধ্যমে অফলাইনে হারিয়ে যাওয়া বলগুলো ক্যালকুলেট করা
     function catchUpOfflineBalls(s, matchId) {
       if (!s.lastUpdated || s.isMatchOver) return;
 
@@ -175,16 +174,13 @@
       const missedBalls = Math.floor(elapsedSeconds / 5);
 
       if (missedBalls > 0) {
-        // অফলাইনে যে কয়টি ৫ সেকেন্ড পার হয়েছে, সে কয়টি বল সিমুলেট করা
-        const ballsToSimulate = Math.min(missedBalls, 300); // ম্যাক্স লিমিট
+        const ballsToSimulate = Math.min(missedBalls, 300);
         for (let i = 0; i < ballsToSimulate; i++) {
           if (s.isMatchOver) break;
           processSingleBallLogic(s);
         }
         s.lastUpdated = now;
-        if (isAuthenticated) {
-          set(ref(db, `bets/${matchId}/aiScore`), s);
-        }
+        saveScoreToDatabase(matchId, s);
       }
     }
 
@@ -209,6 +205,7 @@
         s.ball += 1;
       }
 
+      if (!Array.isArray(s.recentBalls)) s.recentBalls = [];
       s.recentBalls.push(event);
       if (s.recentBalls.length > 6) s.recentBalls.shift();
 
@@ -271,9 +268,33 @@
             isMatchOver: false,
             lastUpdated: Date.now()
           };
+          saveScoreToDatabase(matchId, simulatedScores[matchId]);
         }
       }
       return simulatedScores[matchId];
+    }
+
+    async function saveScoreToDatabase(matchId, scoreObj) {
+      if (!isAuthenticated || !matchId) return;
+      try {
+        const updates = {};
+        updates[`bets/${matchId}/aiScore`] = {
+          innings: scoreObj.innings,
+          battingTeam: scoreObj.battingTeam,
+          bowlingTeam: scoreObj.bowlingTeam,
+          runs: scoreObj.runs,
+          wickets: scoreObj.wickets,
+          over: scoreObj.over,
+          ball: scoreObj.ball,
+          recentBalls: scoreObj.recentBalls || [],
+          target: scoreObj.target,
+          isMatchOver: scoreObj.isMatchOver,
+          lastUpdated: scoreObj.lastUpdated
+        };
+        await update(ref(db), updates);
+      } catch (err) {
+        console.error("Firebase Sync Failed:", err);
+      }
     }
 
     async function updateMatchStateByOneBall(matchId) {
@@ -283,13 +304,7 @@
       processSingleBallLogic(s);
       s.lastUpdated = Date.now();
 
-      if (isAuthenticated) {
-        try {
-          await set(ref(db, `bets/${matchId}/aiScore`), s);
-        } catch (e) {
-          console.error("Database Write Error:", e);
-        }
-      }
+      saveScoreToDatabase(matchId, s);
     }
 
     const toEngNum = (num) => {
