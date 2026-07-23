@@ -166,43 +166,29 @@
       else return getRandomInt(230, 250);
     }
 
-    function getAIScoreData(matchId, team1Name, team2Name, dbScore) {
-      if (!simulatedScores[matchId]) {
-        if (dbScore) {
-          simulatedScores[matchId] = {
-            innings: dbScore.innings || 1,
-            battingTeam: dbScore.battingTeam || team1Name || 'TM1',
-            bowlingTeam: dbScore.bowlingTeam || team2Name || 'TM2',
-            runs: dbScore.runs || 0,
-            wickets: dbScore.wickets || 0,
-            over: dbScore.over || 0,
-            ball: dbScore.ball || 0,
-            recentBalls: Array.isArray(dbScore.recentBalls) ? dbScore.recentBalls : [],
-            target: dbScore.target || 0,
-            isMatchOver: dbScore.isMatchOver || false
-          };
-        } else {
-          simulatedScores[matchId] = {
-            innings: 1,
-            battingTeam: team1Name || 'TM1',
-            bowlingTeam: team2Name || 'TM2',
-            runs: 0,
-            wickets: 0,
-            over: 0,
-            ball: 0,
-            recentBalls: [],
-            target: 0,
-            isMatchOver: false
-          };
+    // টাইমস্ট্যাম্পের মাধ্যমে অফলাইনে হারিয়ে যাওয়া বলগুলো ক্যালকুলেট করা
+    function catchUpOfflineBalls(s, matchId) {
+      if (!s.lastUpdated || s.isMatchOver) return;
+
+      const now = Date.now();
+      const elapsedSeconds = Math.floor((now - s.lastUpdated) / 1000);
+      const missedBalls = Math.floor(elapsedSeconds / 5);
+
+      if (missedBalls > 0) {
+        // অফলাইনে যে কয়টি ৫ সেকেন্ড পার হয়েছে, সে কয়টি বল সিমুলেট করা
+        const ballsToSimulate = Math.min(missedBalls, 300); // ম্যাক্স লিমিট
+        for (let i = 0; i < ballsToSimulate; i++) {
+          if (s.isMatchOver) break;
+          processSingleBallLogic(s);
+        }
+        s.lastUpdated = now;
+        if (isAuthenticated) {
+          set(ref(db, `bets/${matchId}/aiScore`), s);
         }
       }
-      return simulatedScores[matchId];
     }
 
-    async function updateMatchStateByOneBall(matchId) {
-      const s = simulatedScores[matchId];
-      if (!s || s.isMatchOver) return;
-
+    function processSingleBallLogic(s) {
       const rand = Math.random();
       let event = '0';
       if (rand < 0.35) event = '0';
@@ -252,23 +238,54 @@
           s.isMatchOver = true;
         }
       }
+    }
 
-      // Save explicitly to Firebase Database if logged in
+    function getAIScoreData(matchId, team1Name, team2Name, dbScore) {
+      if (!simulatedScores[matchId]) {
+        if (dbScore) {
+          simulatedScores[matchId] = {
+            innings: dbScore.innings || 1,
+            battingTeam: dbScore.battingTeam || team1Name || 'TM1',
+            bowlingTeam: dbScore.bowlingTeam || team2Name || 'TM2',
+            runs: dbScore.runs || 0,
+            wickets: dbScore.wickets || 0,
+            over: dbScore.over || 0,
+            ball: dbScore.ball || 0,
+            recentBalls: Array.isArray(dbScore.recentBalls) ? dbScore.recentBalls : [],
+            target: dbScore.target || 0,
+            isMatchOver: dbScore.isMatchOver || false,
+            lastUpdated: dbScore.lastUpdated || Date.now()
+          };
+          catchUpOfflineBalls(simulatedScores[matchId], matchId);
+        } else {
+          simulatedScores[matchId] = {
+            innings: 1,
+            battingTeam: team1Name || 'TM1',
+            bowlingTeam: team2Name || 'TM2',
+            runs: 0,
+            wickets: 0,
+            over: 0,
+            ball: 0,
+            recentBalls: [],
+            target: 0,
+            isMatchOver: false,
+            lastUpdated: Date.now()
+          };
+        }
+      }
+      return simulatedScores[matchId];
+    }
+
+    async function updateMatchStateByOneBall(matchId) {
+      const s = simulatedScores[matchId];
+      if (!s || s.isMatchOver) return;
+
+      processSingleBallLogic(s);
+      s.lastUpdated = Date.now();
+
       if (isAuthenticated) {
         try {
-          const scorePayload = {
-            innings: s.innings,
-            battingTeam: s.battingTeam,
-            bowlingTeam: s.bowlingTeam,
-            runs: s.runs,
-            wickets: s.wickets,
-            over: s.over,
-            ball: s.ball,
-            recentBalls: s.recentBalls || [],
-            target: s.target,
-            isMatchOver: s.isMatchOver
-          };
-          await set(ref(db, `bets/${matchId}/aiScore`), scorePayload);
+          await set(ref(db, `bets/${matchId}/aiScore`), s);
         } catch (e) {
           console.error("Database Write Error:", e);
         }
