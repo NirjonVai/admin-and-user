@@ -95,7 +95,7 @@
           <p class="text-xs text-gray-500">Real-time status and odds control for AI Virtual Matches</p>
         </div>
         
-        <a href="ai-addbet.html" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold shadow-md transition flex items-center gap-2">
+        <a href="add-bet.html" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold shadow-md transition flex items-center gap-2">
           <i class="fa-solid fa-plus"></i> Add AI Match
         </a>
       </div>
@@ -164,6 +164,9 @@
       const startTime = match.startTime || currentTime;
       const status = match.status;
 
+      // ইনপুট থেকে নির্ধারিত ডায়নামিক ওভার (ডিফল্ট ২০ ওভার)
+      const maxOvers = Number(match.overs) || 20;
+
       let team1Name = match.team1?.name?.substring(0, 3).toUpperCase() || 'TM1';
       let team2Name = match.team2?.name?.substring(0, 3).toUpperCase() || 'TM2';
 
@@ -173,7 +176,8 @@
           battingTeam: team1Name,
           bowlingTeam: team2Name,
           runs: 0, wickets: 0, over: 0, ball: 0,
-          recentBalls: [], target: 0, isMatchOver: false
+          recentBalls: [], target: 0, isMatchOver: false,
+          maxOvers: maxOvers
         };
       }
 
@@ -190,7 +194,8 @@
         battingTeam: team1Name,
         bowlingTeam: team2Name,
         runs: 0, wickets: 0, over: 0, ball: 0,
-        recentBalls: [], target: 0, isMatchOver: false
+        recentBalls: [], target: 0, isMatchOver: false,
+        maxOvers: maxOvers
       };
 
       for (let currentBall = 1; currentBall <= totalBallsPlayed; currentBall++) {
@@ -224,15 +229,21 @@
           s.ball = 0;
         }
 
-        if (s.innings === 1 && (s.over >= 20 || s.wickets >= 10)) {
+        // ডায়নামিক ওভার অনুযায়ী ইনিংস ১ শেষ হওয়া
+        if (s.innings === 1 && (s.over >= maxOvers || s.wickets >= 10)) {
           s.target = s.runs + 1;
-          if (s.target < 120) s.target = 165;
+          // ওভার কম হলে টার্গেট মানানসই রাখা
+          const minTarget = Math.max(20, maxOvers * 6);
+          if (s.target < minTarget) s.target = minTarget;
+
           s.innings = 2;
           s.battingTeam = team2Name;
           s.bowlingTeam = team1Name;
           s.runs = 0; s.wickets = 0; s.over = 0; s.ball = 0;
           s.recentBalls = [];
-        } else if (s.innings === 2 && (s.runs >= s.target || s.over >= 20 || s.wickets >= 10)) {
+        } 
+        // ডায়নামিক ওভার অনুযায়ী ইনিংস ২ শেষ এবং ম্যাচ সমাপ্তি
+        else if (s.innings === 2 && (s.runs >= s.target || s.over >= maxOvers || s.wickets >= 10)) {
           s.isMatchOver = true;
         }
       }
@@ -282,7 +293,6 @@
     }
 
     function renderAIMatches() {
-      // বর্তমানে টাইপিং চলাকালীন ইনপুট ফিল্ড থাকলে ফোকাস রক্ষা করা
       const activeElement = document.activeElement;
       if (activeElement && activeElement.classList.contains('odds-input')) {
         return; 
@@ -335,7 +345,7 @@
           <div class="flex justify-between items-center mb-4 pb-3 border-b border-gray-100 gap-2">
             <div class="flex items-center gap-1.5 flex-wrap">
               <span class="text-xs font-bold uppercase tracking-wider text-purple-600 bg-purple-50 px-2.5 py-1 rounded-lg">
-                ${data.sport || 'Match'}
+                ${data.sport || 'Match'} (${data.overs || 20} Ov)
               </span>
               <span class="text-[10px] font-bold px-2 py-0.5 rounded-md border bg-purple-100 text-purple-600 border-purple-200">
                 🤖 AI
@@ -422,6 +432,8 @@
     }
 
     function getScoreboardHTML(data, aiScore, isLive) {
+      const maxOvers = aiScore.maxOvers || data.overs || 20;
+
       return `
         <div class="flex justify-between items-center border-b border-gray-800 pb-2 mb-2">
           <div class="flex items-center gap-2">
@@ -430,7 +442,7 @@
             <span class="text-[9px] bg-gray-800 text-gray-400 px-1.5 py-0.5 rounded font-mono">${aiScore.innings === 1 ? '1st Inn' : '2nd Inn'}</span>
           </div>
           <span class="text-[11px] font-semibold text-purple-400 bg-purple-950/80 px-2 py-0.5 rounded-md border border-purple-800/40 font-mono">
-            ${aiScore.over}.${aiScore.ball} Ov
+            ${aiScore.over}.${aiScore.ball} / ${maxOvers} Ov
           </span>
         </div>
         <div class="flex flex-wrap items-center justify-between text-[11px] text-gray-300 gap-1.5">
@@ -453,7 +465,7 @@
       `;
     }
 
-    // প্রতি ৪ সেকেন্ডে শুধুমাত্র স্কোরবোর্ড আপডেট করার নিরাপদ টাইমার (DOM রি-রেন্ডার হবে না)
+    // প্রতি ৪ সেকেন্ডে রিয়েলটাইম স্কোরবোর্ড রেন্ডার
     setInterval(() => {
       if (allMatchesData && Object.keys(allMatchesData).length > 0) {
         Object.keys(allMatchesData).forEach(matchId => {
@@ -531,4 +543,4 @@
     });
   </script>
 </body>
-  </html>
+</html>
