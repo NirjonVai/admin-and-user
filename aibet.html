@@ -151,7 +151,7 @@
 
     let allMatchesData = {};
 
-    // বাংলা সংখ্যা থেকে ইংরেজি সংখ্যায় কনভার্ট
+    // বাংলা সংখ্যা থেকে ইংরেজি সংখ্যায় কনভার্ট
     const toEngNum = (num) => {
       if (num === undefined || num === null) return '';
       let str = String(num);
@@ -161,7 +161,7 @@
       return str;
     };
 
-    // ⚡ টাইমস্ট্যাম্পের ভিত্তিতে পিওর অ্যালগরিদম নির্ভর অটো-স্কোর ক্যালকুলেশন
+    // ⚡ টাইমস্ট্যাম্পভিত্তিক স্কোর হিসাব করার লজিক
     function calculateScoreFromTimestamp(match, currentTime = Date.now()) {
       const startTime = match.startTime || currentTime;
       const status = match.status;
@@ -183,7 +183,7 @@
       const elapsedSeconds = Math.max(0, Math.floor((currentTime - startTime) / 1000));
       const totalBallsPlayed = Math.floor(elapsedSeconds / 4);
 
-      // Deterministic Random Generator (সব জায়গায় একই স্কোর দেবে)
+      // Deterministic Random Generator (সব পেজে একই রেজাল্ট দেবে)
       const seedRandom = (seed) => {
         let x = Math.sin(seed) * 10000;
         return x - Math.floor(x);
@@ -231,7 +231,7 @@
         // ২য় ইনিংস লজিক
         if (s.innings === 1 && (s.over >= 20 || s.wickets >= 10)) {
           s.target = s.runs + 1;
-          if (s.target < 120) s.target = 165; // Defalut target fallback
+          if (s.target < 120) s.target = 165;
           s.innings = 2;
           s.battingTeam = team2Name;
           s.bowlingTeam = team1Name;
@@ -243,6 +243,45 @@
       }
 
       return s;
+    }
+
+    // 💾 স্কোর ডাটাবেসে সেভ ও সিঙ্ক করার ফাংশন
+    async function syncAndSaveAIScore(matchId, matchData) {
+      if (!matchData || matchData.status !== 'live') return;
+
+      const currentScore = calculateScoreFromTimestamp(matchData);
+
+      // ডাটাবেসের স্কোরের সাথে তুলনা করা (নতুন বল হলে ডাটাবেসে আপডেট পাঠাবে)
+      const dbBallCount = ((matchData.aiScore?.over || 0) * 6) + (matchData.aiScore?.ball || 0);
+      const currentBallCount = (currentScore.over * 6) + currentScore.ball;
+
+      if (currentBallCount > dbBallCount || !matchData.aiScore) {
+        try {
+          const updatePayload = {
+            aiScore: currentScore
+          };
+
+          // ম্যাচ শেষ হয়ে গেলে অটো বিজয়ী সেভ হবে
+          if (currentScore.isMatchOver) {
+            let winner = 'draw';
+            if (currentScore.runs >= currentScore.target && currentScore.innings === 2) {
+              winner = currentScore.battingTeam;
+            } else if (currentScore.innings === 2) {
+              winner = currentScore.bowlingTeam;
+            }
+
+            updatePayload.status = 'finished';
+            updatePayload.winner = winner;
+          }
+
+          await update(ref(db, `bets/${matchId}`), updatePayload);
+          console.log(`[Database aiScore Saved]: Match ${matchId}`, currentScore);
+        } catch (err) {
+          console.error("Firebase Sync Error:", err);
+        }
+      }
+
+      return currentScore;
     }
 
     function listenToBets() {
@@ -277,6 +316,10 @@
       aiMatchKeys.forEach((matchId) => {
         const matchData = allMatchesData[matchId];
         const computedScore = calculateScoreFromTimestamp(matchData);
+        
+        // 💾 ফায়ারবেসে aiScore সেভ করার প্রসেস রান হবে
+        syncAndSaveAIScore(matchId, matchData);
+
         renderMatchCard(matchId, matchData, computedScore);
       });
     }
@@ -416,7 +459,7 @@
       matchesContainer.appendChild(card);
     }
 
-    // প্রতি ৪ সেকেন্ড পর পর স্ক্রিনের UI অটো-রিফ্রেশ হবে (ফায়ারবেসে বার বার ডাটা রাইট করার দরকার নেই)
+    // প্রতি ৪ সেকেন্ড পর পর UI রেন্ডার হবে এবং ব্যাকগ্রাউন্ডে aiScore সেভ হবে
     setInterval(() => {
       if (allMatchesData && Object.keys(allMatchesData).length > 0) {
         renderAIMatches();
@@ -430,20 +473,31 @@
     });
 
     matchesContainer.addEventListener('change', async (e) => {
-      // স্ট্যাটাস লাইভ করার সময় startTime সেভ হবে
       if (e.target.classList.contains('status-select')) {
         const matchId = e.target.getAttribute('data-id');
         const newStatus = e.target.value;
+        const matchData = allMatchesData[matchId];
         
         const updateData = { status: newStatus };
+        
         if (newStatus === 'live') {
           updateData.startTime = Date.now();
+        } else if (newStatus === 'finished' && matchData) {
+          const finalScore = calculateScoreFromTimestamp(matchData, Date.now());
+          let winner = 'draw';
+          if (finalScore.runs >= finalScore.target && finalScore.innings === 2) {
+            winner = finalScore.battingTeam;
+          } else if (finalScore.innings === 2) {
+            winner = finalScore.bowlingTeam;
+          }
+
+          updateData.aiScore = finalScore;
+          updateData.winner = winner;
         }
 
         await update(ref(db, `bets/${matchId}`), updateData);
       }
 
-      // Odds আপডেট
       if (e.target.classList.contains('odds-input')) {
         const matchId = e.target.getAttribute('data-id');
         const oddsType = e.target.getAttribute('data-type');
