@@ -151,7 +151,6 @@
 
     let allMatchesData = {};
 
-    // বাংলা সংখ্যা থেকে ইংরেজি সংখ্যায় কনভার্ট
     const toEngNum = (num) => {
       if (num === undefined || num === null) return '';
       let str = String(num);
@@ -161,7 +160,6 @@
       return str;
     };
 
-    // ⚡ টাইমস্ট্যাম্পভিত্তিক নিখুঁত স্কোর ক্যালকুলেটর
     function calculateScoreFromTimestamp(match, currentTime = Date.now()) {
       const startTime = match.startTime || currentTime;
       const status = match.status;
@@ -179,7 +177,6 @@
         };
       }
 
-      // প্রতি ৪ সেকেন্ডে ১ বল
       const elapsedSeconds = Math.max(0, Math.floor((currentTime - startTime) / 1000));
       const totalBallsPlayed = Math.floor(elapsedSeconds / 4);
 
@@ -227,7 +224,6 @@
           s.ball = 0;
         }
 
-        // ইনিংস পরিবর্তন ও খেলা শেষ হওয়ার লজিক
         if (s.innings === 1 && (s.over >= 20 || s.wickets >= 10)) {
           s.target = s.runs + 1;
           if (s.target < 120) s.target = 165;
@@ -244,22 +240,16 @@
       return s;
     }
 
-    // 💾 অটো সেভ ট্র্রিগার: ফায়ারবেস ডাটাবেসের aiScore নোডে বল-বাই-বল ডাটা রাইট করবে
     async function syncAndSaveAIScore(matchId, matchData) {
       if (!matchData || matchData.status !== 'live') return;
 
       const currentScore = calculateScoreFromTimestamp(matchData);
-
       const dbBallCount = ((matchData.aiScore?.over || 0) * 6) + (matchData.aiScore?.ball || 0);
       const currentBallCount = (currentScore.over * 6) + currentScore.ball;
 
-      // নতুন বল গণনা হওয়ামাত্রই ডাটাবেসে সেভ হবে
       if (currentBallCount > dbBallCount || !matchData.aiScore) {
         try {
-          const updatePayload = {
-            aiScore: currentScore
-          };
-
+          const updatePayload = { aiScore: currentScore };
           if (currentScore.isMatchOver) {
             let winner = 'draw';
             if (currentScore.runs >= currentScore.target && currentScore.innings === 2) {
@@ -267,17 +257,14 @@
             } else if (currentScore.innings === 2) {
               winner = currentScore.bowlingTeam;
             }
-
             updatePayload.status = 'finished';
             updatePayload.winner = winner;
           }
-
           await update(ref(db, `bets/${matchId}`), updatePayload);
         } catch (err) {
           console.error("Firebase Sync Error:", err);
         }
       }
-
       return currentScore;
     }
 
@@ -295,6 +282,12 @@
     }
 
     function renderAIMatches() {
+      // বর্তমানে টাইপিং চলাকালীন ইনপুট ফিল্ড থাকলে ফোকাস রক্ষা করা
+      const activeElement = document.activeElement;
+      if (activeElement && activeElement.classList.contains('odds-input')) {
+        return; 
+      }
+
       matchesContainer.innerHTML = '';
       const keys = Object.keys(allMatchesData);
       
@@ -313,10 +306,7 @@
       aiMatchKeys.forEach((matchId) => {
         const matchData = allMatchesData[matchId];
         const computedScore = calculateScoreFromTimestamp(matchData);
-        
-        // রেন্ডার করার সাথে সাথে ফায়ারবেস ডাটাবেসে aiScore রাইট হবে
         syncAndSaveAIScore(matchId, matchData);
-
         renderMatchCard(matchId, matchData, computedScore);
       });
     }
@@ -338,7 +328,8 @@
 
       const card = document.createElement('div');
       card.className = "bg-white rounded-2xl shadow-sm border border-gray-200 p-6 flex flex-col justify-between";
-      
+      card.setAttribute('data-card-id', id);
+
       card.innerHTML = `
         <div>
           <div class="flex justify-between items-center mb-4 pb-3 border-b border-gray-100 gap-2">
@@ -373,35 +364,9 @@
             </div>
           </div>
 
-          <!-- Dynamic Ball-By-Ball Scoreboard -->
-          <div class="bg-gray-900 text-white p-3.5 rounded-xl my-3 shadow-inner">
-            <div class="flex justify-between items-center border-b border-gray-800 pb-2 mb-2">
-              <div class="flex items-center gap-2">
-                <span class="inline-block w-2 h-2 rounded-full ${isLive ? 'bg-red-500 animate-pulse' : 'bg-gray-500'}"></span>
-                <span class="text-xs font-bold tracking-wider text-gray-200">${aiScore.battingTeam} ${aiScore.runs}/${aiScore.wickets}</span>
-                <span class="text-[9px] bg-gray-800 text-gray-400 px-1.5 py-0.5 rounded font-mono">${aiScore.innings === 1 ? '1st Inn' : '2nd Inn'}</span>
-              </div>
-              <span class="text-[11px] font-semibold text-purple-400 bg-purple-950/80 px-2 py-0.5 rounded-md border border-purple-800/40 font-mono">
-                ${aiScore.over}.${aiScore.ball} Ov
-              </span>
-            </div>
-            <div class="flex flex-wrap items-center justify-between text-[11px] text-gray-300 gap-1.5">
-              <div class="flex items-center gap-1 flex-wrap">
-                <span class="font-medium text-gray-400">Over ${aiScore.over + 1}:</span>
-                ${(aiScore.recentBalls || []).length === 0 ? '<span class="text-[10px] text-gray-500">Waiting for next ball...</span>' : ''}
-                ${(aiScore.recentBalls || []).map(ball => {
-                  let badgeStyle = "bg-gray-800 text-gray-200";
-                  if (ball === '4') badgeStyle = "bg-blue-500/20 text-blue-300 font-bold";
-                  if (ball === '6') badgeStyle = "bg-emerald-500/20 text-emerald-300 font-bold";
-                  if (ball === 'wd') badgeStyle = "bg-amber-500/20 text-amber-300 font-bold";
-                  if (ball === 'W') badgeStyle = "bg-red-500/20 text-red-400 font-bold";
-                  return `<span class="${badgeStyle} px-1.5 py-0.5 rounded font-mono text-[10px]">${ball}</span>`;
-                }).join('')}
-              </div>
-              <div class="text-xs font-bold text-amber-400 ml-auto font-mono">
-                ${aiScore.innings === 2 ? `Target: ${aiScore.target}` : `1st Innings`}
-              </div>
-            </div>
+          <!-- Dynamic Scoreboard Area -->
+          <div id="scoreboard-${id}" class="bg-gray-900 text-white p-3.5 rounded-xl my-3 shadow-inner">
+            ${getScoreboardHTML(data, aiScore, isLive)}
           </div>
 
           <div class="text-center text-xs text-gray-500 my-3 bg-gray-50 py-2 rounded-lg">
@@ -456,10 +421,53 @@
       matchesContainer.appendChild(card);
     }
 
-    // প্রতি ৪ সেকেন্ডে UI আপডেট এবং ফায়ারবেস aiScore সিঙ্ক
+    function getScoreboardHTML(data, aiScore, isLive) {
+      return `
+        <div class="flex justify-between items-center border-b border-gray-800 pb-2 mb-2">
+          <div class="flex items-center gap-2">
+            <span class="inline-block w-2 h-2 rounded-full ${isLive ? 'bg-red-500 animate-pulse' : 'bg-gray-500'}"></span>
+            <span class="text-xs font-bold tracking-wider text-gray-200">${aiScore.battingTeam} ${aiScore.runs}/${aiScore.wickets}</span>
+            <span class="text-[9px] bg-gray-800 text-gray-400 px-1.5 py-0.5 rounded font-mono">${aiScore.innings === 1 ? '1st Inn' : '2nd Inn'}</span>
+          </div>
+          <span class="text-[11px] font-semibold text-purple-400 bg-purple-950/80 px-2 py-0.5 rounded-md border border-purple-800/40 font-mono">
+            ${aiScore.over}.${aiScore.ball} Ov
+          </span>
+        </div>
+        <div class="flex flex-wrap items-center justify-between text-[11px] text-gray-300 gap-1.5">
+          <div class="flex items-center gap-1 flex-wrap">
+            <span class="font-medium text-gray-400">Over ${aiScore.over + 1}:</span>
+            ${(aiScore.recentBalls || []).length === 0 ? '<span class="text-[10px] text-gray-500">Waiting...</span>' : ''}
+            ${(aiScore.recentBalls || []).map(ball => {
+              let badgeStyle = "bg-gray-800 text-gray-200";
+              if (ball === '4') badgeStyle = "bg-blue-500/20 text-blue-300 font-bold";
+              if (ball === '6') badgeStyle = "bg-emerald-500/20 text-emerald-300 font-bold";
+              if (ball === 'wd') badgeStyle = "bg-amber-500/20 text-amber-300 font-bold";
+              if (ball === 'W') badgeStyle = "bg-red-500/20 text-red-400 font-bold";
+              return `<span class="${badgeStyle} px-1.5 py-0.5 rounded font-mono text-[10px]">${ball}</span>`;
+            }).join('')}
+          </div>
+          <div class="text-xs font-bold text-amber-400 ml-auto font-mono">
+            ${aiScore.innings === 2 ? `Target: ${aiScore.target}` : `1st Innings`}
+          </div>
+        </div>
+      `;
+    }
+
+    // প্রতি ৪ সেকেন্ডে শুধুমাত্র স্কোরবোর্ড আপডেট করার নিরাপদ টাইমার (DOM রি-রেন্ডার হবে না)
     setInterval(() => {
       if (allMatchesData && Object.keys(allMatchesData).length > 0) {
-        renderAIMatches();
+        Object.keys(allMatchesData).forEach(matchId => {
+          const matchData = allMatchesData[matchId];
+          if (matchData && matchData.category === 'AI Match' && matchData.status === 'live') {
+            const computedScore = calculateScoreFromTimestamp(matchData);
+            syncAndSaveAIScore(matchId, matchData);
+            
+            const scoreboardElem = document.getElementById(`scoreboard-${matchId}`);
+            if (scoreboardElem) {
+              scoreboardElem.innerHTML = getScoreboardHTML(matchData, computedScore, true);
+            }
+          }
+        });
       }
     }, 4000);
 
@@ -523,4 +531,4 @@
     });
   </script>
 </body>
-</html>
+  </html>
