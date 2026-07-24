@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BetX - AI Match</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #1c163a !important; /* বডি ব্যাকগ্রাউন্ড */
+        }
+        .custom-bg {
+            background-color: #262152 !important; /* হেডার, বক্স ও ন্যাভ কালার */
+        }
+    </style>
+</head>
+<body class="text-slate-100 min-h-screen selection:bg-amber-400 selection:text-slate-950 pb-24 lg:pb-0">
+
+    <!-- Header with custom color -->
+    <header class="custom-bg backdrop-blur-md border-b border-slate-800/80 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3.5 flex justify-between items-center">
+            <div class="flex items-center space-x-2 group cursor-pointer">
+                <span class="text-xl font-black tracking-widest text-white">BET<span class="text-amber-400 bg-gradient-to-r from-amber-400 to-yellow-300 bg-clip-text text-transparent">X</span></span>
+            </div>
+
+            <div class="flex items-center space-x-4">
+                <div class="bg-slate-800/40 backdrop-blur-sm px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl flex items-center space-x-2 sm:space-x-3 border border-slate-700/60 shadow-inner">
+                    <span class="text-xs sm:text-sm font-extrabold text-emerald-400 tracking-wide" id="user-balance">৳500.00</span>
+                    <button class="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 flex items-center justify-center transition-colors cursor-pointer">
+                        <i class="fa-solid fa-plus text-xs"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+        
+    <main class="lg:col-span-2 space-y-6 px-3 py-6 max-w-4xl mx-auto">
+        <!-- Live & Dynamic Match Containers Will Render Here -->
+        <div id="ai-matches-list" class="space-y-6">
+            <!-- Loading State -->
+            <div class="rounded-xl border border-slate-700/60 p-8 text-center custom-bg">
+                <i class="fa-solid fa-spinner fa-spin text-3xl text-amber-400 mb-3"></i>
+                <p class="text-slate-400 text-sm font-semibold">Loading AI Matches from Database...</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Bottom Nav with custom color -->
+    <nav class="lg:hidden fixed bottom-0 left-0 right-0 custom-bg backdrop-blur-xl border-t border-slate-800/80 px-2 py-2.5 z-50 flex justify-around items-center shadow-2xl rounded-t-2xl">
+        <a href="#" class="flex flex-col items-center justify-center text-emerald-400 px-3 py-1 rounded-xl transition-all">
+            <i class="fa-solid fa-fire text-lg mb-1"></i>
+            <span class="text-[10px] font-bold tracking-wide">Popular</span>
+        </a>
+        <a href="#" class="flex flex-col items-center justify-center text-slate-400 hover:text-slate-200 px-3 py-1 rounded-xl transition-all relative">
+            <i class="fa-solid fa-star text-lg mb-1"></i>
+            <span class="text-[10px] font-medium tracking-wide">Favorite</span>
+        </a>
+        <button class="flex flex-col items-center justify-center text-slate-400 hover:text-slate-200 px-3 py-1 rounded-xl transition-all relative cursor-pointer">
+            <span id="mobile-badge" class="hidden absolute -top-1 bg-gradient-to-r from-emerald-500 to-emerald-400 text-slate-950 font-black text-[9px] px-1.5 py-0.5 rounded-full border border-slate-900 scale-90">1</span>
+            <i class="fa-solid fa-receipt text-lg mb-1"></i>
+            <span class="text-[10px] font-medium tracking-wide">Bet Slip</span>
+        </button>
+        <a href="#" class="flex flex-col items-center justify-center text-slate-400 hover:text-slate-200 px-3 py-1 rounded-xl transition-all">
+            <i class="fa-solid fa-history text-lg mb-1"></i>
+            <span class="text-[10px] font-medium tracking-wide">History</span>
+        </a>
+        <a href="#" class="flex flex-col items-center justify-center text-slate-400 hover:text-slate-200 px-3 py-1 rounded-xl transition-all">
+            <i class="fa-solid fa-bars text-lg mb-1"></i>
+            <span class="text-[10px] font-medium tracking-wide">Menu</span>
+        </a>
+    </nav>
+
+    <!-- Firebase Realtime Database Integration Script -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        // Firebase Configuration (Same configuration as your Admin Panel)
+        const firebaseConfig = {
+            apiKey: "AIzaSyBzQaaXhTtiGpMjRMBUXZaCIrDRoNyEkU4",
+            authDomain: "betx-904da.firebaseapp.com",
+            databaseURL: "https://betx-904da-default-rtdb.firebaseio.com",
+            projectId: "betx-904da",
+            storageBucket: "betx-904da.firebasestorage.app",
+            messagingSenderId: "1076536561200",
+            appId: "1:1076536561200:web:87ddeee59d73ed3a08e7f5",
+            measurementId: "G-ER5HGVL74K"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        const matchesListContainer = document.getElementById('ai-matches-list');
+        let localMatchesCache = {};
+
+        // ⚡ Time-based deterministic Score Engine (Ensures 100% sync with Admin Panel calculations)
+        function calculateScoreFromTimestamp(match, currentTime = Date.now()) {
+            const startTime = match.startTime || currentTime;
+            const status = match.status;
+
+            let team1Name = match.team1?.name?.substring(0, 3).toUpperCase() || 'TM1';
+            let team2Name = match.team2?.name?.substring(0, 3).toUpperCase() || 'TM2';
+
+            if (status !== 'live') {
+                return {
+                    innings: match.aiScore?.innings || 1,
+                    battingTeam: match.aiScore?.battingTeam || team1Name,
+                    bowlingTeam: match.aiScore?.bowlingTeam || team2Name,
+                    runs: match.aiScore?.runs || 0,
+                    wickets: match.aiScore?.wickets || 0,
+                    over: match.aiScore?.over || 0,
+                    ball: match.aiScore?.ball || 0,
+                    recentBalls: match.aiScore?.recentBalls || [],
+                    target: match.aiScore?.target || 0,
+                    isMatchOver: status === 'finished'
+                };
+            }
+
+            const elapsedSeconds = Math.max(0, Math.floor((currentTime - startTime) / 1000));
+            const totalBallsPlayed = Math.floor(elapsedSeconds / 4);
+
+            const seedRandom = (seed) => {
+                let x = Math.sin(seed) * 10000;
+                return x - Math.floor(x);
+            };
+
+            let s = {
+                innings: 1,
+                battingTeam: team1Name,
+                bowlingTeam: team2Name,
+                runs: 0,
+                wickets: 0,
+                over: 0,
+                ball: 0,
+                recentBalls: [],
+                target: 0,
+                isMatchOver: false
+            };
+
+            for (let currentBall = 1; currentBall <= totalBallsPlayed; currentBall++) {
+                if (s.isMatchOver) break;
+
+                const rand = seedRandom(startTime + currentBall);
+                let event = '0';
+                if (rand < 0.35) event = '0';
+                else if (rand < 0.65) event = '1';
+                else if (rand < 0.78) event = '2';
+                else if (rand < 0.88) event = '4';
+                else if (rand < 0.94) event = '6';
+                else if (rand < 0.97) event = 'wd';
+                else event = 'W';
+
+                if (event === 'wd') {
+                    s.runs += 1;
+                } else if (event === 'W') {
+                    s.wickets += 1;
+                    s.ball += 1;
+                } else {
+                    s.runs += parseInt(event);
+                    s.ball += 1;
+                }
+
+                s.recentBalls.push(event);
+                if (s.recentBalls.length > 6) s.recentBalls.shift();
+
+                if (s.ball >= 6) {
+                    s.over += 1;
+                    s.ball = 0;
+                }
+
+                if (s.innings === 1 && (s.over >= 20 || s.wickets >= 10)) {
+                    s.target = s.runs + 1;
+                    s.innings = 2;
+                    s.battingTeam = team2Name;
+                    s.bowlingTeam = team1Name;
+                    s.runs = 0;
+                    s.wickets = 0;
+                    s.over = 0;
+                    s.ball = 0;
+                    s.recentBalls = [];
+                } else if (s.innings === 2 && (s.runs >= s.target || s.over >= 20 || s.wickets >= 10)) {
+                    s.isMatchOver = true;
+                }
+            }
+
+            return s;
+        }
+
+        // 📡 Listen to Realtime Database
+        function listenToDatabase() {
+            const betsRef = ref(db, 'bets');
+            onValue(betsRef, (snapshot) => {
+                if (!snapshot.exists()) {
+                    matchesListContainer.innerHTML = `
+                        <div class="rounded-xl border border-slate-700/60 p-8 text-center custom-bg">
+                            <i class="fa-solid fa-robot text-3xl text-slate-500 mb-2"></i>
+                            <p class="text-slate-400 text-sm">No active AI Matches available right now.</p>
+                        </div>
+                    `;
+                    localMatchesCache = {};
+                    return;
+                }
+
+                localMatchesCache = snapshot.val();
+                renderMatches();
+            });
+        }
+
+        // 🎨 Render Match HTML with EXACT Original Design Structure
+        function renderMatches() {
+            const keys = Object.keys(localMatchesCache);
+            const aiKeys = keys.filter(k => localMatchesCache[k] && localMatchesCache[k].category === 'AI Match');
+
+            if (aiKeys.length === 0) {
+                matchesListContainer.innerHTML = `
+                    <div class="rounded-xl border border-slate-700/60 p-8 text-center custom-bg">
+                        <i class="fa-solid fa-robot text-3xl text-slate-500 mb-2"></i>
+                        <p class="text-slate-400 text-sm">No AI Matches available.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let htmlContent = '';
+
+            aiKeys.forEach((matchId) => {
+                const match = localMatchesCache[matchId];
+                const score = calculateScoreFromTimestamp(match);
+
+                const team1Name = match.team1?.name || 'Team 1';
+                const team2Name = match.team2?.name || 'Team 2';
+
+                const team1Code = team1Name.substring(0, 3).toUpperCase();
+                const team2Code = team2Name.substring(0, 3).toUpperCase();
+
+                const isLive = match.status === 'live';
+                const isFinished = match.status === 'finished';
+
+                const oddsTeam1 = match.odds?.team1 || '1.50';
+                const oddsDraw = match.odds?.draw || '2.00';
+                const oddsTeam2 = match.odds?.team2 || '1.50';
+
+                // Sum of current over runs
+                const overSum = score.recentBalls.reduce((acc, b) => {
+                    if (b === 'wd') return acc + 1;
+                    if (b === 'W') return acc;
+                    return acc + (parseInt(b) || 0);
+                }, 0);
+
+                htmlContent += `
+                <div class="rounded-xl border border-slate-700/60 shadow-2xl overflow-hidden custom-bg">
+                    
+                    <!-- Match Box Header / Live Info -->
+                    <div class="p-2 relative bg-cover bg-center" style="background-image: linear-gradient(rgba(30, 23, 42, 0.65), rgba(30, 23, 42, 0.75)), url('cricket-stadium3.jpg');">
+                        <div class="absolute top-0 right-0 ${isLive ? 'bg-[#f84444]' : 'bg-slate-700'} text-white font-black px-4 uppercase text-[7px] tracking-wider translate-x-4 translate-y-1.5 rotate-45 flex items-center justify-center shadow-md z-10">
+                            ${isLive ? '<span class="w-1 h-1 bg-white rounded-full mr-1 animate-pulse"></span> Live' : match.status}
+                        </div>
+                        
+                        <div class="flex items-center space-x-1.5 text-slate-200 text-xs font-bold tracking-wide mb-3">
+                            <i class="fa-solid fa-baseball-bat-ball text-slate-300 text-[11px]"></i>
+                            <span class="uppercase">${match.league || 'AI T20 League'}</span>
+                            <span class="text-slate-400 font-bold">• &nbsp;${match.status.toUpperCase()}</span>
+                        </div>
+
+                        <div class="space-y-2.5 my-2">
+                            <!-- Team VS Grid -->
+                            <div class="grid grid-cols-3 items-center py-2 relative">
+                                <!-- Team 1 -->
+                                <div class="flex flex-col items-center justify-center text-center">
+                                    <div class="w-7 h-7 bg-slate-950 rounded-full flex items-center justify-center border border-slate-800 shadow-inner relative shrink-0 mb-1 overflow-hidden">
+                                        ${match.team1?.logo 
+                                            ? `<img src="${match.team1.logo}" class="w-full h-full object-cover">` 
+                                            : `<span class="text-[10px] font-black text-amber-400">${team1Code}</span>`}
+                                    </div>
+                                    <span class="font-extrabold text-sm tracking-wide text-white">${team1Name}</span>
+                                </div>
+
+                                <!-- VS Divider -->
+                                <div class="flex justify-center">
+                                    <span class="text-xs font-bold text-slate-400 uppercase bg-slate-800/60 px-2 py-0.5 rounded">VS</span>
+                                </div>
+
+                                <!-- Team 2 -->
+                                <div class="flex flex-col items-center justify-center text-center">
+                                    <div class="w-7 h-7 bg-slate-950 rounded-full flex items-center justify-center border border-slate-800 shadow-inner relative shrink-0 mb-1 overflow-hidden">
+                                        ${match.team2?.logo 
+                                            ? `<img src="${match.team2.logo}" class="w-full h-full object-cover">` 
+                                            : `<span class="text-[10px] font-black text-sky-400">${team2Code}</span>`}
+                                    </div>
+                                    <span class="font-extrabold text-sm tracking-wide text-white">${team2Name}</span>
+                                </div>
+                            </div>
+
+                            <!-- Dynamic Live Scoreboard -->
+                            <div class="bg-slate-950/40 rounded-xl p-2 mx-2 flex items-center border border-slate-800/40 relative">
+                                <div class="flex items-center space-x-4 shrink-0">
+                                    <div class="w-8 h-8 rounded-full bg-slate-900 flex items-center justify-center border border-slate-800 shadow-inner overflow-hidden">
+                                        <span class="text-[10px] font-black text-sky-400">${score.battingTeam}</span>
+                                    </div>
+                                    
+                                    <div class="flex flex-col justify-center">
+                                        <span class="text-xs font-black tracking-wider text-slate-400 leading-none mb-1">${score.battingTeam}</span>
+                                        <div class="flex items-baseline space-x-2">
+                                            <span class="text-2xl font-black text-[#5ce1e6] tracking-tight leading-none">${score.runs}-${score.wickets}</span>
+                                            <span class="text-xs font-bold text-slate-400/85">${score.over}.${score.ball}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="h-10 w-[2px] bg-slate-500/70 shrink-0 mx-4"></div>
+
+                                <div class="flex-1 flex items-center justify-center">
+                                    <span class="text-4xl font-black text-[#f3e37c] font-sans">${score.recentBalls.length > 0 ? score.recentBalls[score.recentBalls.length - 1] : '0'}</span>
+                                </div>
+                            </div>
+
+                            <!-- Over Details Timeline -->
+                            <div class="flex items-center pt-2 text-slate-300 select-none justify-center">
+                                <span class="text-xs font-semibold mr-2 text-slate-200">(OV) ${score.over + 1}</span>
+                                <div class="flex items-center space-x-1 text-[11px] font-bold">
+                                    ${score.recentBalls.length === 0 ? '<span class="text-slate-500 text-[10px]">Waiting for ball...</span>' : ''}
+                                    ${score.recentBalls.map(ball => {
+                                        if (ball === 'W') {
+                                            return `<span class="w-5 h-5 rounded-full bg-red-700 text-white flex items-center justify-center font-extrabold">W</span>`;
+                                        } else if (ball === 'wd') {
+                                            return `<span class="w-5 h-5 rounded-full border border-slate-600/80 flex items-center justify-center text-slate-400">wd</span>`;
+                                        } else if (ball === '4' || ball === '6') {
+                                            return `<span class="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center font-extrabold">${ball}</span>`;
+                                        } else {
+                                            return `<span class="w-5 h-5 rounded-full border border-slate-600/80 flex items-center justify-center text-slate-300">${ball}</span>`;
+                                        }
+                                    }).join('')}
+
+                                    <span class="text-xs font-semibold text-slate-300 ml-1 mr-2">= ${overSum}</span>
+                                    
+                                    <span class="w-16 h-6 rounded-lg bg-slate-950/40 border border-slate-800/40 text-slate-300/85 flex items-center justify-center text-[10px] ml-1">
+                                        ${score.innings === 2 ? `Target ${score.target}` : '1st Innings'}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Odds Section -->
+                    <div class="p-4 custom-bg border-t border-slate-800/60">
+                        <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Team Wins 1X2</h3>
+                        <div class="grid grid-cols-3 gap-3 sm:gap-2">
+                            <button class="odd-btn bg-slate-950/40 hover:bg-gradient-to-r hover:from-amber-500 hover:to-amber-400 border border-slate-700/40 hover:border-transparent py-1 px-2 sm:py-1.5 rounded-lg transition-all duration-300 text-center group cursor-pointer hover:shadow-lg hover:shadow-amber-500/10 flex flex-col items-center justify-center">
+                                <span class="block text-[10px] sm:text-[9px] font-bold text-slate-400 group-hover:text-slate-950 uppercase tracking-wider leading-none mb-1">W1 (${team1Code})</span>
+                                <span class="font-extrabold text-xs sm:text-sm text-white group-hover:text-slate-950 leading-none">${oddsTeam1}</span>
+                            </button>
+                            <button class="odd-btn bg-slate-950/40 hover:bg-gradient-to-r hover:from-amber-500 hover:to-amber-400 border border-slate-700/40 hover:border-transparent py-1 px-2 sm:py-1.5 rounded-lg transition-all duration-300 text-center group cursor-pointer hover:shadow-lg hover:shadow-amber-500/10 flex flex-col items-center justify-center">
+                                <span class="block text-[10px] sm:text-[9px] font-bold text-slate-400 group-hover:text-slate-950 uppercase tracking-wider leading-none mb-1">X</span>
+                                <span class="font-extrabold text-xs sm:text-sm text-white group-hover:text-slate-950 leading-none">${oddsDraw}</span>
+                            </button>
+                            <button class="odd-btn bg-slate-950/40 hover:bg-gradient-to-r hover:from-amber-500 hover:to-amber-400 border border-slate-700/40 hover:border-transparent py-1 px-2 sm:py-1.5 rounded-lg transition-all duration-300 text-center group cursor-pointer hover:shadow-lg hover:shadow-amber-500/10 flex flex-col items-center justify-center">
+                                <span class="block text-[10px] sm:text-[9px] font-bold text-slate-400 group-hover:text-slate-950 uppercase tracking-wider leading-none mb-1">W2 (${team2Code})</span>
+                                <span class="font-extrabold text-xs sm:text-sm text-white group-hover:text-slate-950 leading-none">${oddsTeam2}</span>
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+                `;
+            });
+
+            matchesListContainer.innerHTML = htmlContent;
+        }
+
+        // Initialize listener
+        listenToDatabase();
+
+        // ⏱ Every 4 seconds live tick to reflect ball-by-ball score update
+        setInterval(() => {
+            if (localMatchesCache && Object.keys(localMatchesCache).length > 0) {
+                renderMatches();
+            }
+        }, 4000);
+    </script>
+</body>
+  </html>
