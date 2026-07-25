@@ -96,11 +96,21 @@
         const matchesListContainer = document.getElementById('ai-matches-list');
         let localMatchesCache = {};
 
-        // Helper function to format timestamp to readable Time (e.g. 7:09 AM)
-        function formatMatchTime(timestamp) {
-            if (!timestamp) return 'LIVE';
-            const date = new Date(timestamp);
-            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+        // 🕒 matchDate বা startTime থেকে সঠিকভাবে সময় দেখানোর ফাংশন
+        function getFormattedMatchTime(match) {
+            if (match.matchDate) {
+                const dateObj = new Date(match.matchDate);
+                if (!isNaN(dateObj.getTime())) {
+                    return dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+                }
+            }
+            if (match.startTime) {
+                const dateObj = new Date(match.startTime);
+                if (!isNaN(dateObj.getTime())) {
+                    return dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+                }
+            }
+            return 'LIVE';
         }
 
         // ⚡ Time-based deterministic Score Engine
@@ -254,8 +264,8 @@
                 const oddsDraw = match.odds?.draw || '2.00';
                 const oddsTeam2 = match.odds?.team2 || '1.50';
 
-                // Format Time (e.g., 07:09 AM)
-                const matchTimeDisplay = match.matchTime || formatMatchTime(match.startTime);
+                // 🔥 matchDate ফিল্ড থেকে আসল সময় তুলে আনা হচ্ছে
+                const displayTime = getFormattedMatchTime(match);
 
                 const overSum = score.recentBalls.reduce((acc, b) => {
                     if (b === 'wd') return acc + 1;
@@ -272,10 +282,9 @@
                             ${isLive ? '<span class="w-1 h-1 bg-white rounded-full mr-1 animate-pulse"></span> Live' : match.status}
                         </div>
                         
-                        <!-- (10 OV) এর বদলে Time দেখানোর আপডেটটি নিচে করা হয়েছে -->
                         <div class="flex items-center space-x-1.5 text-slate-200 text-xs font-bold tracking-wide mb-3">
                             <i class="fa-solid fa-baseball-bat-ball text-slate-300 text-[11px]"></i>
-                            <span class="uppercase">${match.league || 'AI League'} (${matchTimeDisplay})</span>
+                            <span class="uppercase">${match.league || 'AI League'} (${displayTime})</span>
                             <span class="text-slate-400 font-bold">• &nbsp;${match.status.toUpperCase()}</span>
                         </div>
 
