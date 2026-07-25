@@ -287,7 +287,8 @@
           activeElement.classList.contains('odds-input') || 
           activeElement.classList.contains('market-title-input') || 
           activeElement.classList.contains('custom-option-name') || 
-          activeElement.classList.contains('custom-option-val')
+          activeElement.classList.contains('custom-option-val') ||
+          activeElement.tagName === 'INPUT'
       )) {
         return; 
       }
@@ -359,7 +360,7 @@
         customMarketsHTML += `
           <div class="mt-4 pt-3 border-t border-purple-100">
             <div class="flex items-center justify-between mb-2">
-              <input type="text" data-id="${id}" data-mkey="${mKey}" value="${market.title || ''}" placeholder="Market Title (e.g. Total Runs)" class="market-title-input text-xs font-semibold text-gray-600 bg-transparent border-b border-dashed border-gray-300 focus:border-purple-600 focus:outline-none w-full mr-2">
+              <input type="text" data-id="${id}" data-mkey="${mKey}" value="${market.title || ''}" placeholder="Market Title (e.g. Toss Winner)" class="market-title-input text-xs font-semibold text-gray-600 bg-transparent border-b border-dashed border-gray-300 focus:border-purple-600 focus:outline-none w-full mr-2">
               <div class="flex items-center gap-1.5 shrink-0">
                 <button data-id="${id}" data-mkey="${mKey}" class="add-option-btn text-[10px] bg-purple-100 text-purple-700 hover:bg-purple-200 px-2 py-1 rounded-lg font-bold transition flex items-center gap-1 cursor-pointer">
                   <i class="fa-solid fa-plus text-[8px]"></i> Option
@@ -427,8 +428,33 @@
               </span>
               <div class="flex items-center gap-3">
                 <span class="text-[10px] text-gray-400">Multiplier (x)</span>
-                <button data-id="${id}" class="add-market-btn text-[10px] bg-purple-600 hover:bg-purple-700 text-white px-2.5 py-1 rounded-lg font-bold transition flex items-center gap-1 cursor-pointer shadow-sm">
+                <button data-id="${id}" class="toggle-add-market-btn text-[10px] bg-purple-600 hover:bg-purple-700 text-white px-2.5 py-1 rounded-lg font-bold transition flex items-center gap-1 cursor-pointer shadow-sm">
                   <i class="fa-solid fa-plus text-[9px]"></i> Add Title Market
+                </button>
+              </div>
+            </div>
+
+            <!-- Add Bet Category Form (Initially Hidden) -->
+            <div id="add-market-form-${id}" class="hidden mb-4 p-3 bg-white border border-purple-200 rounded-xl shadow-sm">
+              <p class="text-[11px] font-bold text-purple-700 mb-2">Create New Market Bet</p>
+              <input type="text" id="new-market-title-${id}" placeholder="Market Title (e.g. Toss Winner)" class="w-full px-3 py-1.5 text-xs bg-gray-50 border border-gray-200 rounded-lg mb-2 focus:outline-none focus:ring-2 focus:ring-purple-500">
+              
+              <div class="grid grid-cols-2 gap-2 mb-2">
+                <input type="text" id="new-opt1-name-${id}" value="${data.team1?.name || 'Team 1'}" placeholder="Option 1 Name" class="px-2 py-1 text-xs bg-gray-50 border border-gray-200 rounded-lg focus:outline-none">
+                <input type="text" inputmode="decimal" id="new-opt1-val-${id}" value="1.85" placeholder="Odds" class="px-2 py-1 text-xs text-center font-bold bg-gray-50 border border-gray-200 rounded-lg focus:outline-none">
+              </div>
+
+              <div class="grid grid-cols-2 gap-2 mb-3">
+                <input type="text" id="new-opt2-name-${id}" value="${data.team2?.name || 'Team 2'}" placeholder="Option 2 Name" class="px-2 py-1 text-xs bg-gray-50 border border-gray-200 rounded-lg focus:outline-none">
+                <input type="text" inputmode="decimal" id="new-opt2-val-${id}" value="1.85" placeholder="Odds" class="px-2 py-1 text-xs text-center font-bold bg-gray-50 border border-gray-200 rounded-lg focus:outline-none">
+              </div>
+
+              <div class="flex justify-end gap-2">
+                <button data-id="${id}" class="cancel-add-market-btn px-2.5 py-1 text-[10px] bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg font-semibold transition cursor-pointer">
+                  Cancel
+                </button>
+                <button data-id="${id}" class="save-market-btn px-3 py-1 text-[10px] bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold transition cursor-pointer shadow-sm">
+                  Save Bet Market
                 </button>
               </div>
             </div>
@@ -607,24 +633,62 @@
         return;
       }
 
-      // Add New Market Category Title (e.g. Toss Winner)
-      const addMarketBtn = e.target.closest('.add-market-btn');
-      if (addMarketBtn) {
-        const matchId = addMarketBtn.getAttribute('data-id');
-        const matchData = allMatchesData[matchId];
-        const team1 = matchData?.team1?.name || "Pakistan";
-        const team2 = matchData?.team2?.name || "Afghanistan";
+      // Toggle Open Add Market Form
+      const toggleAddMarketBtn = e.target.closest('.toggle-add-market-btn');
+      if (toggleAddMarketBtn) {
+        const matchId = toggleAddMarketBtn.getAttribute('data-id');
+        const formDiv = document.getElementById(`add-market-form-${matchId}`);
+        if (formDiv) {
+          formDiv.classList.toggle('hidden');
+        }
+        return;
+      }
+
+      // Cancel Add Market Form
+      const cancelAddMarketBtn = e.target.closest('.cancel-add-market-btn');
+      if (cancelAddMarketBtn) {
+        const matchId = cancelAddMarketBtn.getAttribute('data-id');
+        const formDiv = document.getElementById(`add-market-form-${matchId}`);
+        if (formDiv) {
+          formDiv.classList.add('hidden');
+        }
+        return;
+      }
+
+      // Save New Title Market Bet & Hide Form
+      const saveMarketBtn = e.target.closest('.save-market-btn');
+      if (saveMarketBtn) {
+        const matchId = saveMarketBtn.getAttribute('data-id');
+        
+        const titleInput = document.getElementById(`new-market-title-${matchId}`);
+        const opt1NameInput = document.getElementById(`new-opt1-name-${matchId}`);
+        const opt1ValInput = document.getElementById(`new-opt1-val-${matchId}`);
+        const opt2NameInput = document.getElementById(`new-opt2-name-${matchId}`);
+        const opt2ValInput = document.getElementById(`new-opt2-val-${matchId}`);
+
+        const title = titleInput.value.trim() || "Toss Winner";
+        const opt1Name = opt1NameInput.value.trim() || "Option 1";
+        const opt1Val = toEngNum(opt1ValInput.value) || "1.85";
+        const opt2Name = opt2NameInput.value.trim() || "Option 2";
+        const opt2Val = toEngNum(opt2ValInput.value) || "1.85";
 
         const marketRef = ref(db, `bets/${matchId}/customMarkets`);
         const newMarketRef = push(marketRef);
 
         await update(newMarketRef, {
-          title: "Toss Winner",
+          title: title,
           options: {
-            "opt1": { name: team1, val: "1.85" },
-            "opt2": { name: team2, val: "1.85" }
+            "opt1": { name: opt1Name, val: opt1Val },
+            "opt2": { name: opt2Name, val: opt2Val }
           }
         });
+
+        // Clear & Hide Form after saving
+        titleInput.value = '';
+        const formDiv = document.getElementById(`add-market-form-${matchId}`);
+        if (formDiv) {
+          formDiv.classList.add('hidden');
+        }
         return;
       }
 
