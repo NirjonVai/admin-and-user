@@ -92,7 +92,7 @@
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
           <h2 class="text-xl font-bold text-gray-800">AI Matches & Odds</h2>
-          <p class="text-xs text-gray-500">Real-time status and unlimited custom odds control for AI Virtual Matches</p>
+          <p class="text-xs text-gray-500">Real-time status and dynamic custom bet categories & odds control</p>
         </div>
         
         <a href="add-bet.html" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold shadow-md transition flex items-center gap-2">
@@ -163,7 +163,6 @@
     function calculateScoreFromTimestamp(match, currentTime = Date.now()) {
       const startTime = match.startTime || currentTime;
       const status = match.status;
-
       const maxOvers = Number(match.overs) || 20;
 
       let team1Name = match.team1?.name?.substring(0, 3).toUpperCase() || 'TM1';
@@ -171,12 +170,9 @@
 
       if (status !== 'live') {
         return {
-          innings: 1,
-          battingTeam: team1Name,
-          bowlingTeam: team2Name,
+          innings: 1, battingTeam: team1Name, bowlingTeam: team2Name,
           runs: 0, wickets: 0, over: 0, ball: 0,
-          recentBalls: [], target: 0, isMatchOver: false,
-          maxOvers: maxOvers
+          recentBalls: [], target: 0, isMatchOver: false, maxOvers: maxOvers
         };
       }
 
@@ -189,12 +185,9 @@
       };
 
       let s = {
-        innings: 1,
-        battingTeam: team1Name,
-        bowlingTeam: team2Name,
+        innings: 1, battingTeam: team1Name, bowlingTeam: team2Name,
         runs: 0, wickets: 0, over: 0, ball: 0,
-        recentBalls: [], target: 0, isMatchOver: false,
-        maxOvers: maxOvers
+        recentBalls: [], target: 0, isMatchOver: false, maxOvers: maxOvers
       };
 
       for (let currentBall = 1; currentBall <= totalBallsPlayed; currentBall++) {
@@ -290,7 +283,12 @@
 
     function renderAIMatches() {
       const activeElement = document.activeElement;
-      if (activeElement && (activeElement.classList.contains('odds-input') || activeElement.classList.contains('custom-odds-input') || activeElement.classList.contains('custom-odds-title'))) {
+      if (activeElement && (
+          activeElement.classList.contains('odds-input') || 
+          activeElement.classList.contains('market-title-input') || 
+          activeElement.classList.contains('custom-option-name') || 
+          activeElement.classList.contains('custom-option-val')
+      )) {
         return; 
       }
 
@@ -332,22 +330,47 @@
         draw: toEngNum(rawOdds.draw || '2.00')
       };
 
-      const customOddsObj = data.customOdds || {};
+      const customMarkets = data.customMarkets || {};
 
       const card = document.createElement('div');
       card.className = "bg-white rounded-2xl shadow-sm border border-gray-200 p-6 flex flex-col justify-between";
       card.setAttribute('data-card-id', id);
 
-      let customOddsHTML = '';
-      Object.keys(customOddsObj).forEach((cKey) => {
-        const cItem = customOddsObj[cKey] || {};
-        customOddsHTML += `
-          <div class="flex items-center gap-2 bg-white p-2 rounded-xl border border-purple-100 shadow-2xs">
-            <input type="text" data-id="${id}" data-ckey="${cKey}" value="${cItem.title || ''}" placeholder="Bet Option Title" class="custom-odds-title w-1/2 px-2.5 py-1 text-xs font-semibold text-gray-800 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
-            <input type="text" inputmode="decimal" data-id="${id}" data-ckey="${cKey}" value="${toEngNum(cItem.value || '1.80')}" placeholder="Odds" class="custom-odds-input w-1/3 px-2 py-1 text-xs font-bold text-center text-purple-700 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
-            <button data-id="${id}" data-ckey="${cKey}" class="delete-custom-odd-btn text-red-500 hover:text-red-700 hover:bg-red-50 p-1.5 rounded-lg transition cursor-pointer text-xs" title="Remove Option">
-              <i class="fa-solid fa-trash"></i>
-            </button>
+      let customMarketsHTML = '';
+      Object.keys(customMarkets).forEach((mKey) => {
+        const market = customMarkets[mKey] || {};
+        const options = market.options || {};
+
+        let optionsHTML = '';
+        Object.keys(options).forEach((oKey) => {
+          const opt = options[oKey] || {};
+          optionsHTML += `
+            <div class="flex items-center gap-2">
+              <input type="text" data-id="${id}" data-mkey="${mKey}" data-okey="${oKey}" value="${opt.name || ''}" placeholder="Option (e.g. ${data.team1?.name || 'PAK'})" class="custom-option-name w-1/2 px-2.5 py-1 text-xs font-medium text-gray-800 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+              <input type="text" inputmode="decimal" data-id="${id}" data-mkey="${mKey}" data-okey="${oKey}" value="${toEngNum(opt.val || '1.80')}" placeholder="Odds" class="custom-option-val w-1/3 px-2 py-1 text-xs font-bold text-center text-purple-700 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+              <button data-id="${id}" data-mkey="${mKey}" data-okey="${oKey}" class="delete-option-btn text-red-400 hover:text-red-600 p-1 transition cursor-pointer text-xs" title="Remove Option">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+          `;
+        });
+
+        customMarketsHTML += `
+          <div class="bg-gray-50 border border-gray-200 rounded-xl p-3 mb-3">
+            <div class="flex items-center justify-between mb-2 pb-2 border-b border-gray-200 gap-2">
+              <input type="text" data-id="${id}" data-mkey="${mKey}" value="${market.title || ''}" placeholder="Market Title (e.g. Toss Winner)" class="market-title-input text-xs font-bold text-gray-800 bg-transparent border-b border-dashed border-gray-300 focus:border-purple-600 focus:outline-none w-full">
+              <div class="flex items-center gap-1.5 shrink-0">
+                <button data-id="${id}" data-mkey="${mKey}" class="add-option-btn text-[10px] bg-purple-100 text-purple-700 hover:bg-purple-200 px-2 py-1 rounded-md font-bold transition flex items-center gap-1 cursor-pointer">
+                  <i class="fa-solid fa-plus text-[8px]"></i> Option
+                </button>
+                <button data-id="${id}" data-mkey="${mKey}" class="delete-market-btn text-red-500 hover:bg-red-50 p-1 rounded-md transition cursor-pointer text-xs" title="Delete Market Category">
+                  <i class="fa-solid fa-trash-can"></i>
+                </button>
+              </div>
+            </div>
+            <div class="space-y-2">
+              ${optionsHTML || '<p class="text-[10px] text-gray-400 italic">No options added yet. Click "+ Option".</p>'}
+            </div>
           </div>
         `;
       });
@@ -395,7 +418,7 @@
             <i class="fa-regular fa-clock mr-1"></i> ${new Date(data.matchDate || Date.now()).toLocaleString('en-US')}
           </div>
 
-          <!-- Main Match 1X2 Odds -->
+          <!-- Default Primary Match Odds -->
           <div class="bg-purple-50/60 border border-purple-100 rounded-xl p-3 my-4">
             <div class="flex items-center justify-between mb-2">
               <span class="text-[11px] font-bold text-gray-700 flex items-center gap-1">
@@ -422,19 +445,19 @@
             </div>
           </div>
 
-          <!-- Custom Unlimited Odds Markets -->
-          <div class="bg-gray-50 border border-gray-200 rounded-xl p-3 my-4">
+          <!-- Dynamic Unlimited Betting Categories / Title Markets -->
+          <div class="my-4">
             <div class="flex items-center justify-between mb-3">
               <span class="text-[11px] font-bold text-gray-700 flex items-center gap-1">
-                <i class="fa-solid fa-list-check text-purple-600"></i> Custom Betting Markets
+                <i class="fa-solid fa-layer-group text-purple-600"></i> Custom Betting Markets
               </span>
-              <button data-id="${id}" class="add-custom-odd-btn text-[10px] bg-purple-600 hover:bg-purple-700 text-white px-2.5 py-1 rounded-lg font-bold transition flex items-center gap-1 cursor-pointer">
-                <i class="fa-solid fa-plus text-[9px]"></i> Add Option
+              <button data-id="${id}" class="add-market-btn text-[10px] bg-purple-600 hover:bg-purple-700 text-white px-2.5 py-1 rounded-lg font-bold transition flex items-center gap-1 cursor-pointer">
+                <i class="fa-solid fa-plus text-[9px]"></i> Add Title Market
               </button>
             </div>
 
-            <div id="custom-odds-list-${id}" class="space-y-2">
-              ${customOddsHTML || '<p class="text-[11px] text-gray-400 text-center py-2">No custom odds added yet.</p>'}
+            <div id="custom-markets-list-${id}">
+              ${customMarketsHTML || '<p class="text-[11px] text-gray-400 text-center py-2 bg-gray-50 rounded-xl border border-dashed border-gray-200">No custom markets added. Click "+ Add Title Market"</p>'}
             </div>
           </div>
         </div>
@@ -513,7 +536,7 @@
     }, 4000);
 
     matchesContainer.addEventListener('input', (e) => {
-      if (e.target.classList.contains('odds-input') || e.target.classList.contains('custom-odds-input')) {
+      if (e.target.classList.contains('odds-input') || e.target.classList.contains('custom-option-val')) {
         e.target.value = toEngNum(e.target.value);
       }
     });
@@ -552,18 +575,27 @@
         await update(ref(db, `bets/${matchId}/odds`), { [oddsType]: toEngNum(e.target.value) });
       }
 
-      // Custom Odds Title update
-      if (e.target.classList.contains('custom-odds-title')) {
+      // Market Category Title Update
+      if (e.target.classList.contains('market-title-input')) {
         const matchId = e.target.getAttribute('data-id');
-        const cKey = e.target.getAttribute('data-ckey');
-        await update(ref(db, `bets/${matchId}/customOdds/${cKey}`), { title: e.target.value });
+        const mKey = e.target.getAttribute('data-mkey');
+        await update(ref(db, `bets/${matchId}/customMarkets/${mKey}`), { title: e.target.value });
       }
 
-      // Custom Odds Value update
-      if (e.target.classList.contains('custom-odds-input')) {
+      // Custom Option Name Update
+      if (e.target.classList.contains('custom-option-name')) {
         const matchId = e.target.getAttribute('data-id');
-        const cKey = e.target.getAttribute('data-ckey');
-        await update(ref(db, `bets/${matchId}/customOdds/${cKey}`), { value: toEngNum(e.target.value) });
+        const mKey = e.target.getAttribute('data-mkey');
+        const oKey = e.target.getAttribute('data-okey');
+        await update(ref(db, `bets/${matchId}/customMarkets/${mKey}/options/${oKey}`), { name: e.target.value });
+      }
+
+      // Custom Option Odds Value Update
+      if (e.target.classList.contains('custom-option-val')) {
+        const matchId = e.target.getAttribute('data-id');
+        const mKey = e.target.getAttribute('data-mkey');
+        const oKey = e.target.getAttribute('data-okey');
+        await update(ref(db, `bets/${matchId}/customMarkets/${mKey}/options/${oKey}`), { val: toEngNum(e.target.value) });
       }
     });
 
@@ -576,24 +608,56 @@
         return;
       }
 
-      // Add dynamic custom betting option
-      const addCustomOddBtn = e.target.closest('.add-custom-odd-btn');
-      if (addCustomOddBtn) {
-        const matchId = addCustomOddBtn.getAttribute('data-id');
-        const customOddsRef = ref(db, `bets/${matchId}/customOdds`);
-        await push(customOddsRef, {
-          title: "New Bet Option",
-          value: "1.80"
+      // Add New Market Category Title (e.g. Toss Winner)
+      const addMarketBtn = e.target.closest('.add-market-btn');
+      if (addMarketBtn) {
+        const matchId = addMarketBtn.getAttribute('data-id');
+        const matchData = allMatchesData[matchId];
+        const team1 = matchData?.team1?.name || "Team 1";
+        const team2 = matchData?.team2?.name || "Team 2";
+
+        const marketRef = ref(db, `bets/${matchId}/customMarkets`);
+        const newMarketRef = push(marketRef);
+
+        await update(newMarketRef, {
+          title: "Toss Winner",
+          options: {
+            "opt1": { name: team1, val: "1.85" },
+            "opt2": { name: team2, val: "1.85" }
+          }
         });
         return;
       }
 
-      // Delete custom betting option
-      const deleteCustomOddBtn = e.target.closest('.delete-custom-odd-btn');
-      if (deleteCustomOddBtn) {
-        const matchId = deleteCustomOddBtn.getAttribute('data-id');
-        const cKey = deleteCustomOddBtn.getAttribute('data-ckey');
-        await remove(ref(db, `bets/${matchId}/customOdds/${cKey}`));
+      // Delete Market Category Title
+      const deleteMarketBtn = e.target.closest('.delete-market-btn');
+      if (deleteMarketBtn && confirm('Are you sure you want to delete this title market?')) {
+        const matchId = deleteMarketBtn.getAttribute('data-id');
+        const mKey = deleteMarketBtn.getAttribute('data-mkey');
+        await remove(ref(db, `bets/${matchId}/customMarkets/${mKey}`));
+        return;
+      }
+
+      // Add Option to specific Market Title
+      const addOptionBtn = e.target.closest('.add-option-btn');
+      if (addOptionBtn) {
+        const matchId = addOptionBtn.getAttribute('data-id');
+        const mKey = addOptionBtn.getAttribute('data-mkey');
+        const optionsRef = ref(db, `bets/${matchId}/customMarkets/${mKey}/options`);
+        await push(optionsRef, {
+          name: "New Option",
+          val: "1.80"
+        });
+        return;
+      }
+
+      // Delete Option from Market Title
+      const deleteOptionBtn = e.target.closest('.delete-option-btn');
+      if (deleteOptionBtn) {
+        const matchId = deleteOptionBtn.getAttribute('data-id');
+        const mKey = deleteOptionBtn.getAttribute('data-mkey');
+        const oKey = deleteOptionBtn.getAttribute('data-okey');
+        await remove(ref(db, `bets/${matchId}/customMarkets/${mKey}/options/${oKey}`));
         return;
       }
     });
