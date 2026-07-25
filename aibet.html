@@ -337,7 +337,7 @@
       card.className = "bg-white rounded-2xl shadow-sm border border-gray-200 p-6 flex flex-col justify-between";
       card.setAttribute('data-card-id', id);
 
-      // Render Dynamic Additional Bet Markets (Strictly matching the screenshot style)
+      // Render Dynamic Custom Title Markets (Matching Image EXACTLY)
       let customMarketsHTML = '';
       Object.keys(customMarkets).forEach((mKey) => {
         const market = customMarkets[mKey] || {};
@@ -352,28 +352,20 @@
             <div class="relative group">
               <input type="text" data-id="${id}" data-mkey="${mKey}" data-okey="${oKey}" value="${opt.name || ''}" placeholder="NAME" class="custom-option-name block text-[9px] font-bold text-gray-400 uppercase truncate mb-1 w-full bg-transparent border-none p-0 focus:outline-none focus:ring-0">
               <input type="text" inputmode="decimal" data-id="${id}" data-mkey="${mKey}" data-okey="${oKey}" value="${toEngNum(opt.val || '1.85')}" placeholder="Odds" class="custom-option-val w-full px-2 py-2 text-xs font-bold text-gray-800 bg-white border border-gray-200 rounded-full text-center focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-sm">
-              <button data-id="${id}" data-mkey="${mKey}" data-okey="${oKey}" class="delete-option-btn absolute -top-1 -right-1 bg-red-100 text-red-500 rounded-full w-4 h-4 flex items-center justify-center text-[8px] opacity-0 group-hover:opacity-100 transition cursor-pointer" title="Remove Option">
-                <i class="fa-solid fa-xmark"></i>
-              </button>
             </div>
           `;
         });
 
         customMarketsHTML += `
-          <div class="mt-4 pt-3 border-t border-gray-100">
+          <div class="mt-5 pt-3 border-t border-gray-100">
             <div class="flex items-center justify-between mb-2">
-              <input type="text" data-id="${id}" data-mkey="${mKey}" value="${market.title || ''}" placeholder="Market Title" class="market-title-input text-xs font-bold text-gray-600 bg-transparent border-b border-dashed border-gray-300 focus:border-purple-600 focus:outline-none w-full mr-2">
-              <div class="flex items-center gap-1 shrink-0">
-                <button data-id="${id}" data-mkey="${mKey}" class="add-option-btn text-[10px] text-purple-600 hover:bg-purple-50 px-2 py-1 rounded-lg font-semibold transition flex items-center gap-1 cursor-pointer">
-                  <i class="fa-solid fa-plus text-[8px]"></i> Option
-                </button>
-                <button data-id="${id}" data-mkey="${mKey}" class="delete-market-btn text-red-400 hover:text-red-600 p-1 rounded-md transition cursor-pointer text-xs" title="Delete Market">
-                  <i class="fa-solid fa-trash-can"></i>
-                </button>
-              </div>
+              <input type="text" data-id="${id}" data-mkey="${mKey}" value="${market.title || 'Total Six'}" placeholder="Market Title" class="market-title-input text-xs font-bold text-gray-700 bg-transparent border-b border-dashed border-gray-300 focus:border-purple-600 focus:outline-none w-1/2">
+              <button data-id="${id}" data-mkey="${mKey}" class="add-option-btn text-xs font-bold text-purple-600 hover:text-purple-700 transition flex items-center gap-1 cursor-pointer">
+                + Option
+              </button>
             </div>
-            <div class="grid ${gridColsClass} gap-2">
-              ${optionsHTML || '<p class="text-[10px] text-gray-400 italic col-span-full">No options added yet.</p>'}
+            <div class="grid ${gridColsClass} gap-3">
+              ${optionsHTML || '<p class="text-[10px] text-gray-400 italic col-span-full">No options added.</p>'}
             </div>
           </div>
         `;
@@ -428,38 +420,37 @@
               <span class="text-xs font-bold text-purple-900 flex items-center gap-1.5">
                 <i class="fa-solid fa-chart-line text-purple-600"></i> Primary Match Odds <span class="text-[10px] text-gray-400 font-normal">Multiplier (x)</span>
               </span>
-              <button data-id="${id}" class="toggle-add-market-btn text-[10px] bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded-xl font-bold transition flex items-center gap-1 cursor-pointer shadow-sm">
+              <button data-id="${id}" class="toggle-add-market-btn text-xs bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded-xl font-bold transition flex items-center gap-1 cursor-pointer shadow-sm">
                 <i class="fa-solid fa-plus text-[9px]"></i> Add Title Market
               </button>
             </div>
 
             <!-- Add Bet Category Form (Initially Hidden) -->
             <div id="add-market-form-${id}" class="hidden mb-4 p-3 bg-white border border-purple-200 rounded-2xl shadow-sm">
-              <p class="text-[11px] font-bold text-purple-700 mb-2">Create New Market Bet</p>
-              <input type="text" id="new-market-title-${id}" placeholder="Market Title (e.g. Toss Winner)" class="w-full px-3 py-1.5 text-xs bg-gray-50 border border-gray-200 rounded-xl mb-2 focus:outline-none focus:ring-2 focus:ring-purple-500">
+              <p class="text-[11px] font-bold text-purple-700 mb-2">Create New Title Market</p>
+              <input type="text" id="new-market-title-${id}" placeholder="Market Title (e.g. Total Six)" class="w-full px-3 py-1.5 text-xs bg-gray-50 border border-gray-200 rounded-xl mb-2 focus:outline-none focus:ring-2 focus:ring-purple-500">
               
               <div class="grid grid-cols-2 gap-2 mb-2">
-                <input type="text" id="new-opt1-name-${id}" value="${data.team1?.name || 'Pakistan'}" placeholder="Option 1 Name" class="px-2 py-1 text-xs bg-gray-50 border border-gray-200 rounded-lg focus:outline-none">
+                <input type="text" id="new-opt1-name-${id}" value="6.5 OVER" placeholder="Option 1 Name" class="px-2 py-1 text-xs bg-gray-50 border border-gray-200 rounded-lg focus:outline-none">
                 <input type="text" inputmode="decimal" id="new-opt1-val-${id}" value="1.85" placeholder="Odds" class="px-2 py-1 text-xs text-center font-bold bg-gray-50 border border-gray-200 rounded-lg focus:outline-none">
               </div>
 
               <div class="grid grid-cols-2 gap-2 mb-3">
-                <input type="text" id="new-opt2-name-${id}" value="${data.team2?.name || 'Afghanistan'}" placeholder="Option 2 Name" class="px-2 py-1 text-xs bg-gray-50 border border-gray-200 rounded-lg focus:outline-none">
+                <input type="text" id="new-opt2-name-${id}" value="6.5 UNDER" placeholder="Option 2 Name" class="px-2 py-1 text-xs bg-gray-50 border border-gray-200 rounded-lg focus:outline-none">
                 <input type="text" inputmode="decimal" id="new-opt2-val-${id}" value="1.85" placeholder="Odds" class="px-2 py-1 text-xs text-center font-bold bg-gray-50 border border-gray-200 rounded-lg focus:outline-none">
               </div>
 
-              <!-- Bet Save & Cancel Action Buttons -->
               <div class="flex justify-end gap-2 pt-2 border-t border-gray-100">
                 <button data-id="${id}" class="cancel-add-market-btn px-3 py-1.5 text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg font-semibold transition cursor-pointer">
                   Cancel
                 </button>
                 <button data-id="${id}" class="save-market-btn px-3.5 py-1.5 text-xs bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-bold transition cursor-pointer shadow-md flex items-center gap-1.5">
-                  <i class="fa-solid fa-floppy-disk"></i> Save Bet Market
+                  <i class="fa-solid fa-floppy-disk"></i> Save Title Market
                 </button>
               </div>
             </div>
 
-            <!-- Default Match Winner (1X2) Bet (Same layout as requested image) -->
+            <!-- Default Match Winner (1X2) Bet -->
             <div>
               <p class="text-xs font-bold mb-2 text-gray-600">Match Winner (1X2)</p> 
               <div class="grid grid-cols-3 gap-2">
@@ -480,7 +471,7 @@
               </div>
             </div>
 
-            <!-- Dynamically Added Bets List (Rendered matching screenshot design) -->
+            <!-- Dynamically Added Bets List -->
             <div id="custom-markets-list-${id}">
               ${customMarketsHTML}
             </div>
@@ -666,10 +657,10 @@
         const opt2NameInput = document.getElementById(`new-opt2-name-${matchId}`);
         const opt2ValInput = document.getElementById(`new-opt2-val-${matchId}`);
 
-        const title = titleInput.value.trim() || "Toss Winner";
-        const opt1Name = opt1NameInput.value.trim() || "Option 1";
+        const title = titleInput.value.trim() || "Total Six";
+        const opt1Name = opt1NameInput.value.trim() || "6.5 OVER";
         const opt1Val = toEngNum(opt1ValInput.value) || "1.85";
-        const opt2Name = opt2NameInput.value.trim() || "Option 2";
+        const opt2Name = opt2NameInput.value.trim() || "6.5 UNDER";
         const opt2Val = toEngNum(opt2ValInput.value) || "1.85";
 
         const marketRef = ref(db, `bets/${matchId}/customMarkets`);
@@ -692,16 +683,7 @@
         return;
       }
 
-      // Delete Market Category Title
-      const deleteMarketBtn = e.target.closest('.delete-market-btn');
-      if (deleteMarketBtn && confirm('Are you sure you want to delete this title market?')) {
-        const matchId = deleteMarketBtn.getAttribute('data-id');
-        const mKey = deleteMarketBtn.getAttribute('data-mkey');
-        await remove(ref(db, `bets/${matchId}/customMarkets/${mKey}`));
-        return;
-      }
-
-      // Add Option to specific Market Title
+      // Add Option (+ Option) button action inside Market Title
       const addOptionBtn = e.target.closest('.add-option-btn');
       if (addOptionBtn) {
         const matchId = addOptionBtn.getAttribute('data-id');
@@ -711,16 +693,6 @@
           name: "NEW OPTION",
           val: "1.85"
         });
-        return;
-      }
-
-      // Delete Option from Market Title
-      const deleteOptionBtn = e.target.closest('.delete-option-btn');
-      if (deleteOptionBtn) {
-        const matchId = deleteOptionBtn.getAttribute('data-id');
-        const mKey = deleteOptionBtn.getAttribute('data-mkey');
-        const oKey = deleteOptionBtn.getAttribute('data-okey');
-        await remove(ref(db, `bets/${matchId}/customMarkets/${mKey}/options/${oKey}`));
         return;
       }
     });
@@ -738,4 +710,4 @@
     });
   </script>
 </body>
-  </html>
+</html>
