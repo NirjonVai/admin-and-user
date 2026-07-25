@@ -5,37 +5,34 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BetX - AI Match</title>
     <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #1c163a !important;
+        }
+        .custom-bg {
+            background-color: #262152 !important;
         }
     </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen selection:bg-amber-400 selection:text-slate-950 pb-20 lg:pb-0">
+<body class="text-slate-100 min-h-screen selection:bg-amber-400 selection:text-slate-950 pb-24 lg:pb-0">
 
-    <!-- Header (Dashboard-এর সাথে পুরোপুরি এক) -->
-    <header class="bg-slate-900/80 backdrop-blur-md border-b border-slate-800/80 sticky top-0 z-50">
+    <!-- Header -->
+    <header class="custom-bg backdrop-blur-md border-b border-slate-800/80 sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 py-3.5 flex justify-between items-center">
             <div class="flex items-center space-x-2 group cursor-pointer">
-                <span class="text-xl font-black tracking-widest text-white">BET<span class="text-amber-400 bg-gradient-to-r from-yellow-400 to-amber-300 bg-clip-text text-transparent">X</span></span>
+                <span class="text-xl font-black tracking-widest text-white">BET<span class="text-amber-400 bg-gradient-to-r from-amber-400 to-yellow-300 bg-clip-text text-transparent">X</span></span>
             </div>
 
-            <div class="flex items-center space-x-3 sm:space-x-4">
-                <!-- User Profile Display -->
-                <div class="flex items-center space-x-2 bg-slate-800/40 border border-slate-700/60 px-3 py-1.5 rounded-xl text-xs sm:text-sm font-semibold text-slate-200">
-                    <i class="fa-solid fa-user-circle text-amber-400 text-sm sm:text-base"></i>
-                    <span id="user-display-name" class="max-w-[100px] sm:max-w-[150px] truncate">User</span>
-                </div>
-
-                <!-- Balance Box -->
+            <div class="flex items-center space-x-4">
                 <div class="bg-slate-800/40 backdrop-blur-sm px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl flex items-center space-x-2 sm:space-x-3 border border-slate-700/60 shadow-inner">
-                    <span class="text-xs sm:text-sm font-extrabold text-amber-400 tracking-wide" id="user-balance">৳500.00</span>
-                    <button class="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-amber-400/10 hover:bg-amber-400/20 text-amber-400 flex items-center justify-center transition-colors cursor-pointer">
+                    <span class="text-xs sm:text-sm font-extrabold text-emerald-400 tracking-wide" id="user-balance">৳500.00</span>
+                    <button class="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 flex items-center justify-center transition-colors cursor-pointer">
                         <i class="fa-solid fa-plus text-xs"></i>
                     </button>
                 </div>
@@ -43,27 +40,18 @@
         </div>
     </header>
         
-    <!-- Main Section -->
-    <main class="max-w-4xl mx-auto px-4 py-6 md:py-8 space-y-6">
-        <div class="flex justify-between items-center mb-2 px-1">
-            <h2 class="text-xs sm:text-sm font-black tracking-widest text-slate-200 flex items-center space-x-2">
-                <span class="w-2 h-2 bg-amber-400 rounded-full animate-ping absolute inline-flex"></span>
-                <span class="w-2 h-2 bg-amber-400 rounded-full relative"></span>
-                <span>AI MATCHES LIVE</span>
-            </h2>
-        </div>
-
+    <main class="lg:col-span-2 space-y-6 px-3 py-6 max-w-4xl mx-auto">
         <div id="ai-matches-list" class="space-y-6">
-            <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-8 text-center shadow-xl">
+            <div class="rounded-xl border border-slate-700/60 p-8 text-center custom-bg">
                 <i class="fa-solid fa-spinner fa-spin text-3xl text-amber-400 mb-3"></i>
-                <p class="text-slate-400 text-xs sm:text-sm font-semibold">Loading AI Matches from Database...</p>
+                <p class="text-slate-400 text-sm font-semibold">Loading AI Matches from Database...</p>
             </div>
         </div>
     </main>
 
-    <!-- Bottom Nav (Dashboard-এর সাথে মিলিয়ে তৈরি) -->
-    <nav class="lg:hidden fixed bottom-0 left-0 right-0 bg-slate-900/90 backdrop-blur-xl border-t border-slate-800/80 px-2 py-2 z-50 flex justify-around items-center shadow-2xl rounded-t-2xl">
-        <a href="#" class="flex flex-col items-center justify-center text-amber-400 px-3 py-1 rounded-xl transition-all">
+    <!-- Bottom Nav -->
+    <nav class="lg:hidden fixed bottom-0 left-0 right-0 custom-bg backdrop-blur-xl border-t border-slate-800/80 px-2 py-2.5 z-50 flex justify-around items-center shadow-2xl rounded-t-2xl">
+        <a href="#" class="flex flex-col items-center justify-center text-emerald-400 px-3 py-1 rounded-xl transition-all">
             <i class="fa-solid fa-fire text-lg mb-1"></i>
             <span class="text-[10px] font-bold tracking-wide">Popular</span>
         </a>
@@ -72,7 +60,7 @@
             <span class="text-[10px] font-medium tracking-wide">Favorite</span>
         </a>
         <button class="flex flex-col items-center justify-center text-slate-400 hover:text-slate-200 px-3 py-1 rounded-xl transition-all relative cursor-pointer">
-            <span id="mobile-badge" class="hidden absolute -top-1 bg-gradient-to-r from-amber-400 to-yellow-300 text-slate-950 font-black text-[9px] px-1.5 py-0.5 rounded-full border border-slate-900 scale-90">1</span>
+            <span id="mobile-badge" class="hidden absolute -top-1 bg-gradient-to-r from-emerald-500 to-emerald-400 text-slate-950 font-black text-[9px] px-1.5 py-0.5 rounded-full border border-slate-900 scale-90">1</span>
             <i class="fa-solid fa-receipt text-lg mb-1"></i>
             <span class="text-[10px] font-medium tracking-wide">Bet Slip</span>
         </button>
@@ -229,9 +217,9 @@
             onValue(betsRef, (snapshot) => {
                 if (!snapshot.exists()) {
                     matchesListContainer.innerHTML = `
-                        <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-8 text-center shadow-xl">
+                        <div class="rounded-xl border border-slate-700/60 p-8 text-center custom-bg">
                             <i class="fa-solid fa-robot text-3xl text-slate-500 mb-2"></i>
-                            <p class="text-slate-400 text-xs sm:text-sm">No active AI Matches available right now.</p>
+                            <p class="text-slate-400 text-sm">No active AI Matches available right now.</p>
                         </div>
                     `;
                     localMatchesCache = {};
@@ -243,23 +231,22 @@
             });
         }
 
-        // 🎨 Render Match HTML (Dashboard-এর কালার স্কিম ও স্টাইল প্রয়োগ করা হয়েছে)
+        // 🎨 Render Match HTML
         function renderMatches() {
             const keys = Object.keys(localMatchesCache);
             const aiKeys = keys.filter(k => localMatchesCache[k] && localMatchesCache[k].category === 'AI Match');
 
             if (aiKeys.length === 0) {
                 matchesListContainer.innerHTML = `
-                    <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-8 text-center shadow-xl">
+                    <div class="rounded-xl border border-slate-700/60 p-8 text-center custom-bg">
                         <i class="fa-solid fa-robot text-3xl text-slate-500 mb-2"></i>
-                        <p class="text-slate-400 text-xs sm:text-sm">No AI Matches available.</p>
+                        <p class="text-slate-400 text-sm">No AI Matches available.</p>
                     </div>
                 `;
                 return;
             }
 
             let htmlContent = '';
-            const fallbackLogo = "https://placehold.co/50x50/334155/ffffff?text=Team";
 
             aiKeys.forEach((matchId) => {
                 const match = localMatchesCache[matchId];
@@ -277,6 +264,7 @@
                 const oddsDraw = match.odds?.draw || '2.00';
                 const oddsTeam2 = match.odds?.team2 || '1.50';
 
+                // 🔥 matchDate ফিল্ড থেকে আসল সময় তুলে আনা হচ্ছে
                 const displayTime = getFormattedMatchTime(match);
 
                 const overSum = score.recentBalls.reduce((acc, b) => {
@@ -285,110 +273,112 @@
                     return acc + (parseInt(b) || 0);
                 }, 0);
 
-                const bgStyle = match.bgUrl 
-                    ? `background-image: linear-gradient(rgba(15, 23, 42, 0.85), rgba(15, 23, 42, 0.85)), url('${match.bgUrl}');` 
-                    : `background-color: #0f172a;`;
-
                 htmlContent += `
-                <div class="rounded-xl border border-slate-700/80 shadow-2xl overflow-hidden relative group bg-cover bg-center" style="${bgStyle}">
+                <div class="rounded-xl border border-slate-700/60 shadow-2xl overflow-hidden custom-bg">
                     
-                    <!-- Match Header -->
-                    <div class="p-3 md:p-4 border-b border-slate-800/80 relative">
-                        <div class="absolute top-0 right-0 bg-amber-400 text-slate-950 font-black px-4 uppercase text-[8px] tracking-wider translate-x-4 translate-y-1.5 rotate-45 flex items-center justify-center shadow-md z-10">
-                            ${isLive ? '<span class="w-1.5 h-1.5 bg-slate-950 rounded-full mr-1 animate-pulse"></span> Live' : match.status}
+                    <!-- Match Box Header -->
+                    <div class="p-2 relative bg-cover bg-center" style="background-image: linear-gradient(rgba(30, 23, 42, 0.65), rgba(30, 23, 42, 0.75)), url('cricket-stadium3.jpg');">
+                        <div class="absolute top-0 right-0 ${isLive ? 'bg-[#f84444]' : 'bg-slate-700'} text-white font-black px-4 uppercase text-[7px] tracking-wider translate-x-4 translate-y-1.5 rotate-45 flex items-center justify-center shadow-md z-10">
+                            ${isLive ? '<span class="w-1 h-1 bg-white rounded-full mr-1 animate-pulse"></span> Live' : match.status}
                         </div>
                         
                         <div class="flex items-center space-x-1.5 text-slate-200 text-xs font-bold tracking-wide mb-3">
-                            <i class="fa-solid fa-baseball-bat-ball text-amber-400 text-[11px]"></i>
-                            <span class="uppercase text-amber-400">${match.league || 'AI Cricket League'}</span>
-                            <span class="text-slate-400 font-medium">• &nbsp;${displayTime}</span>
+                            <i class="fa-solid fa-baseball-bat-ball text-slate-300 text-[11px]"></i>
+                            <span class="uppercase">${match.league || 'AI League'} (${displayTime})</span>
+                            <span class="text-slate-400 font-bold">• &nbsp;${match.status.toUpperCase()}</span>
                         </div>
 
-                        <!-- Team VS Section -->
-                        <div class="space-y-3 my-2">
-                            <div class="grid grid-cols-3 items-center py-2">
+                        <div class="space-y-2.5 my-2">
+                            <!-- Team VS Grid -->
+                            <div class="grid grid-cols-3 items-center py-2 relative">
                                 <div class="flex flex-col items-center justify-center text-center">
-                                    <div class="w-10 h-10 md:w-12 md:h-12 bg-slate-800 rounded-full flex items-center justify-center shadow-md border border-slate-700 overflow-hidden mb-2">
-                                        <img src="${match.team1?.logo || fallbackLogo}" alt="${team1Name}" class="w-full h-full object-cover" onerror="this.src='${fallbackLogo}'">
+                                    <div class="w-7 h-7 bg-slate-950 rounded-full flex items-center justify-center border border-slate-800 shadow-inner relative shrink-0 mb-1 overflow-hidden">
+                                        ${match.team1?.logo 
+                                            ? `<img src="${match.team1.logo}" class="w-full h-full object-cover">` 
+                                            : `<span class="text-[10px] font-black text-amber-400">${team1Code}</span>`}
                                     </div>
-                                    <span class="font-extrabold text-xs md:text-sm tracking-wide text-white leading-tight">${team1Name}</span>
+                                    <span class="font-extrabold text-sm tracking-wide text-white">${team1Name}</span>
                                 </div>
 
                                 <div class="flex justify-center">
-                                    <span class="text-amber-400 font-black italic text-xl tracking-tighter">VS</span>
+                                    <span class="text-xs font-bold text-slate-400 uppercase bg-slate-800/60 px-2 py-0.5 rounded">VS</span>
                                 </div>
 
                                 <div class="flex flex-col items-center justify-center text-center">
-                                    <div class="w-10 h-10 md:w-12 md:h-12 bg-slate-800 rounded-full flex items-center justify-center shadow-md border border-slate-700 overflow-hidden mb-2">
-                                        <img src="${match.team2?.logo || fallbackLogo}" alt="${team2Name}" class="w-full h-full object-cover" onerror="this.src='${fallbackLogo}'">
+                                    <div class="w-7 h-7 bg-slate-950 rounded-full flex items-center justify-center border border-slate-800 shadow-inner relative shrink-0 mb-1 overflow-hidden">
+                                        ${match.team2?.logo 
+                                            ? `<img src="${match.team2.logo}" class="w-full h-full object-cover">` 
+                                            : `<span class="text-[10px] font-black text-sky-400">${team2Code}</span>`}
                                     </div>
-                                    <span class="font-extrabold text-xs md:text-sm tracking-wide text-white leading-tight">${team2Name}</span>
+                                    <span class="font-extrabold text-sm tracking-wide text-white">${team2Name}</span>
                                 </div>
                             </div>
 
-                            <!-- Live Scoreboard -->
-                            <div class="bg-slate-950/70 rounded-xl p-3 border border-slate-800/80 flex items-center justify-between">
-                                <div class="flex items-center space-x-3">
-                                    <div class="w-7 h-7 rounded-lg bg-amber-400/10 text-amber-400 flex items-center justify-center font-black text-xs border border-amber-400/20">
-                                        ${score.battingTeam}
+                            <!-- Dynamic Live Scoreboard -->
+                            <div class="bg-slate-950/40 rounded-xl p-2 mx-2 flex items-center border border-slate-800/40 relative">
+                                <div class="flex items-center space-x-4 shrink-0">
+                                    <div class="w-8 h-8 rounded-full bg-slate-900 flex items-center justify-center border border-slate-800 shadow-inner overflow-hidden">
+                                        <span class="text-[10px] font-black text-sky-400">${score.battingTeam}</span>
                                     </div>
-                                    <div class="flex flex-col">
-                                        <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">${score.battingTeam} Batting</span>
+                                    
+                                    <div class="flex flex-col justify-center">
+                                        <span class="text-xs font-black tracking-wider text-slate-400 leading-none mb-1">${score.battingTeam}</span>
                                         <div class="flex items-baseline space-x-2">
-                                            <span class="text-xl md:text-2xl font-extrabold text-amber-400 tracking-tight leading-none">${score.runs}/${score.wickets}</span>
-                                            <span class="text-xs font-semibold text-slate-300">(${score.over}.${score.ball}/${score.maxOvers} Ov)</span>
+                                            <span class="text-2xl font-black text-[#5ce1e6] tracking-tight leading-none">${score.runs}-${score.wickets}</span>
+                                            <span class="text-xs font-bold text-slate-400/85">${score.over}.${score.ball} / ${score.maxOvers} Ov</span>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div class="text-right">
-                                    <span class="text-[10px] font-bold text-slate-400 block uppercase mb-0.5">Last Ball</span>
-                                    <span class="text-2xl font-black text-amber-400 leading-none">${score.recentBalls.length > 0 ? score.recentBalls[score.recentBalls.length - 1] : '0'}</span>
+                                <div class="h-10 w-[2px] bg-slate-500/70 shrink-0 mx-4"></div>
+
+                                <div class="flex-1 flex items-center justify-center">
+                                    <span class="text-4xl font-black text-[#f3e37c] font-sans">${score.recentBalls.length > 0 ? score.recentBalls[score.recentBalls.length - 1] : '0'}</span>
                                 </div>
                             </div>
 
-                            <!-- Over Timeline -->
-                            <div class="flex items-center justify-between pt-1 text-slate-300">
-                                <div class="flex items-center space-x-1.5 text-xs">
-                                    <span class="font-bold text-slate-400 text-[11px]">OV ${score.over + 1}:</span>
-                                    <div class="flex items-center space-x-1">
-                                        ${score.recentBalls.length === 0 ? '<span class="text-slate-500 text-[10px] italic">Waiting for ball...</span>' : ''}
-                                        ${score.recentBalls.map(ball => {
-                                            if (ball === 'W') {
-                                                return `<span class="w-5 h-5 rounded-md bg-red-500/20 text-red-400 border border-red-500/30 flex items-center justify-center font-bold text-[10px]">W</span>`;
-                                            } else if (ball === 'wd') {
-                                                return `<span class="w-5 h-5 rounded-md bg-slate-800 text-slate-400 border border-slate-700 flex items-center justify-center font-bold text-[10px]">wd</span>`;
-                                            } else if (ball === '4' || ball === '6') {
-                                                return `<span class="w-5 h-5 rounded-md bg-amber-400 text-slate-950 flex items-center justify-center font-extrabold text-[10px]">${ball}</span>`;
-                                            } else {
-                                                return `<span class="w-5 h-5 rounded-md bg-slate-800 text-slate-200 border border-slate-700 flex items-center justify-center font-bold text-[10px]">${ball}</span>`;
-                                            }
-                                        }).join('')}
-                                    </div>
+                            <!-- Over Details Timeline -->
+                            <div class="flex items-center pt-2 text-slate-300 select-none justify-center">
+                                <span class="text-xs font-semibold mr-2 text-slate-200">(OV) ${score.over + 1}</span>
+                                <div class="flex items-center space-x-1 text-[11px] font-bold">
+                                    ${score.recentBalls.length === 0 ? '<span class="text-slate-500 text-[10px]">Waiting for ball...</span>' : ''}
+                                    ${score.recentBalls.map(ball => {
+                                        if (ball === 'W') {
+                                            return `<span class="w-5 h-5 rounded-full bg-red-700 text-white flex items-center justify-center font-extrabold">W</span>`;
+                                        } else if (ball === 'wd') {
+                                            return `<span class="w-5 h-5 rounded-full border border-slate-600/80 flex items-center justify-center text-slate-400">wd</span>`;
+                                        } else if (ball === '4' || ball === '6') {
+                                            return `<span class="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center font-extrabold">${ball}</span>`;
+                                        } else {
+                                            return `<span class="w-5 h-5 rounded-full border border-slate-600/80 flex items-center justify-center text-slate-300">${ball}</span>`;
+                                        }
+                                    }).join('')}
+
+                                    <span class="text-xs font-semibold text-slate-300 ml-1 mr-2">= ${overSum}</span>
+                                    
+                                    <span class="px-2 h-6 rounded-lg bg-slate-950/40 border border-slate-800/40 text-slate-300/85 flex items-center justify-center text-[10px] ml-1">
+                                        ${score.innings === 2 ? `Target ${score.target}` : '1st Innings'}
+                                    </span>
                                 </div>
-                                <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-800/80 text-amber-400 border border-slate-700/60">
-                                    ${score.innings === 2 ? `Target: ${score.target}` : '1st Innings'}
-                                </span>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Odds Section (Dashboard Style Button Gradient) -->
-                    <div class="p-3 bg-slate-900/90 border-t border-slate-800/80">
-                        <div class="grid grid-cols-3 gap-2">
-                            <button class="bg-gradient-to-b from-slate-800 to-slate-900 hover:from-amber-400 hover:to-amber-500 border border-slate-700 hover:border-amber-400/50 p-2 rounded-xl transition-all duration-300 group cursor-pointer text-center">
-                                <span class="block text-[10px] font-bold text-slate-400 group-hover:text-slate-950 uppercase mb-0.5">W1 (${team1Code})</span>
-                                <span class="font-extrabold text-xs sm:text-sm text-amber-400 group-hover:text-slate-950">${oddsTeam1}</span>
+                    <!-- Dynamic Odds Section -->
+                    <div class="p-4 custom-bg border-t border-slate-800/60">
+                        <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Team Wins 1X2</h3>
+                        <div class="grid grid-cols-3 gap-3 sm:gap-2">
+                            <button class="odd-btn bg-slate-950/40 hover:bg-gradient-to-r hover:from-amber-500 hover:to-amber-400 border border-slate-700/40 hover:border-transparent py-1 px-2 sm:py-1.5 rounded-lg transition-all duration-300 text-center group cursor-pointer hover:shadow-lg hover:shadow-amber-500/10 flex flex-col items-center justify-center">
+                                <span class="block text-[10px] sm:text-[9px] font-bold text-slate-400 group-hover:text-slate-950 uppercase tracking-wider leading-none mb-1">W1 (${team1Code})</span>
+                                <span class="font-extrabold text-xs sm:text-sm text-white group-hover:text-slate-950 leading-none">${oddsTeam1}</span>
                             </button>
-
-                            <button class="bg-gradient-to-b from-slate-800 to-slate-900 hover:from-amber-400 hover:to-amber-500 border border-slate-700 hover:border-amber-400/50 p-2 rounded-xl transition-all duration-300 group cursor-pointer text-center">
-                                <span class="block text-[10px] font-bold text-slate-400 group-hover:text-slate-950 uppercase mb-0.5">DRAW</span>
-                                <span class="font-extrabold text-xs sm:text-sm text-amber-400 group-hover:text-slate-950">${oddsDraw}</span>
+                            <button class="odd-btn bg-slate-950/40 hover:bg-gradient-to-r hover:from-amber-500 hover:to-amber-400 border border-slate-700/40 hover:border-transparent py-1 px-2 sm:py-1.5 rounded-lg transition-all duration-300 text-center group cursor-pointer hover:shadow-lg hover:shadow-amber-500/10 flex flex-col items-center justify-center">
+                                <span class="block text-[10px] sm:text-[9px] font-bold text-slate-400 group-hover:text-slate-950 uppercase tracking-wider leading-none mb-1">X</span>
+                                <span class="font-extrabold text-xs sm:text-sm text-white group-hover:text-slate-950 leading-none">${oddsDraw}</span>
                             </button>
-
-                            <button class="bg-gradient-to-b from-slate-800 to-slate-900 hover:from-amber-400 hover:to-amber-500 border border-slate-700 hover:border-amber-400/50 p-2 rounded-xl transition-all duration-300 group cursor-pointer text-center">
-                                <span class="block text-[10px] font-bold text-slate-400 group-hover:text-slate-950 uppercase mb-0.5">W2 (${team2Code})</span>
-                                <span class="font-extrabold text-xs sm:text-sm text-amber-400 group-hover:text-slate-950">${oddsTeam2}</span>
+                            <button class="odd-btn bg-slate-950/40 hover:bg-gradient-to-r hover:from-amber-500 hover:to-amber-400 border border-slate-700/40 hover:border-transparent py-1 px-2 sm:py-1.5 rounded-lg transition-all duration-300 text-center group cursor-pointer hover:shadow-lg hover:shadow-amber-500/10 flex flex-col items-center justify-center">
+                                <span class="block text-[10px] sm:text-[9px] font-bold text-slate-400 group-hover:text-slate-950 uppercase tracking-wider leading-none mb-1">W2 (${team2Code})</span>
+                                <span class="font-extrabold text-xs sm:text-sm text-white group-hover:text-slate-950 leading-none">${oddsTeam2}</span>
                             </button>
                         </div>
                     </div>
