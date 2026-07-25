@@ -92,7 +92,7 @@
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
           <h2 class="text-xl font-bold text-gray-800">AI Matches & Odds</h2>
-          <p class="text-xs text-gray-500">Real-time status and odds control for AI Virtual Matches</p>
+          <p class="text-xs text-gray-500">Real-time status and unlimited dynamic odds control for AI Virtual Matches</p>
         </div>
         
         <a href="add-bet.html" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold shadow-md transition flex items-center gap-2">
@@ -115,7 +115,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { getDatabase, ref, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    import { getDatabase, ref, onValue, update, remove, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyBzQaaXhTtiGpMjRMBUXZaCIrDRoNyEkU4",
@@ -164,7 +164,6 @@
       const startTime = match.startTime || currentTime;
       const status = match.status;
 
-      // ইনপুট থেকে নির্ধারিত ডায়নামিক ওভার (ডিফল্ট ২০ ওভার)
       const maxOvers = Number(match.overs) || 20;
 
       let team1Name = match.team1?.name?.substring(0, 3).toUpperCase() || 'TM1';
@@ -229,10 +228,8 @@
           s.ball = 0;
         }
 
-        // ডায়নামিক ওভার অনুযায়ী ইনিংস ১ শেষ হওয়া
         if (s.innings === 1 && (s.over >= maxOvers || s.wickets >= 10)) {
           s.target = s.runs + 1;
-          // ওভার কম হলে টার্গেট মানানসই রাখা
           const minTarget = Math.max(20, maxOvers * 6);
           if (s.target < minTarget) s.target = minTarget;
 
@@ -242,7 +239,6 @@
           s.runs = 0; s.wickets = 0; s.over = 0; s.ball = 0;
           s.recentBalls = [];
         } 
-        // ডায়নামিক ওভার অনুযায়ী ইনিংস ২ শেষ এবং ম্যাচ সমাপ্তি
         else if (s.innings === 2 && (s.runs >= s.target || s.over >= maxOvers || s.wickets >= 10)) {
           s.isMatchOver = true;
         }
@@ -294,7 +290,7 @@
 
     function renderAIMatches() {
       const activeElement = document.activeElement;
-      if (activeElement && activeElement.classList.contains('odds-input')) {
+      if (activeElement && (activeElement.classList.contains('odds-input') || activeElement.classList.contains('market-title-input') || activeElement.classList.contains('option-name-input'))) {
         return; 
       }
 
@@ -329,16 +325,64 @@
           ? 'bg-gray-500/10 text-gray-500 border-gray-500/20' 
           : 'bg-blue-500/10 text-blue-500 border-blue-500/20';
 
-      const rawOdds = data.odds || {};
-      const odds = {
-        team1: toEngNum(rawOdds.team1 || '1.50'),
-        team2: toEngNum(rawOdds.team2 || '1.50'),
-        draw: toEngNum(rawOdds.draw || '2.00')
-      };
-
       const card = document.createElement('div');
       card.className = "bg-white rounded-2xl shadow-sm border border-gray-200 p-6 flex flex-col justify-between";
       card.setAttribute('data-card-id', id);
+
+      // Extract markets or convert old structure if present
+      let markets = data.markets || {};
+      
+      // Legacy odds structure fallback
+      if (Object.keys(markets).length === 0 && data.odds) {
+        const rawOdds = data.odds || {};
+        markets["m_default"] = {
+          title: "Match Winner (1X2)",
+          options: {
+            "o1": { name: data.team1?.name || 'Team 1', val: toEngNum(rawOdds.team1 || '1.50') },
+            "o2": { name: 'Draw', val: toEngNum(rawOdds.draw || '2.00') },
+            "o3": { name: data.team2?.name || 'Team 2', val: toEngNum(rawOdds.team2 || '1.50') }
+          }
+        };
+      }
+
+      let marketsHTML = '';
+      Object.keys(markets).forEach((mKey) => {
+        const market = markets[mKey];
+        const options = market.options || {};
+        
+        let optionsHTML = '';
+        Object.keys(options).forEach((oKey) => {
+          const opt = options[oKey];
+          optionsHTML += `
+            <div class="flex items-center gap-1 bg-white p-1.5 rounded-lg border border-purple-200/80 shadow-xs">
+              <input type="text" data-id="${id}" data-mkey="${mKey}" data-okey="${oKey}" value="${opt.name || ''}" placeholder="Option Name" class="option-name-input w-full text-[10px] font-semibold text-gray-700 bg-transparent border-b border-dashed border-gray-300 focus:outline-none focus:border-purple-500 px-1">
+              <input type="text" inputmode="decimal" lang="en" data-id="${id}" data-mkey="${mKey}" data-okey="${oKey}" value="${toEngNum(opt.val || '1.50')}" placeholder="1.50" class="odds-input w-16 px-1.5 py-1 text-xs font-bold text-purple-700 bg-purple-50 border border-purple-200 rounded-md text-center focus:outline-none focus:ring-1 focus:ring-purple-500 font-sans">
+              <button data-id="${id}" data-mkey="${mKey}" data-okey="${oKey}" class="delete-option-btn text-red-400 hover:text-red-600 px-1 text-xs" title="Remove Option">
+                <i class="fa-solid fa-circle-xmark"></i>
+              </button>
+            </div>
+          `;
+        });
+
+        marketsHTML += `
+          <div class="bg-purple-50/50 border border-purple-100 rounded-xl p-3 mb-3">
+            <div class="flex items-center justify-between mb-2 pb-1 border-b border-purple-100/60 gap-2">
+              <input type="text" data-id="${id}" data-mkey="${mKey}" value="${market.title || 'Bet Title'}" placeholder="Bet Title (e.g. Winner)" class="market-title-input font-bold text-xs text-purple-900 bg-transparent border-b border-dashed border-purple-300 focus:outline-none focus:border-purple-600 px-1 w-full">
+              <button data-id="${id}" data-mkey="${mKey}" class="delete-market-btn text-xs text-red-500 hover:text-red-700 font-semibold px-2 py-0.5 rounded-md hover:bg-red-50 transition" title="Delete Market">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            </div>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2">
+              ${optionsHTML}
+            </div>
+
+            <button data-id="${id}" data-mkey="${mKey}" class="add-option-btn w-full text-[10px] font-bold text-purple-600 bg-white hover:bg-purple-100/50 border border-purple-200 py-1.5 rounded-lg transition flex items-center justify-center gap-1">
+              <i class="fa-solid fa-plus text-[9px]"></i> Add Option
+            </button>
+          </div>
+        `;
+      });
 
       card.innerHTML = `
         <div>
@@ -383,34 +427,24 @@
             <i class="fa-regular fa-clock mr-1"></i> ${new Date(data.matchDate || Date.now()).toLocaleString('en-US')}
           </div>
 
-          <div class="bg-purple-50/60 border border-purple-100 rounded-xl p-3 my-4">
-            <div class="flex items-center justify-between mb-2">
-              <span class="text-[11px] font-bold text-gray-700 flex items-center gap-1">
-                <i class="fa-solid fa-chart-line text-purple-600"></i> Match Odds
+          <!-- Unlimited Markets Container -->
+          <div class="mt-4">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-bold text-gray-700 flex items-center gap-1.5">
+                <i class="fa-solid fa-chart-line text-purple-600"></i> Bet Markets & Odds
               </span>
-              <span class="text-[10px] text-gray-400">Multiplier (x)</span>
+              <button data-id="${id}" class="add-market-btn text-[11px] font-bold text-white bg-purple-600 hover:bg-purple-700 px-3 py-1 rounded-lg shadow-sm transition flex items-center gap-1 cursor-pointer">
+                <i class="fa-solid fa-plus text-[9px]"></i> New Market Title
+              </button>
             </div>
-            <p class="text-xs font-semibold mb-2">Team Wins 1X2</p> 
-            <div class="grid grid-cols-3 gap-2">
-              <div>
-                <label class="block text-[9px] font-semibold text-gray-500 uppercase truncate">${data.team1?.name || 'TM1'}</label>
-                <input type="text" inputmode="decimal" lang="en" data-id="${id}" data-type="team1" value="${odds.team1}" class="odds-input w-full px-2 py-1.5 text-xs font-bold text-gray-800 bg-white border border-gray-200 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-purple-500 font-sans">
-              </div>
 
-              <div>
-                <label class="block text-[9px] font-semibold text-gray-500 uppercase truncate">Draw</label>
-                <input type="text" inputmode="decimal" lang="en" data-id="${id}" data-type="draw" value="${odds.draw}" class="odds-input w-full px-2 py-1.5 text-xs font-bold text-gray-800 bg-white border border-gray-200 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-purple-500 font-sans">
-              </div>
-
-              <div>
-                <label class="block text-[9px] font-semibold text-gray-500 uppercase truncate">${data.team2?.name || 'TM2'}</label>
-                <input type="text" inputmode="decimal" lang="en" data-id="${id}" data-type="team2" value="${odds.team2}" class="odds-input w-full px-2 py-1.5 text-xs font-bold text-gray-800 bg-white border border-gray-200 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-purple-500 font-sans">
-              </div>
+            <div class="space-y-3">
+              ${marketsHTML || `<p class="text-xs text-gray-400 text-center py-2">No markets added yet. Click "+ New Market Title" to add one.</p>`}
             </div>
           </div>
         </div>
 
-        <div class="pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
+        <div class="pt-3 border-t border-gray-100 flex items-center justify-between gap-2 mt-4">
           <div class="flex-1">
             <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Status</label>
             <select data-id="${id}" class="status-select w-full px-2 py-1.5 text-xs font-medium bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500">
@@ -465,7 +499,7 @@
       `;
     }
 
-    // প্রতি ৪ সেকেন্ডে রিয়েলটাইম স্কোরবোর্ড রেন্ডার
+    // Interval to refresh scoreboards live
     setInterval(() => {
       if (allMatchesData && Object.keys(allMatchesData).length > 0) {
         Object.keys(allMatchesData).forEach(matchId => {
@@ -490,6 +524,7 @@
     });
 
     matchesContainer.addEventListener('change', async (e) => {
+      // Update Status
       if (e.target.classList.contains('status-select')) {
         const matchId = e.target.getAttribute('data-id');
         const newStatus = e.target.value;
@@ -515,14 +550,73 @@
         await update(ref(db, `bets/${matchId}`), updateData);
       }
 
+      // Dynamic Market Title Change
+      if (e.target.classList.contains('market-title-input')) {
+        const matchId = e.target.getAttribute('data-id');
+        const mKey = e.target.getAttribute('data-mkey');
+        await update(ref(db, `bets/${matchId}/markets/${mKey}`), { title: e.target.value });
+      }
+
+      // Dynamic Option Name Change
+      if (e.target.classList.contains('option-name-input')) {
+        const matchId = e.target.getAttribute('data-id');
+        const mKey = e.target.getAttribute('data-mkey');
+        const oKey = e.target.getAttribute('data-okey');
+        await update(ref(db, `bets/${matchId}/markets/${mKey}/options/${oKey}`), { name: e.target.value });
+      }
+
+      // Dynamic Odds Value Change
       if (e.target.classList.contains('odds-input')) {
         const matchId = e.target.getAttribute('data-id');
-        const oddsType = e.target.getAttribute('data-type');
-        await update(ref(db, `bets/${matchId}/odds`), { [oddsType]: toEngNum(e.target.value) });
+        const mKey = e.target.getAttribute('data-mkey');
+        const oKey = e.target.getAttribute('data-okey');
+        await update(ref(db, `bets/${matchId}/markets/${mKey}/options/${oKey}`), { val: toEngNum(e.target.value) });
       }
     });
 
     matchesContainer.addEventListener('click', async (e) => {
+      // Add Market Title
+      const addMarketBtn = e.target.closest('.add-market-btn');
+      if (addMarketBtn) {
+        const matchId = addMarketBtn.getAttribute('data-id');
+        const newMKey = 'm_' + Date.now();
+        const newMarketData = {
+          title: "New Bet Market",
+          options: {
+            "o1": { name: "Option 1", val: "1.50" },
+            "o2": { name: "Option 2", val: "2.00" }
+          }
+        };
+        await set(ref(db, `bets/${matchId}/markets/${newMKey}`), newMarketData);
+      }
+
+      // Delete Market Title
+      const deleteMarketBtn = e.target.closest('.delete-market-btn');
+      if (deleteMarketBtn && confirm('Are you sure you want to delete this bet market title?')) {
+        const matchId = deleteMarketBtn.getAttribute('data-id');
+        const mKey = deleteMarketBtn.getAttribute('data-mkey');
+        await remove(ref(db, `bets/${matchId}/markets/${mKey}`));
+      }
+
+      // Add Option inside Market
+      const addOptionBtn = e.target.closest('.add-option-btn');
+      if (addOptionBtn) {
+        const matchId = addOptionBtn.getAttribute('data-id');
+        const mKey = addOptionBtn.getAttribute('data-mkey');
+        const newOKey = 'o_' + Date.now();
+        await set(ref(db, `bets/${matchId}/markets/${mKey}/options/${newOKey}`), { name: "New Option", val: "1.85" });
+      }
+
+      // Delete Option
+      const deleteOptionBtn = e.target.closest('.delete-option-btn');
+      if (deleteOptionBtn) {
+        const matchId = deleteOptionBtn.getAttribute('data-id');
+        const mKey = deleteOptionBtn.getAttribute('data-mkey');
+        const oKey = deleteOptionBtn.getAttribute('data-okey');
+        await remove(ref(db, `bets/${matchId}/markets/${mKey}/options/${oKey}`));
+      }
+
+      // Delete Match
       const deleteBtn = e.target.closest('.delete-btn');
       if (deleteBtn && confirm('Are you sure you want to delete this match?')) {
         const matchId = deleteBtn.getAttribute('data-id');
@@ -543,4 +637,4 @@
     });
   </script>
 </body>
-</html>
+  </html>
