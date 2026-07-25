@@ -4,8 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BetX - Dashboard</title>
-    <!-- Fixed Tailwind CDN Link -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -49,7 +48,7 @@
         </div>
     </header>
 
-    <!-- Main Container (Adjusted Grid Columns) -->
+    <!-- Main Container -->
     <div class="max-w-7xl mx-auto px-4 py-6 md:py-8 grid grid-cols-1 lg:grid-cols-4 gap-6">
         
         <!-- Sidebar -->
@@ -84,8 +83,8 @@
             </div>
         </aside>
 
-        <!-- Main Content (Spans 3 Columns) -->
-        <main class="lg:col-span-3 space-y-1">
+        <!-- Main Content -->
+        <main class="lg:col-span-2 space-y-1">
             <div>
                 <div class="flex justify-between items-center mb-4 px-1">
                     <h2 class="text-xs sm:text-sm font-black tracking-widest text-slate-200 flex items-center space-x-2">
@@ -100,8 +99,8 @@
                 </div>
 
                 <!-- Matches Container (Dynamic Load) -->
-                <div id="matches-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <p class="text-slate-400 text-xs italic text-center py-4 col-span-full">Loading matches...</p>
+                <div id="matches-container" class="space-y-4">
+                    <p class="text-slate-400 text-xs italic text-center py-4">Loading matches...</p>
                 </div>
             </div>
         </main>
@@ -217,25 +216,21 @@
                     const month = !isNaN(dateObj.getMonth()) ? dateObj.toLocaleString('default', { month: 'short' }) : '---';
                     const time = !isNaN(dateObj.valueOf()) ? dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--';
 
-                    // Icons & Fallback Backgrounds
+                    // Icons & Backgrounds based on sport
                     const isFootball = sportLower === 'football';
                     const sportIcon = isFootball ? 'fa-futbol' : 'fa-baseball-bat-ball';
-                    const bgStyle = match.bgUrl 
-                        ? `background-image: linear-gradient(rgba(15, 23, 42, 0.85), rgba(15, 23, 42, 0.85)), url('${match.bgUrl}');` 
-                        : `background-color: #0f172a;`;
-
-                    const fallbackLogo = "https://placehold.co/50x50/334155/ffffff?text=Team";
+                    const bgUrl = isFootball ? 'stadium-football.jpg' : 'cricket-stadium.jpg';
 
                     matchesHTML += `
-                        <div class="rounded-xl p-3 md:p-4 border border-slate-700/80 shadow-2xl relative overflow-hidden group bg-cover bg-center" style="${bgStyle}">
-                            <div class="absolute top-0 right-0 bg-amber-400 text-slate-950 font-black px-4 uppercase text-[8px] tracking-wider translate-x-4 translate-y-1.5 rotate-45 flex items-center justify-center shadow-md z-10">
-                                <span class="w-1.5 h-1.5 bg-slate-950 rounded-full mr-1 animate-pulse"></span> ${match.status || 'Live'}
+                        <div class="rounded-xl p-2 md:p-4 border border-slate-600 shadow-2xl relative overflow-hidden group max-w-md mx-auto lg:mx-0 bg-cover bg-center" style="background-image: linear-gradient(rgba(30, 23, 42, 0.55), rgba(30, 23, 42, 0.75)), url('${bgUrl}');">
+                            <div class="absolute top-0 right-0 bg-amber-400 text-slate-950 font-black px-4 uppercase text-[7px] tracking-wider translate-x-4 translate-y-1.5 rotate-45 flex items-center justify-center shadow-md z-10">
+                                <span class="w-1 h-1 bg-slate-950 rounded-full mr-1 animate-pulse"></span> ${match.status || 'Live'}
                             </div>
                             
                             <div class="flex items-center space-x-1.5 text-slate-200 text-[11px] md:text-xs font-bold tracking-wide mb-3 drop-shadow-md">
                                 <i class="fa-solid ${sportIcon} text-amber-400 text-[11px]"></i>
                                 <span class="uppercase">${match.league || 'Tournament'}</span>
-                                <span class="text-slate-400 font-normal text-[11px]">• &nbsp;${time}</span>
+                                <span class="text-slate-300 font-bold text-[11px]">• &nbsp;${time}</span>
                             </div>
 
                             <div class="flex items-center justify-start">
@@ -244,23 +239,23 @@
                                     <span class="text-[10px] font-bold text-amber-400 mt-0.5 uppercase">${month}</span>
                                 </div>
 
-                                <div class="h-12 w-[2px] bg-slate-700/80 self-center"></div>
+                                <div class="h-12 w-[2px] bg-slate-400/80 shadow-[0_0_8px_rgba(255,255,255,0.1)] self-center"></div>
 
                                 <div class="flex-1 flex items-center justify-around pl-3 md:pl-4">
-                                    <div class="flex flex-col items-center text-center w-5/12">
-                                        <div class="w-10 h-10 md:w-12 md:h-12 bg-slate-800 rounded-full flex items-center justify-center shadow-md border border-slate-700 overflow-hidden">
-                                            <img src="${match.team1?.logo || fallbackLogo}" alt="${match.team1?.name || 'Team 1'}" class="w-full h-full object-cover" onerror="this.src='${fallbackLogo}'">
+                                    <div class="flex flex-col items-center text-center w-5/12 drop-shadow-[0_2px_3px_rgba(0,0,0,0.8)]">
+                                        <div class="w-10 h-10 md:w-12 md:h-12 bg-white rounded-full flex items-center justify-center shadow-md border border-slate-700/30 overflow-hidden">
+                                            <img src="${match.team1?.logo || ''}" alt="team logo" class="w-full h-full object-cover" onError="this.src='https://via.placeholder.com/50'">
                                         </div>
                                         <p class="font-extrabold text-[11px] md:text-xs tracking-wide text-white mt-2 line-clamp-1">${match.team1?.name || 'Team 1'}</p>
                                     </div>
 
-                                    <span class="text-amber-400 font-black italic text-xl tracking-tighter mx-2 mb-4">
-                                        VS
+                                    <span class="text-amber-400 font-black italic text-xl tracking-tighter drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] mx-2 mb-5">
+                                        Vs
                                     </span>
 
-                                    <div class="flex flex-col items-center text-center w-5/12">
-                                        <div class="w-10 h-10 md:w-12 md:h-12 bg-slate-800 rounded-full flex items-center justify-center shadow-md border border-slate-700 overflow-hidden">
-                                            <img src="${match.team2?.logo || fallbackLogo}" alt="${match.team2?.name || 'Team 2'}" class="w-full h-full object-cover" onerror="this.src='${fallbackLogo}'">
+                                    <div class="flex flex-col items-center text-center w-5/12 drop-shadow-[0_2px_3px_rgba(0,0,0,0.8)]">
+                                        <div class="w-10 h-10 md:w-12 md:h-12 bg-white rounded-full flex items-center justify-center shadow-md border border-slate-700/30 overflow-hidden">
+                                            <img src="${match.team2?.logo || ''}" alt="team logo" class="w-full h-full object-cover" onError="this.src='https://via.placeholder.com/50'">
                                         </div>
                                         <p class="font-extrabold text-[11px] md:text-xs tracking-wide text-white mt-2 line-clamp-1">${match.team2?.name || 'Team 2'}</p>
                                     </div>
@@ -274,11 +269,12 @@
                 footballCountEl.innerText = footballCount;
                 cricketCountEl.innerText = cricketCount;
             } else {
-                matchesContainer.innerHTML = '<p class="text-slate-400 text-xs italic text-center py-4 col-span-full">No live matches available right now.</p>';
+                matchesContainer.innerHTML = '<p class="text-slate-400 text-xs italic text-center py-4">No live matches available right now.</p>';
                 footballCountEl.innerText = '0';
                 cricketCountEl.innerText = '0';
             }
         });
     </script>
+
 </body>
 </html>
