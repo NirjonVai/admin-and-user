@@ -327,8 +327,8 @@
       const rawOdds = data.odds || {};
       const odds = {
         team1: toEngNum(rawOdds.team1 || '1.50'),
-        team2: toEngNum(rawOdds.team2 || '1.50'),
-        draw: toEngNum(rawOdds.draw || '2.00')
+        team2: toEngNum(rawOdds.team2 || '2.60'),
+        draw: toEngNum(rawOdds.draw || '4.77')
       };
 
       const customMarkets = data.customMarkets || {};
@@ -337,20 +337,22 @@
       card.className = "bg-white rounded-2xl shadow-sm border border-gray-200 p-6 flex flex-col justify-between";
       card.setAttribute('data-card-id', id);
 
-      // Render Dynamic Additional Bet Markets Inside Primary Match Odds Block
+      // Render Dynamic Additional Bet Markets (Strictly matching the screenshot style)
       let customMarketsHTML = '';
       Object.keys(customMarkets).forEach((mKey) => {
         const market = customMarkets[mKey] || {};
         const options = market.options || {};
+        const optionKeys = Object.keys(options);
+        const gridColsClass = optionKeys.length === 3 ? 'grid-cols-3' : 'grid-cols-2';
 
         let optionsHTML = '';
-        Object.keys(options).forEach((oKey) => {
+        optionKeys.forEach((oKey) => {
           const opt = options[oKey] || {};
           optionsHTML += `
-            <div class="flex items-center gap-2">
-              <input type="text" data-id="${id}" data-mkey="${mKey}" data-okey="${oKey}" value="${opt.name || ''}" placeholder="Option Name" class="custom-option-name w-1/2 px-3 py-1.5 text-xs font-semibold text-gray-700 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500">
-              <input type="text" inputmode="decimal" data-id="${id}" data-mkey="${mKey}" data-okey="${oKey}" value="${toEngNum(opt.val || '1.80')}" placeholder="Odds" class="custom-option-val w-1/3 px-2 py-1.5 text-xs font-bold text-center text-gray-800 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 font-sans shadow-sm">
-              <button data-id="${id}" data-mkey="${mKey}" data-okey="${oKey}" class="delete-option-btn text-gray-400 hover:text-red-500 p-1 transition cursor-pointer text-xs" title="Remove Option">
+            <div class="relative group">
+              <input type="text" data-id="${id}" data-mkey="${mKey}" data-okey="${oKey}" value="${opt.name || ''}" placeholder="NAME" class="custom-option-name block text-[9px] font-bold text-gray-400 uppercase truncate mb-1 w-full bg-transparent border-none p-0 focus:outline-none focus:ring-0">
+              <input type="text" inputmode="decimal" data-id="${id}" data-mkey="${mKey}" data-okey="${oKey}" value="${toEngNum(opt.val || '1.85')}" placeholder="Odds" class="custom-option-val w-full px-2 py-2 text-xs font-bold text-gray-800 bg-white border border-gray-200 rounded-full text-center focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-sm">
+              <button data-id="${id}" data-mkey="${mKey}" data-okey="${oKey}" class="delete-option-btn absolute -top-1 -right-1 bg-red-100 text-red-500 rounded-full w-4 h-4 flex items-center justify-center text-[8px] opacity-0 group-hover:opacity-100 transition cursor-pointer" title="Remove Option">
                 <i class="fa-solid fa-xmark"></i>
               </button>
             </div>
@@ -358,20 +360,20 @@
         });
 
         customMarketsHTML += `
-          <div class="mt-4 pt-3 border-t border-purple-100">
+          <div class="mt-4 pt-3 border-t border-gray-100">
             <div class="flex items-center justify-between mb-2">
-              <input type="text" data-id="${id}" data-mkey="${mKey}" value="${market.title || ''}" placeholder="Market Title (e.g. Toss Winner)" class="market-title-input text-xs font-semibold text-gray-600 bg-transparent border-b border-dashed border-gray-300 focus:border-purple-600 focus:outline-none w-full mr-2">
-              <div class="flex items-center gap-1.5 shrink-0">
-                <button data-id="${id}" data-mkey="${mKey}" class="add-option-btn text-[10px] bg-purple-100 text-purple-700 hover:bg-purple-200 px-2 py-1 rounded-lg font-bold transition flex items-center gap-1 cursor-pointer">
+              <input type="text" data-id="${id}" data-mkey="${mKey}" value="${market.title || ''}" placeholder="Market Title" class="market-title-input text-xs font-bold text-gray-600 bg-transparent border-b border-dashed border-gray-300 focus:border-purple-600 focus:outline-none w-full mr-2">
+              <div class="flex items-center gap-1 shrink-0">
+                <button data-id="${id}" data-mkey="${mKey}" class="add-option-btn text-[10px] text-purple-600 hover:bg-purple-50 px-2 py-1 rounded-lg font-semibold transition flex items-center gap-1 cursor-pointer">
                   <i class="fa-solid fa-plus text-[8px]"></i> Option
                 </button>
-                <button data-id="${id}" data-mkey="${mKey}" class="delete-market-btn text-red-400 hover:text-red-600 p-1 rounded-md transition cursor-pointer text-xs" title="Delete Category">
+                <button data-id="${id}" data-mkey="${mKey}" class="delete-market-btn text-red-400 hover:text-red-600 p-1 rounded-md transition cursor-pointer text-xs" title="Delete Market">
                   <i class="fa-solid fa-trash-can"></i>
                 </button>
               </div>
             </div>
-            <div class="space-y-2">
-              ${optionsHTML || '<p class="text-[10px] text-gray-400 italic">No options added yet.</p>'}
+            <div class="grid ${gridColsClass} gap-2">
+              ${optionsHTML || '<p class="text-[10px] text-gray-400 italic col-span-full">No options added yet.</p>'}
             </div>
           </div>
         `;
@@ -382,7 +384,7 @@
           <div class="flex justify-between items-center mb-4 pb-3 border-b border-gray-100 gap-2">
             <div class="flex items-center gap-1.5 flex-wrap">
               <span class="text-xs font-bold uppercase tracking-wider text-purple-600 bg-purple-50 px-2.5 py-1 rounded-lg">
-                ${data.sport || 'Match'} (${data.overs || 20} Ov)
+                ${data.sport || 'CRICKET'} (${data.overs || 10} OV)
               </span>
               <span class="text-[10px] font-bold px-2 py-0.5 rounded-md border bg-purple-100 text-purple-600 border-purple-200">
                 🤖 AI
@@ -393,12 +395,12 @@
             </span>
           </div>
 
-          <p class="text-xs font-medium text-gray-400 mb-4">${data.league || 'AI Virtual League'}</p>
+          <p class="text-xs font-medium text-gray-400 mb-4 uppercase tracking-wider">${data.league || 'KPL T20 LEAGUE'}</p>
 
           <div class="flex items-center justify-between my-4 gap-2">
             <div class="flex flex-col items-center text-center w-1/3">
               <img src="${data.team1?.logo || ''}" alt="${data.team1?.name || ''}" class="w-12 h-12 object-contain mb-2 rounded-full bg-gray-50 p-1 border border-gray-100" onerror="this.src='https://via.placeholder.com/50?text=T1'">
-              <span class="text-xs font-bold text-gray-800 line-clamp-1">${data.team1?.name || 'Team 1'}</span>
+              <span class="text-xs font-bold text-gray-800 line-clamp-1">${data.team1?.name || 'Pakistan'}</span>
             </div>
 
             <div class="text-center">
@@ -407,7 +409,7 @@
 
             <div class="flex flex-col items-center text-center w-1/3">
               <img src="${data.team2?.logo || ''}" alt="${data.team2?.name || ''}" class="w-12 h-12 object-contain mb-2 rounded-full bg-gray-50 p-1 border border-gray-100" onerror="this.src='https://via.placeholder.com/50?text=T2'">
-              <span class="text-xs font-bold text-gray-800 line-clamp-1">${data.team2?.name || 'Team 2'}</span>
+              <span class="text-xs font-bold text-gray-800 line-clamp-1">${data.team2?.name || 'Afghanistan'}</span>
             </div>
           </div>
 
@@ -421,36 +423,33 @@
           </div>
 
           <!-- Primary Match Odds Container -->
-          <div class="bg-purple-50/40 border border-purple-100 rounded-2xl p-4 my-4">
+          <div class="bg-purple-50/30 border border-purple-100 rounded-2xl p-4 my-4">
             <div class="flex items-center justify-between mb-3">
               <span class="text-xs font-bold text-purple-900 flex items-center gap-1.5">
-                <i class="fa-solid fa-chart-line text-purple-600"></i> Primary Match Odds
+                <i class="fa-solid fa-chart-line text-purple-600"></i> Primary Match Odds <span class="text-[10px] text-gray-400 font-normal">Multiplier (x)</span>
               </span>
-              <div class="flex items-center gap-3">
-                <span class="text-[10px] text-gray-400">Multiplier (x)</span>
-                <button data-id="${id}" class="toggle-add-market-btn text-[10px] bg-purple-600 hover:bg-purple-700 text-white px-2.5 py-1 rounded-lg font-bold transition flex items-center gap-1 cursor-pointer shadow-sm">
-                  <i class="fa-solid fa-plus text-[9px]"></i> Add Title Market
-                </button>
-              </div>
+              <button data-id="${id}" class="toggle-add-market-btn text-[10px] bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded-xl font-bold transition flex items-center gap-1 cursor-pointer shadow-sm">
+                <i class="fa-solid fa-plus text-[9px]"></i> Add Title Market
+              </button>
             </div>
 
             <!-- Add Bet Category Form (Initially Hidden) -->
-            <div id="add-market-form-${id}" class="hidden mb-4 p-3 bg-white border border-purple-200 rounded-xl shadow-sm">
+            <div id="add-market-form-${id}" class="hidden mb-4 p-3 bg-white border border-purple-200 rounded-2xl shadow-sm">
               <p class="text-[11px] font-bold text-purple-700 mb-2">Create New Market Bet</p>
-              <input type="text" id="new-market-title-${id}" placeholder="Market Title (e.g. Toss Winner)" class="w-full px-3 py-1.5 text-xs bg-gray-50 border border-gray-200 rounded-lg mb-2 focus:outline-none focus:ring-2 focus:ring-purple-500">
+              <input type="text" id="new-market-title-${id}" placeholder="Market Title (e.g. Toss Winner)" class="w-full px-3 py-1.5 text-xs bg-gray-50 border border-gray-200 rounded-xl mb-2 focus:outline-none focus:ring-2 focus:ring-purple-500">
               
               <div class="grid grid-cols-2 gap-2 mb-2">
-                <input type="text" id="new-opt1-name-${id}" value="${data.team1?.name || 'Team 1'}" placeholder="Option 1 Name" class="px-2 py-1 text-xs bg-gray-50 border border-gray-200 rounded-lg focus:outline-none">
+                <input type="text" id="new-opt1-name-${id}" value="${data.team1?.name || 'Pakistan'}" placeholder="Option 1 Name" class="px-2 py-1 text-xs bg-gray-50 border border-gray-200 rounded-lg focus:outline-none">
                 <input type="text" inputmode="decimal" id="new-opt1-val-${id}" value="1.85" placeholder="Odds" class="px-2 py-1 text-xs text-center font-bold bg-gray-50 border border-gray-200 rounded-lg focus:outline-none">
               </div>
 
               <div class="grid grid-cols-2 gap-2 mb-3">
-                <input type="text" id="new-opt2-name-${id}" value="${data.team2?.name || 'Team 2'}" placeholder="Option 2 Name" class="px-2 py-1 text-xs bg-gray-50 border border-gray-200 rounded-lg focus:outline-none">
+                <input type="text" id="new-opt2-name-${id}" value="${data.team2?.name || 'Afghanistan'}" placeholder="Option 2 Name" class="px-2 py-1 text-xs bg-gray-50 border border-gray-200 rounded-lg focus:outline-none">
                 <input type="text" inputmode="decimal" id="new-opt2-val-${id}" value="1.85" placeholder="Odds" class="px-2 py-1 text-xs text-center font-bold bg-gray-50 border border-gray-200 rounded-lg focus:outline-none">
               </div>
 
               <!-- Bet Save & Cancel Action Buttons -->
-              <div class="flex justify-end gap-2 pt-1 border-t border-gray-100">
+              <div class="flex justify-end gap-2 pt-2 border-t border-gray-100">
                 <button data-id="${id}" class="cancel-add-market-btn px-3 py-1.5 text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg font-semibold transition cursor-pointer">
                   Cancel
                 </button>
@@ -460,28 +459,28 @@
               </div>
             </div>
 
-            <!-- Default Match Winner (1X2) Bet -->
+            <!-- Default Match Winner (1X2) Bet (Same layout as requested image) -->
             <div>
-              <p class="text-xs font-semibold mb-2 text-gray-600">Match Winner (1X2)</p> 
+              <p class="text-xs font-bold mb-2 text-gray-600">Match Winner (1X2)</p> 
               <div class="grid grid-cols-3 gap-2">
                 <div>
-                  <label class="block text-[9px] font-semibold text-gray-400 uppercase truncate mb-1">${data.team1?.name || 'TM1'}</label>
-                  <input type="text" inputmode="decimal" lang="en" data-id="${id}" data-type="team1" value="${odds.team1}" class="odds-input w-full px-2 py-1.5 text-xs font-bold text-gray-800 bg-white border border-gray-200 rounded-xl text-center focus:outline-none focus:ring-2 focus:ring-purple-500 font-sans shadow-sm">
+                  <label class="block text-[9px] font-bold text-gray-400 uppercase truncate mb-1">${data.team1?.name || 'PAKISTAN'}</label>
+                  <input type="text" inputmode="decimal" lang="en" data-id="${id}" data-type="team1" value="${odds.team1}" class="odds-input w-full px-2 py-2 text-xs font-bold text-gray-800 bg-white border border-gray-200 rounded-full text-center focus:outline-none focus:ring-2 focus:ring-purple-500 font-sans shadow-sm">
                 </div>
 
                 <div>
-                  <label class="block text-[9px] font-semibold text-gray-400 uppercase truncate mb-1">Draw</label>
-                  <input type="text" inputmode="decimal" lang="en" data-id="${id}" data-type="draw" value="${odds.draw}" class="odds-input w-full px-2 py-1.5 text-xs font-bold text-gray-800 bg-white border border-gray-200 rounded-xl text-center focus:outline-none focus:ring-2 focus:ring-purple-500 font-sans shadow-sm">
+                  <label class="block text-[9px] font-bold text-gray-400 uppercase truncate mb-1">DRAW</label>
+                  <input type="text" inputmode="decimal" lang="en" data-id="${id}" data-type="draw" value="${odds.draw}" class="odds-input w-full px-2 py-2 text-xs font-bold text-gray-800 bg-white border border-gray-200 rounded-full text-center focus:outline-none focus:ring-2 focus:ring-purple-500 font-sans shadow-sm">
                 </div>
 
                 <div>
-                  <label class="block text-[9px] font-semibold text-gray-400 uppercase truncate mb-1">${data.team2?.name || 'TM2'}</label>
-                  <input type="text" inputmode="decimal" lang="en" data-id="${id}" data-type="team2" value="${odds.team2}" class="odds-input w-full px-2 py-1.5 text-xs font-bold text-gray-800 bg-white border border-gray-200 rounded-xl text-center focus:outline-none focus:ring-2 focus:ring-purple-500 font-sans shadow-sm">
+                  <label class="block text-[9px] font-bold text-gray-400 uppercase truncate mb-1">${data.team2?.name || 'AFGHANISTAN'}</label>
+                  <input type="text" inputmode="decimal" lang="en" data-id="${id}" data-type="team2" value="${odds.team2}" class="odds-input w-full px-2 py-2 text-xs font-bold text-gray-800 bg-white border border-gray-200 rounded-full text-center focus:outline-none focus:ring-2 focus:ring-purple-500 font-sans shadow-sm">
                 </div>
               </div>
             </div>
 
-            <!-- Dynamically Added Bets List Inside Primary Odds Block -->
+            <!-- Dynamically Added Bets List (Rendered matching screenshot design) -->
             <div id="custom-markets-list-${id}">
               ${customMarketsHTML}
             </div>
@@ -490,8 +489,8 @@
 
         <div class="pt-3 border-t border-gray-100 flex items-center justify-between gap-2 mt-2">
           <div class="flex-1">
-            <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Status</label>
-            <select data-id="${id}" class="status-select w-full px-3 py-1.5 text-xs font-medium bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500">
+            <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">STATUS</label>
+            <select data-id="${id}" class="status-select w-full px-3 py-2 text-xs font-semibold bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500">
               <option value="upcoming" ${data.status === 'upcoming' ? 'selected' : ''}>Upcoming</option>
               <option value="live" ${data.status === 'live' ? 'selected' : ''}>Live Now</option>
               <option value="finished" ${data.status === 'finished' ? 'selected' : ''}>Finished</option>
@@ -499,7 +498,7 @@
           </div>
 
           <div class="pt-4">
-            <button data-id="${id}" class="delete-btn text-xs text-red-500 hover:bg-red-50 px-3 py-1.5 rounded-xl transition cursor-pointer flex items-center gap-1 font-semibold">
+            <button data-id="${id}" class="delete-btn text-xs text-red-500 hover:bg-red-50 px-3 py-1.5 rounded-xl transition cursor-pointer flex items-center gap-1 font-bold">
               <i class="fa-solid fa-trash-can"></i> Delete
             </button>
           </div>
@@ -510,7 +509,7 @@
     }
 
     function getScoreboardHTML(data, aiScore, isLive) {
-      const maxOvers = aiScore.maxOvers || data.overs || 20;
+      const maxOvers = aiScore.maxOvers || data.overs || 10;
 
       return `
         <div class="flex justify-between items-center border-b border-gray-800 pb-2 mb-2">
@@ -709,8 +708,8 @@
         const mKey = addOptionBtn.getAttribute('data-mkey');
         const optionsRef = ref(db, `bets/${matchId}/customMarkets/${mKey}/options`);
         await push(optionsRef, {
-          name: "New Option",
-          val: "1.80"
+          name: "NEW OPTION",
+          val: "1.85"
         });
         return;
       }
@@ -739,4 +738,4 @@
     });
   </script>
 </body>
-</html>
+  </html>
