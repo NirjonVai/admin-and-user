@@ -29,7 +29,7 @@
                 <!-- User Profile Display -->
                 <div class="flex items-center space-x-2 bg-slate-800/40 border border-slate-700/60 px-3 py-1.5 rounded-xl text-xs sm:text-sm font-semibold text-slate-200">
                     <i class="fa-solid fa-user-circle text-amber-400 text-sm sm:text-base"></i>
-                    <span id="user-display-name" class="max-w-[100px] sm:max-w-[150px] truncate">User</span>
+                    <span id="user-display-name" class="max-w-[100px] sm:max-w-[150px] truncate">Loading...</span>
                 </div>
 
                 <!-- Balance Box -->
@@ -91,7 +91,8 @@
     <!-- Firebase Realtime Database Integration Script -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getDatabase, ref, get, child, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBzQaaXhTtiGpMjRMBUXZaCIrDRoNyEkU4",
@@ -105,10 +106,34 @@
         };
 
         const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
         const db = getDatabase(app);
 
+        const userNameDisplay = document.getElementById('user-display-name');
         const matchesListContainer = document.getElementById('ai-matches-list');
         let localMatchesCache = {};
+
+        // 🔒 Check Login State (যদি লগইন না থাকে তবে login.html এ রিডাইরেক্ট করবে)
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                try {
+                    const dbRef = ref(db);
+                    const snapshot = await get(child(dbRef, `users/${user.uid}`));
+                    
+                    if (snapshot.exists()) {
+                        const userData = snapshot.val();
+                        userNameDisplay.innerText = userData.username || userData.name || user.email.split('@')[0];
+                    } else {
+                        userNameDisplay.innerText = user.email.split('@')[0];
+                    }
+                } catch (error) {
+                    console.error("Error fetching user data:", error);
+                    userNameDisplay.innerText = user.email ? user.email.split('@')[0] : "User";
+                }
+            } else {
+                window.location.href = "login.html";
+            }
+        });
 
         // 🕒 matchDate বা startTime থেকে সঠিকভাবে সময় দেখানোর ফাংশন
         function getFormattedMatchTime(match) {
@@ -245,7 +270,7 @@
             });
         }
 
-        // 🎨 Render Match HTML (Dashboard Styled)
+        // 🎨 Render Match HTML
         function renderMatches() {
             const keys = Object.keys(localMatchesCache);
             const aiKeys = keys.filter(k => localMatchesCache[k] && localMatchesCache[k].category === 'AI Match');
