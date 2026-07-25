@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
@@ -113,7 +113,7 @@
         const matchesListContainer = document.getElementById('ai-matches-list');
         let localMatchesCache = {};
 
-        // 🔒 Check Login State (যদি লগইন না থাকে তবে login.html এ রিডাইরেক্ট করবে)
+        // 🔒 Check Login State
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 try {
@@ -299,10 +299,6 @@
 
                 const isLive = match.status === 'live';
 
-                const oddsTeam1 = match.odds?.team1 || '1.50';
-                const oddsDraw = match.odds?.draw || '2.00';
-                const oddsTeam2 = match.odds?.team2 || '1.50';
-
                 // 🔥 matchDate ফিল্ড থেকে আসল সময় তুলে আনা হচ্ছে
                 const displayTime = getFormattedMatchTime(match);
 
@@ -311,6 +307,46 @@
                     if (b === 'W') return acc;
                     return acc + (parseInt(b) || 0);
                 }, 0);
+
+                // 🎯 Dynamically generate Admin added Custom Markets HTML
+                const customMarkets = match.customMarkets || {};
+                const customMarketKeys = Object.keys(customMarkets);
+                let customMarketsHTML = '';
+
+                if (customMarketKeys.length === 0) {
+                    customMarketsHTML = `
+                        <div class="text-center py-3">
+                            <p class="text-[11px] font-semibold text-slate-500 italic">No active betting markets right now.</p>
+                        </div>
+                    `;
+                } else {
+                    customMarketKeys.forEach((mKey) => {
+                        const market = customMarkets[mKey] || {};
+                        const options = market.options || {};
+                        const optionKeys = Object.keys(options);
+                        const gridColsClass = optionKeys.length >= 3 ? 'grid-cols-3' : 'grid-cols-2';
+
+                        let optionsHTML = '';
+                        optionKeys.forEach((oKey) => {
+                            const opt = options[oKey] || {};
+                            optionsHTML += `
+                                <button class="bg-slate-800/60 hover:bg-amber-400 border border-slate-700/60 hover:border-amber-400 py-2 px-1 rounded-xl transition-all duration-300 text-center group cursor-pointer shadow-md flex flex-col items-center justify-center">
+                                    <span class="block text-[9px] font-extrabold text-slate-400 group-hover:text-slate-950 uppercase tracking-wider mb-0.5 truncate w-full px-1">${opt.name || 'OPTION'}</span>
+                                    <span class="font-extrabold text-xs sm:text-sm text-amber-400 group-hover:text-slate-950">${opt.val || '1.00'}</span>
+                                </button>
+                            `;
+                        });
+
+                        customMarketsHTML += `
+                            <div class="mb-3 last:mb-0">
+                                <h3 class="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-2">${market.title || 'Betting Market'}</h3>
+                                <div class="grid ${gridColsClass} gap-2">
+                                    ${optionsHTML}
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
 
                 htmlContent += `
                 <div class="rounded-xl border border-slate-600 shadow-2xl overflow-hidden bg-slate-900/90 relative max-w-md mx-auto lg:mx-0">
@@ -403,23 +439,9 @@
                         </div>
                     </div>
 
-                    <!-- Dynamic Odds Section -->
+                    <!-- Dynamic Odds Section (Renders Custom Markets Added by Admin) -->
                     <div class="p-3 bg-slate-900 border-t border-slate-800">
-                        <h3 class="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-2.5">Team Wins 1X2</h3>
-                        <div class="grid grid-cols-3 gap-2">
-                            <button class="bg-slate-800/60 hover:bg-amber-400 border border-slate-700/60 hover:border-amber-400 py-2 rounded-xl transition-all duration-300 text-center group cursor-pointer shadow-md flex flex-col items-center justify-center">
-                                <span class="block text-[9px] font-extrabold text-slate-400 group-hover:text-slate-950 uppercase tracking-wider mb-0.5">W1 (${team1Code})</span>
-                                <span class="font-extrabold text-xs sm:text-sm text-amber-400 group-hover:text-slate-950">${oddsTeam1}</span>
-                            </button>
-                            <button class="bg-slate-800/60 hover:bg-amber-400 border border-slate-700/60 hover:border-amber-400 py-2 rounded-xl transition-all duration-300 text-center group cursor-pointer shadow-md flex flex-col items-center justify-center">
-                                <span class="block text-[9px] font-extrabold text-slate-400 group-hover:text-slate-950 uppercase tracking-wider mb-0.5">X</span>
-                                <span class="font-extrabold text-xs sm:text-sm text-amber-400 group-hover:text-slate-950">${oddsDraw}</span>
-                            </button>
-                            <button class="bg-slate-800/60 hover:bg-amber-400 border border-slate-700/60 hover:border-amber-400 py-2 rounded-xl transition-all duration-300 text-center group cursor-pointer shadow-md flex flex-col items-center justify-center">
-                                <span class="block text-[9px] font-extrabold text-slate-400 group-hover:text-slate-950 uppercase tracking-wider mb-0.5">W2 (${team2Code})</span>
-                                <span class="font-extrabold text-xs sm:text-sm text-amber-400 group-hover:text-slate-950">${oddsTeam2}</span>
-                            </button>
-                        </div>
+                        ${customMarketsHTML}
                     </div>
 
                 </div>
