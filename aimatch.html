@@ -96,12 +96,18 @@
         const matchesListContainer = document.getElementById('ai-matches-list');
         let localMatchesCache = {};
 
-        // ⚡ Time-based deterministic Score Engine (Fully Fixed for Dynamic Overs)
+        // Helper function to format timestamp to readable Time (e.g. 7:09 AM)
+        function formatMatchTime(timestamp) {
+            if (!timestamp) return 'LIVE';
+            const date = new Date(timestamp);
+            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+        }
+
+        // ⚡ Time-based deterministic Score Engine
         function calculateScoreFromTimestamp(match, currentTime = Date.now()) {
             const startTime = match.startTime || currentTime;
             const status = match.status;
 
-            // ডায়নামিক ওভার (ডিফল্ট ২০ ওভার যদি না থাকে)
             const maxOvers = Number(match.overs) || 20;
 
             let team1Name = match.team1?.name?.substring(0, 3).toUpperCase() || 'TM1';
@@ -176,10 +182,8 @@
                     s.ball = 0;
                 }
 
-                // ১ম ইনিংস নির্দিষ্ট overs পৌঁছালে বা ১০ উইকেট পড়লে শেষ হবে
                 if (s.innings === 1 && (s.over >= maxOvers || s.wickets >= 10)) {
                     s.target = s.runs + 1;
-                    
                     s.innings = 2;
                     s.battingTeam = team2Name;
                     s.bowlingTeam = team1Name;
@@ -189,7 +193,6 @@
                     s.ball = 0;
                     s.recentBalls = [];
                 } 
-                // ২য় ইনিংস নির্দিষ্ট overs পৌঁছালে, লক্ষ্য পার করলে বা ১০ উইকেট পড়লে ম্যাচ শেষ হবে
                 else if (s.innings === 2 && (s.runs >= s.target || s.over >= maxOvers || s.wickets >= 10)) {
                     s.isMatchOver = true;
                 }
@@ -251,6 +254,9 @@
                 const oddsDraw = match.odds?.draw || '2.00';
                 const oddsTeam2 = match.odds?.team2 || '1.50';
 
+                // Format Time (e.g., 07:09 AM)
+                const matchTimeDisplay = match.matchTime || formatMatchTime(match.startTime);
+
                 const overSum = score.recentBalls.reduce((acc, b) => {
                     if (b === 'wd') return acc + 1;
                     if (b === 'W') return acc;
@@ -266,9 +272,10 @@
                             ${isLive ? '<span class="w-1 h-1 bg-white rounded-full mr-1 animate-pulse"></span> Live' : match.status}
                         </div>
                         
+                        <!-- (10 OV) এর বদলে Time দেখানোর আপডেটটি নিচে করা হয়েছে -->
                         <div class="flex items-center space-x-1.5 text-slate-200 text-xs font-bold tracking-wide mb-3">
                             <i class="fa-solid fa-baseball-bat-ball text-slate-300 text-[11px]"></i>
-                            <span class="uppercase">${match.league || 'AI League'} (${match.overs || 20} OV)</span>
+                            <span class="uppercase">${match.league || 'AI League'} (${matchTimeDisplay})</span>
                             <span class="text-slate-400 font-bold">• &nbsp;${match.status.toUpperCase()}</span>
                         </div>
 
