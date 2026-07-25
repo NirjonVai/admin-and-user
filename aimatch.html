@@ -13,16 +13,16 @@
     <style>
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: #1c163a !important; /* বডি ব্যাকগ্রাউন্ড */
+            background-color: #1c163a !important;
         }
         .custom-bg {
-            background-color: #262152 !important; /* হেডার, বক্স ও ন্যাভ কালার */
+            background-color: #262152 !important;
         }
     </style>
 </head>
 <body class="text-slate-100 min-h-screen selection:bg-amber-400 selection:text-slate-950 pb-24 lg:pb-0">
 
-    <!-- Header with custom color -->
+    <!-- Header -->
     <header class="custom-bg backdrop-blur-md border-b border-slate-800/80 sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 py-3.5 flex justify-between items-center">
             <div class="flex items-center space-x-2 group cursor-pointer">
@@ -41,9 +41,7 @@
     </header>
         
     <main class="lg:col-span-2 space-y-6 px-3 py-6 max-w-4xl mx-auto">
-        <!-- Live & Dynamic Match Containers Will Render Here -->
         <div id="ai-matches-list" class="space-y-6">
-            <!-- Loading State -->
             <div class="rounded-xl border border-slate-700/60 p-8 text-center custom-bg">
                 <i class="fa-solid fa-spinner fa-spin text-3xl text-amber-400 mb-3"></i>
                 <p class="text-slate-400 text-sm font-semibold">Loading AI Matches from Database...</p>
@@ -51,7 +49,7 @@
         </div>
     </main>
 
-    <!-- Bottom Nav with custom color -->
+    <!-- Bottom Nav -->
     <nav class="lg:hidden fixed bottom-0 left-0 right-0 custom-bg backdrop-blur-xl border-t border-slate-800/80 px-2 py-2.5 z-50 flex justify-around items-center shadow-2xl rounded-t-2xl">
         <a href="#" class="flex flex-col items-center justify-center text-emerald-400 px-3 py-1 rounded-xl transition-all">
             <i class="fa-solid fa-fire text-lg mb-1"></i>
@@ -81,7 +79,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        // Firebase Configuration (Same configuration as your Admin Panel)
         const firebaseConfig = {
             apiKey: "AIzaSyBzQaaXhTtiGpMjRMBUXZaCIrDRoNyEkU4",
             authDomain: "betx-904da.firebaseapp.com",
@@ -99,12 +96,12 @@
         const matchesListContainer = document.getElementById('ai-matches-list');
         let localMatchesCache = {};
 
-        // ⚡ Time-based deterministic Score Engine (100% Synced with Admin Panel Overs Logic)
+        // ⚡ Time-based deterministic Score Engine (Fully Fixed for Dynamic Overs)
         function calculateScoreFromTimestamp(match, currentTime = Date.now()) {
             const startTime = match.startTime || currentTime;
             const status = match.status;
 
-            // অ্যাডমিন প্যানেল থেকে আসা ডাইনামিক ওভার (ডিফল্ট ২০)
+            // ডায়নামিক ওভার (ডিফল্ট ২০ ওভার যদি না থাকে)
             const maxOvers = Number(match.overs) || 20;
 
             let team1Name = match.team1?.name?.substring(0, 3).toUpperCase() || 'TM1';
@@ -179,12 +176,10 @@
                     s.ball = 0;
                 }
 
-                // ডাইনামিক ম্যাক্স ওভার অনুযায়ী ইনিংস ১ সমাপ্তি
+                // ১ম ইনিংস নির্দিষ্ট overs পৌঁছালে বা ১০ উইকেট পড়লে শেষ হবে
                 if (s.innings === 1 && (s.over >= maxOvers || s.wickets >= 10)) {
                     s.target = s.runs + 1;
-                    const minTarget = Math.max(20, maxOvers * 6);
-                    if (s.target < minTarget) s.target = minTarget;
-
+                    
                     s.innings = 2;
                     s.battingTeam = team2Name;
                     s.bowlingTeam = team1Name;
@@ -194,7 +189,7 @@
                     s.ball = 0;
                     s.recentBalls = [];
                 } 
-                // ডাইনামিক ম্যাক্স ওভার অনুযায়ী ইনিংস ২ সমাপ্তি
+                // ২য় ইনিংস নির্দিষ্ট overs পৌঁছালে, লক্ষ্য পার করলে বা ১০ উইকেট পড়লে ম্যাচ শেষ হবে
                 else if (s.innings === 2 && (s.runs >= s.target || s.over >= maxOvers || s.wickets >= 10)) {
                     s.isMatchOver = true;
                 }
@@ -223,7 +218,7 @@
             });
         }
 
-        // 🎨 Render Match HTML with EXACT Original Design Structure
+        // 🎨 Render Match HTML
         function renderMatches() {
             const keys = Object.keys(localMatchesCache);
             const aiKeys = keys.filter(k => localMatchesCache[k] && localMatchesCache[k].category === 'AI Match');
@@ -256,7 +251,6 @@
                 const oddsDraw = match.odds?.draw || '2.00';
                 const oddsTeam2 = match.odds?.team2 || '1.50';
 
-                // Sum of current over runs
                 const overSum = score.recentBalls.reduce((acc, b) => {
                     if (b === 'wd') return acc + 1;
                     if (b === 'W') return acc;
@@ -266,7 +260,7 @@
                 htmlContent += `
                 <div class="rounded-xl border border-slate-700/60 shadow-2xl overflow-hidden custom-bg">
                     
-                    <!-- Match Box Header / Live Info -->
+                    <!-- Match Box Header -->
                     <div class="p-2 relative bg-cover bg-center" style="background-image: linear-gradient(rgba(30, 23, 42, 0.65), rgba(30, 23, 42, 0.75)), url('cricket-stadium3.jpg');">
                         <div class="absolute top-0 right-0 ${isLive ? 'bg-[#f84444]' : 'bg-slate-700'} text-white font-black px-4 uppercase text-[7px] tracking-wider translate-x-4 translate-y-1.5 rotate-45 flex items-center justify-center shadow-md z-10">
                             ${isLive ? '<span class="w-1 h-1 bg-white rounded-full mr-1 animate-pulse"></span> Live' : match.status}
@@ -274,14 +268,13 @@
                         
                         <div class="flex items-center space-x-1.5 text-slate-200 text-xs font-bold tracking-wide mb-3">
                             <i class="fa-solid fa-baseball-bat-ball text-slate-300 text-[11px]"></i>
-                            <span class="uppercase">${match.league || 'AI League'} (${match.overs || 20} Ov)</span>
+                            <span class="uppercase">${match.league || 'AI League'} (${match.overs || 20} OV)</span>
                             <span class="text-slate-400 font-bold">• &nbsp;${match.status.toUpperCase()}</span>
                         </div>
 
                         <div class="space-y-2.5 my-2">
                             <!-- Team VS Grid -->
                             <div class="grid grid-cols-3 items-center py-2 relative">
-                                <!-- Team 1 -->
                                 <div class="flex flex-col items-center justify-center text-center">
                                     <div class="w-7 h-7 bg-slate-950 rounded-full flex items-center justify-center border border-slate-800 shadow-inner relative shrink-0 mb-1 overflow-hidden">
                                         ${match.team1?.logo 
@@ -291,12 +284,10 @@
                                     <span class="font-extrabold text-sm tracking-wide text-white">${team1Name}</span>
                                 </div>
 
-                                <!-- VS Divider -->
                                 <div class="flex justify-center">
                                     <span class="text-xs font-bold text-slate-400 uppercase bg-slate-800/60 px-2 py-0.5 rounded">VS</span>
                                 </div>
 
-                                <!-- Team 2 -->
                                 <div class="flex flex-col items-center justify-center text-center">
                                     <div class="w-7 h-7 bg-slate-950 rounded-full flex items-center justify-center border border-slate-800 shadow-inner relative shrink-0 mb-1 overflow-hidden">
                                         ${match.team2?.logo 
@@ -349,7 +340,7 @@
 
                                     <span class="text-xs font-semibold text-slate-300 ml-1 mr-2">= ${overSum}</span>
                                     
-                                    <span class="w-16 h-6 rounded-lg bg-slate-950/40 border border-slate-800/40 text-slate-300/85 flex items-center justify-center text-[10px] ml-1">
+                                    <span class="px-2 h-6 rounded-lg bg-slate-950/40 border border-slate-800/40 text-slate-300/85 flex items-center justify-center text-[10px] ml-1">
                                         ${score.innings === 2 ? `Target ${score.target}` : '1st Innings'}
                                     </span>
                                 </div>
@@ -383,10 +374,8 @@
             matchesListContainer.innerHTML = htmlContent;
         }
 
-        // Initialize listener
         listenToDatabase();
 
-        // ⏱ Every 4 seconds live tick to reflect ball-by-ball score update
         setInterval(() => {
             if (localMatchesCache && Object.keys(localMatchesCache).length > 0) {
                 renderMatches();
@@ -394,4 +383,4 @@
         }, 4000);
     </script>
 </body>
-    </html>
+</html>
