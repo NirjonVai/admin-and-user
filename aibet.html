@@ -150,7 +150,6 @@
     const matchesContainer = document.getElementById('matches-container');
 
     let allMatchesData = {};
-    let allBetsHistory = {};
 
     const toEngNum = (num) => {
       if (num === undefined || num === null) return '';
@@ -269,31 +268,7 @@
       return currentScore;
     }
 
-    // Function to calculate total bets per option
-    function getOptionBetTotal(matchId, marketTitle, optionName) {
-      let totalAmount = 0;
-      if (!allBetsHistory) return 0;
-
-      Object.keys(allBetsHistory).forEach(userId => {
-        const userBets = allBetsHistory[userId];
-        if (userBets) {
-          Object.keys(userBets).forEach(betKey => {
-            const bet = userBets[betKey];
-            if (
-              (bet.matchId === matchId || bet.matchTitle === allMatchesData[matchId]?.team1?.name + ' VS ' + allMatchesData[matchId]?.team2?.name) &&
-              bet.marketTitle?.toLowerCase() === marketTitle?.toLowerCase() &&
-              bet.optionName?.toLowerCase() === optionName?.toLowerCase()
-            ) {
-              totalAmount += parseFloat(bet.amount || 0);
-            }
-          });
-        }
-      });
-      return totalAmount;
-    }
-
-    function listenToBetsAndHistory() {
-      // Listen to bets matches
+    function listenToBets() {
       const betsRef = ref(db, 'bets');
       onValue(betsRef, (snapshot) => {
         if (!snapshot.exists()) {
@@ -302,17 +277,6 @@
           return;
         }
         allMatchesData = snapshot.val();
-        renderAIMatches();
-      });
-
-      // Listen to bets history placed by users
-      const historyRef = ref(db, 'betsHistory');
-      onValue(historyRef, (snapshot) => {
-        if (snapshot.exists()) {
-          allBetsHistory = snapshot.val();
-        } else {
-          allBetsHistory = {};
-        }
         renderAIMatches();
       });
     }
@@ -365,7 +329,7 @@
       card.className = "bg-white rounded-2xl shadow-sm border border-gray-200 p-6 flex flex-col justify-between";
       card.setAttribute('data-card-id', id);
 
-      // Render Dynamic Custom Title Markets with Bet Totals
+      // Render Dynamic Custom Title Markets
       let customMarketsHTML = '';
       const marketKeys = Object.keys(customMarkets);
 
@@ -381,16 +345,9 @@
           let optionsHTML = '';
           optionKeys.forEach((oKey) => {
             const opt = options[oKey] || {};
-            const betTotal = getOptionBetTotal(id, market.title, opt.name);
-
             optionsHTML += `
               <div class="relative group">
-                <div class="flex items-center justify-between mb-1 gap-1">
-                  <input type="text" data-id="${id}" data-mkey="${mKey}" data-okey="${oKey}" value="${opt.name || ''}" placeholder="NAME" class="custom-option-name block text-[9px] font-bold text-gray-400 uppercase truncate bg-transparent border-none p-0 focus:outline-none focus:ring-0">
-                  <span class="text-[9px] font-black text-white bg-red-500 px-1.5 py-0.2 rounded-full shadow-xs whitespace-nowrap">
-                    ৳${betTotal}
-                  </span>
-                </div>
+                <input type="text" data-id="${id}" data-mkey="${mKey}" data-okey="${oKey}" value="${opt.name || ''}" placeholder="NAME" class="custom-option-name block text-[9px] font-bold text-gray-400 uppercase truncate mb-1 w-full bg-transparent border-none p-0 focus:outline-none focus:ring-0">
                 <input type="text" inputmode="decimal" data-id="${id}" data-mkey="${mKey}" data-okey="${oKey}" value="${toEngNum(opt.val || '1.00')}" placeholder="Odds" class="custom-option-val w-full px-2 py-2 text-xs font-bold text-gray-800 bg-white border border-gray-200 rounded-full text-center focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-sm">
               </div>
             `;
@@ -722,7 +679,7 @@
 
     onAuthStateChanged(auth, async (user) => {
       if (user) {
-        listenToBetsAndHistory();
+        listenToBets();
       } else {
         window.location.href = "login.html";
       }
@@ -733,4 +690,4 @@
     });
   </script>
 </body>
-  </html>
+</html>
