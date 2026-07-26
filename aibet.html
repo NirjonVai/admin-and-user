@@ -270,42 +270,76 @@
     }
 
     function listenToData() {
-      // Listen to bets data
-      const betsRef = ref(db, 'bets');
-      onValue(betsRef, (snapshot) => {
+      // 1. Listen to bets
+      onValue(ref(db, 'bets'), (snapshot) => {
         allMatchesData = snapshot.exists() ? snapshot.val() : {};
         renderAIMatches();
       });
 
-      // Listen to placed bets to aggregate option bet amounts
-      const placedBetsRef = ref(db, 'placedBets');
-      onValue(placedBetsRef, (snapshot) => {
+      // 2. Listen to placedBets (Supports both 'placedBets' and 'userBets')
+      onValue(ref(db, 'placedBets'), (snapshot) => {
         allPlacedBetsData = snapshot.exists() ? snapshot.val() : {};
         renderAIMatches();
       });
+
+      onValue(ref(db, 'userBets'), (snapshot) => {
+        if (snapshot.exists()) {
+          allPlacedBetsData = { ...allPlacedBetsData, ...snapshot.val() };
+          renderAIMatches();
+        }
+      });
     }
 
-    // Helper to calculate total bet placed for a specific match option
+    // Comprehensive function to calculate placed bets total amount for an option
     function getOptionTotalBet(matchId, mKey, oKey, optionName) {
       let total = 0;
       if (!allPlacedBetsData) return 0;
 
-      Object.values(allPlacedBetsData).forEach(userBets => {
-        if (!userBets) return;
-        Object.values(userBets).forEach(bet => {
-          if (
-            bet.matchId === matchId && 
-            (
-              bet.optionKey === oKey || 
-              bet.marketKey === mKey || 
-              (bet.selectedOption && optionName && bet.selectedOption.toLowerCase().trim() === optionName.toLowerCase().trim()) ||
-              (bet.optionName && optionName && bet.optionName.toLowerCase().trim() === optionName.toLowerCase().trim())
-            )
-          ) {
-            total += Number(bet.amount || bet.betAmount || bet.stake || 0);
+      const cleanMatchId = String(matchId).trim();
+      const cleanOptName = optionName ? String(optionName).trim().toLowerCase() : '';
+      const cleanOptKey = oKey ? String(oKey).trim().toLowerCase() : '';
+
+      // Flatten bets data structure
+      const extractBets = (node) => {
+        if (!node || typeof node !== 'object') return [];
+        let list = [];
+        Object.values(node).forEach(item => {
+          if (!item) return;
+          // Check if it's directly a bet object
+          if (item.matchId || item.match_id || item.selectedOption || item.optionName || item.amount || item.betAmount) {
+            list.push(item);
+          } else if (typeof item === 'object') {
+            // Nested user folder
+            Object.values(item).forEach(subItem => {
+              if (subItem && typeof subItem === 'object') list.push(subItem);
+            });
           }
         });
+        return list;
+      };
+
+      const allBetsList = extractBets(allPlacedBetsData);
+
+      allBetsList.forEach(bet => {
+        if (!bet) return;
+
+        const betMatchId = String(bet.matchId || bet.match_id || bet.betId || '').trim();
+        if (betMatchId !== cleanMatchId) return;
+
+        const betOptKey = String(bet.optionKey || bet.option_key || bet.optKey || bet.optionId || '').trim().toLowerCase();
+        const betOptName = String(bet.selectedOption || bet.optionName || bet.option || bet.team || bet.betOn || '').trim().toLowerCase();
+
+        const isKeyMatch = cleanOptKey && betOptKey === cleanOptKey;
+        const isNameMatch = cleanOptName && betOptName === cleanOptName;
+
+        if (isKeyMatch || isNameMatch) {
+          const amt = Number(bet.amount || bet.betAmount || bet.stake || bet.bet_amount || bet.money || 0);
+          if (!isNaN(amt)) {
+            total += amt;
+          }
+        }
       });
+
       return total;
     }
 
@@ -357,7 +391,7 @@
       card.className = "bg-white rounded-2xl shadow-sm border border-gray-200 p-6 flex flex-col justify-between";
       card.setAttribute('data-card-id', id);
 
-      // Render Dynamic Custom Title Markets with Bet Amounts
+      // Render Dynamic Custom Title Markets
       let customMarketsHTML = '';
       const marketKeys = Object.keys(customMarkets);
 
@@ -374,15 +408,12 @@
           optionKeys.forEach((oKey) => {
             const opt = options[oKey] || {};
             const optName = opt.name || '';
-            const totalBetAmount = getOptionTotalBet(id, mKey, oKey, optName);
-            const betDisplayStr = totalBetAmount > 0 ? ` (${totalBetAmount})` : '';
+            const totalBet = getOptionTotalBet(id, mKey, oKey, optName);
+            const formattedName = totalBet > 0 ? `${optName} (${totalBet})` : optName;
 
             optionsHTML += `
               <div class="relative group">
-                <div class="flex items-center justify-between mb-1 gap-1">
-                  <input type="text" data-id="${id}" data-mkey="${mKey}" data-okey="${oKey}" value="${optName}" placeholder="NAME" class="custom-option-name block text-[9px] font-bold text-gray-400 uppercase truncate w-full bg-transparent border-none p-0 focus:outline-none focus:ring-0">
-                  <span class="text-[9px] font-bold text-emerald-600 whitespace-nowrap bg-emerald-50 px-1 py-0.5 rounded">${betDisplayStr}</span>
-                </div>
+                <input type="text" data-id="${id}" data-mkey="${mKey}" data-okey="${oKey}" value="${formattedName}" placeholder="NAME" class="custom-option-name block text-[10px] font-bold ${totalBet > 0 ? 'text-emerald-600' : 'text-gray-500'} uppercase truncate mb-1 w-full bg-transparent border-none p-0 focus:outline-none focus:ring-0">
                 <input type="text" inputmode="decimal" data-id="${id}" data-mkey="${mKey}" data-okey="${oKey}" value="${toEngNum(opt.val || '1.00')}" placeholder="Odds" class="custom-option-val w-full px-2 py-2 text-xs font-bold text-gray-800 bg-white border border-gray-200 rounded-full text-center focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-sm">
               </div>
             `;
@@ -608,12 +639,13 @@
         await update(ref(db, `bets/${matchId}/customMarkets/${mKey}`), { title: e.target.value });
       }
 
-      // Custom Option Name Update
+      // Custom Option Name Update (Strips bracket amount if user edits)
       if (e.target.classList.contains('custom-option-name')) {
         const matchId = e.target.getAttribute('data-id');
         const mKey = e.target.getAttribute('data-mkey');
         const oKey = e.target.getAttribute('data-okey');
-        await update(ref(db, `bets/${matchId}/customMarkets/${mKey}/options/${oKey}`), { name: e.target.value });
+        let cleanVal = e.target.value.replace(/\s*\(\d+\)\s*$/, '').trim();
+        await update(ref(db, `bets/${matchId}/customMarkets/${mKey}/options/${oKey}`), { name: cleanVal });
       }
 
       // Custom Option Odds Value Update
