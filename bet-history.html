@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BetX - My Bet History</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen selection:bg-amber-400 selection:text-slate-950 pb-20 lg:pb-0">
+
+    <!-- Header (Dashboard Theme) -->
+    <header class="bg-slate-900/80 backdrop-blur-md border-b border-slate-800/80 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3.5 flex justify-between items-center">
+            <div class="flex items-center space-x-2 group cursor-pointer" onclick="window.location.href='index.html'">
+                <span class="text-xl font-black tracking-widest text-white">BET<span class="text-amber-400 bg-gradient-to-r from-yellow-400 to-amber-300 bg-clip-text text-transparent">X</span></span>
+            </div>
+
+            <div class="flex items-center space-x-3 sm:space-x-4">
+                <!-- User Profile Display -->
+                <div class="flex items-center space-x-2 bg-slate-800/40 border border-slate-700/60 px-3 py-1.5 rounded-xl text-xs sm:text-sm font-semibold text-slate-200">
+                    <i class="fa-solid fa-user-circle text-amber-400 text-sm sm:text-base"></i>
+                    <span id="user-display-name" class="max-w-[100px] sm:max-w-[150px] truncate">Loading...</span>
+                </div>
+
+                <!-- Balance Box -->
+                <div class="bg-slate-800/40 backdrop-blur-sm px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl flex items-center space-x-2 sm:space-x-3 border border-slate-700/60 shadow-inner">
+                    <span class="text-xs sm:text-sm font-extrabold text-amber-400 tracking-wide" id="user-balance">৳0.00</span>
+                </div>
+            </div>
+        </div>
+    </header>
+        
+    <!-- Main Content Container -->
+    <main class="max-w-4xl mx-auto px-3 py-6 space-y-6">
+        <div class="flex justify-between items-center px-1">
+            <h2 class="text-sm sm:text-base font-black tracking-widest text-slate-200 flex items-center space-x-2">
+                <i class="fa-solid fa-clock-rotate-left text-amber-400 text-base"></i>
+                <span>MY BET HISTORY</span>
+            </h2>
+        </div>
+
+        <!-- History Items Container -->
+        <div id="history-list" class="space-y-4">
+            <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-8 text-center backdrop-blur-md shadow-xl">
+                <i class="fa-solid fa-spinner fa-spin text-3xl text-amber-400 mb-3"></i>
+                <p class="text-slate-400 text-xs font-semibold uppercase tracking-wider">Fetching Bet History...</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Bottom Nav (Dashboard Style) -->
+    <nav class="lg:hidden fixed bottom-0 left-0 right-0 bg-slate-900/90 backdrop-blur-xl border-t border-slate-800/80 px-2 py-2 z-50 flex justify-around items-center shadow-2xl rounded-t-2xl">
+        <a href="index.html" class="flex flex-col items-center justify-center text-slate-400 hover:text-slate-200 px-3 py-1 rounded-xl transition-all">
+            <i class="fa-solid fa-fire text-lg mb-1"></i>
+            <span class="text-[10px] font-medium tracking-wide">Popular</span>
+        </a>
+        <a href="#" class="flex flex-col items-center justify-center text-slate-400 hover:text-slate-200 px-3 py-1 rounded-xl transition-all relative">
+            <i class="fa-solid fa-star text-lg mb-1"></i>
+            <span class="text-[10px] font-medium tracking-wide">Favorite</span>
+        </a>
+        <a href="index.html" class="flex flex-col items-center justify-center text-slate-400 hover:text-slate-200 px-3 py-1 rounded-xl transition-all relative">
+            <i class="fa-solid fa-receipt text-lg mb-1"></i>
+            <span class="text-[10px] font-medium tracking-wide">Bet Slip</span>
+        </a>
+        <a href="#" class="flex flex-col items-center justify-center text-amber-400 px-3 py-1 rounded-xl transition-all">
+            <i class="fa-solid fa-history text-lg mb-1"></i>
+            <span class="text-[10px] font-bold tracking-wide">History</span>
+        </a>
+        <a href="#" class="flex flex-col items-center justify-center text-slate-400 hover:text-slate-200 px-3 py-1 rounded-xl transition-all">
+            <i class="fa-solid fa-bars text-lg mb-1"></i>
+            <span class="text-[10px] font-medium tracking-wide">Menu</span>
+        </a>
+    </nav>
+
+    <!-- Firebase Realtime Database Script -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBzQaaXhTtiGpMjRMBUXZaCIrDRoNyEkU4",
+            authDomain: "betx-904da.firebaseapp.com",
+            databaseURL: "https://betx-904da-default-rtdb.firebaseio.com",
+            projectId: "betx-904da",
+            storageBucket: "betx-904da.firebasestorage.app",
+            messagingSenderId: "1076536561200",
+            appId: "1:1076536561200:web:87ddeee59d73ed3a08e7f5",
+            measurementId: "G-ER5HGVL74K"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
+
+        const userNameDisplay = document.getElementById('user-display-name');
+        const userBalanceDisplay = document.getElementById('user-balance');
+        const historyListContainer = document.getElementById('history-list');
+
+        // Check Auth State
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // Fetch User Details & Balance
+                const userRef = ref(db, `users/${user.uid}`);
+                onValue(userRef, (snapshot) => {
+                    if (snapshot.exists()) {
+                        const userData = snapshot.val();
+                        userNameDisplay.innerText = userData.username || userData.name || user.email.split('@')[0];
+                        userBalanceDisplay.innerText = `৳${(parseFloat(userData.balance) || 0).toFixed(2)}`;
+                    } else {
+                        userNameDisplay.innerText = user.email.split('@')[0];
+                    }
+                });
+
+                // Fetch Bet History Realtime
+                fetchBetHistory(user.uid);
+            } else {
+                window.location.href = "login.html";
+            }
+        });
+
+        // Function to Fetch History
+        function fetchBetHistory(userId) {
+            const historyRef = ref(db, `betsHistory/${userId}`);
+            
+            onValue(historyRef, (snapshot) => {
+                if (!snapshot.exists()) {
+                    historyListContainer.innerHTML = `
+                        <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-8 text-center backdrop-blur-md shadow-xl">
+                            <i class="fa-solid fa-receipt text-3xl text-amber-400/40 mb-2"></i>
+                            <p class="text-slate-400 text-xs font-semibold">No bet history found.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const data = snapshot.val();
+                const historyKeys = Object.keys(data).reverse(); // Newest first
+
+                let htmlContent = '';
+
+                historyKeys.forEach((key) => {
+                    const item = data[key];
+
+                    // Date formatting
+                    let dateStr = 'N/A';
+                    if (item.timestamp) {
+                        const d = new Date(item.timestamp);
+                        dateStr = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    }
+
+                    // Status Badge Mapping
+                    let statusBadge = '';
+                    const statusLower = (item.status || 'pending').toLowerCase();
+
+                    if (statusLower === 'won') {
+                        statusBadge = `<span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider"><i class="fa-solid fa-circle-check mr-1"></i> Won</span>`;
+                    } else if (statusLower === 'lost') {
+                        statusBadge = `<span class="bg-rose-500/10 text-rose-400 border border-rose-500/20 text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider"><i class="fa-solid fa-circle-xmark mr-1"></i> Lost</span>`;
+                    } else {
+                        statusBadge = `<span class="bg-amber-400/10 text-amber-400 border border-amber-400/20 text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider"><i class="fa-solid fa-hourglass-half mr-1 animate-pulse"></i> Pending</span>`;
+                    }
+
+                    htmlContent += `
+                    <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 shadow-xl space-y-3 relative overflow-hidden">
+                        <!-- Top Row: Match Name & Status -->
+                        <div class="flex justify-between items-start border-b border-slate-800/80 pb-2.5">
+                            <div>
+                                <span class="text-[10px] font-bold text-amber-400 uppercase tracking-wider block mb-0.5">${item.marketTitle || 'Betting Market'}</span>
+                                <h3 class="font-extrabold text-sm text-slate-100">${item.matchTitle || 'Match Title'}</h3>
+                            </div>
+                            <div>
+                                ${statusBadge}
+                            </div>
+                        </div>
+
+                        <!-- Mid Row: Selection & Odds -->
+                        <div class="grid grid-cols-2 gap-2 bg-slate-950/60 p-3 rounded-xl border border-slate-800/60 text-xs">
+                            <div>
+                                <span class="text-[10px] text-slate-400 block font-medium">Selected Option:</span>
+                                <span class="font-black text-amber-400">${item.optionName || 'N/A'}</span>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-[10px] text-slate-400 block font-medium">Odds:</span>
+                                <span class="font-black text-slate-200">@${parseFloat(item.odds || 1.00).toFixed(2)}</span>
+                            </div>
+                        </div>
+
+                        <!-- Bottom Row: Financial Details & Date -->
+                        <div class="flex justify-between items-center text-xs pt-1">
+                            <div>
+                                <span class="text-slate-400 block text-[10px]">Bet Amount</span>
+                                <span class="font-extrabold text-white">৳${parseFloat(item.amount || 0).toFixed(2)}</span>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-slate-400 block text-[10px]">Potential Return</span>
+                                <span class="font-black text-emerald-400">৳${parseFloat(item.potentialReturn || 0).toFixed(2)}</span>
+                            </div>
+                        </div>
+
+                        <div class="text-[9px] text-slate-500 font-semibold text-right border-t border-slate-800/40 pt-1.5">
+                            ${dateStr}
+                        </div>
+                    </div>
+                    `;
+                });
+
+                historyListContainer.innerHTML = htmlContent;
+            });
+        }
+    </script>
+</body>
+</html>
