@@ -356,7 +356,7 @@
           customMarketsHTML += `
             <div class="mt-4 pt-3 border-t border-gray-100">
               <div class="flex items-center justify-between mb-2">
-                <input type="text" data-id="${id}" data-mkey="${mKey}" value="${market.title || 'Total Six'}" placeholder="Market Title" class="market-title-input text-xs font-bold text-gray-700 bg-transparent border-b border-dashed border-gray-300 focus:border-purple-600 focus:outline-none w-full">
+                <input type="text" data-id="${id}" data-mkey="${mKey}" value="${market.title || 'Total Six'}" placeholder="Market Title" class="market-title-input text-xs font-bold text-gray-700 bg-transparent border-b border-dashed border-gray-300 focus:border-purple-600 focus:outline-none w-full uppercase">
               </div>
               <div class="grid ${gridColsClass} gap-3">
                 ${optionsHTML || '<p class="text-[10px] text-gray-400 italic col-span-full">No options added.</p>'}
