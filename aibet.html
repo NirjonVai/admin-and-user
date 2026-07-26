@@ -92,7 +92,7 @@
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
           <h2 class="text-xl font-bold text-gray-800">AI Matches & Odds</h2>
-          <p class="text-xs text-gray-500">Real-time status, Win/Loss control & dynamic custom bet categories</p>
+          <p class="text-xs text-gray-500">Real-time status, Per-option Win control & dynamic custom bet categories</p>
         </div>
         
         <a href="add-bet.html" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold shadow-md transition flex items-center gap-2">
@@ -241,28 +241,6 @@
       return s;
     }
 
-    function determineWinner(matchData, finalScore) {
-      const outcomeControl = matchData.outcomeControl || 'auto';
-      const team1Name = matchData.team1?.name?.substring(0, 3).toUpperCase() || 'TM1';
-      const team2Name = matchData.team2?.name?.substring(0, 3).toUpperCase() || 'TM2';
-
-      // Forced outcomes by admin
-      if (outcomeControl === 'team1') return team1Name;
-      if (outcomeControl === 'team2') return team2Name;
-      if (outcomeControl === 'draw') return 'draw';
-
-      // Auto outcome logic
-      if (finalScore && finalScore.innings === 2) {
-        if (finalScore.runs >= finalScore.target) {
-          return finalScore.battingTeam;
-        } else {
-          return finalScore.bowlingTeam;
-        }
-      }
-
-      return 'draw';
-    }
-
     async function syncAndSaveAIScore(matchId, matchData) {
       if (!matchData || matchData.status !== 'live') return;
 
@@ -274,8 +252,14 @@
         try {
           const updatePayload = { aiScore: currentScore };
           if (currentScore.isMatchOver) {
+            let winner = 'draw';
+            if (currentScore.runs >= currentScore.target && currentScore.innings === 2) {
+              winner = currentScore.battingTeam;
+            } else if (currentScore.innings === 2) {
+              winner = currentScore.bowlingTeam;
+            }
             updatePayload.status = 'finished';
-            updatePayload.winner = determineWinner(matchData, currentScore);
+            updatePayload.winner = winner;
           }
           await update(ref(db, `bets/${matchId}`), updatePayload);
         } catch (err) {
@@ -398,8 +382,6 @@
           : 'bg-blue-500/10 text-blue-500 border-blue-500/20';
 
       const customMarkets = data.customMarkets || {};
-      const team1Name = data.team1?.name || 'Team 1';
-      const team2Name = data.team2?.name || 'Team 2';
 
       const card = document.createElement('div');
       card.className = "bg-white rounded-2xl shadow-sm border border-gray-200 p-6 flex flex-col justify-between";
@@ -424,11 +406,32 @@
             const optName = opt.name || '';
             const totalBet = getOptionTotalBet(id, mKey, oKey, optName);
             const formattedName = totalBet > 0 ? `${optName} (${totalBet})` : optName;
+            
+            // Check if this option is declared as Winner
+            const isWinner = opt.isWinner === true || opt.status === 'win' || market.winningOptionKey === oKey;
 
             optionsHTML += `
-              <div class="relative group">
+              <div class="relative group p-2 rounded-xl border ${isWinner ? 'bg-emerald-50 border-emerald-400 shadow-sm' : 'bg-white border-gray-100'} transition-all">
                 <input type="text" data-id="${id}" data-mkey="${mKey}" data-okey="${oKey}" value="${formattedName}" placeholder="NAME" class="custom-option-name block text-[10px] font-bold ${totalBet > 0 ? 'text-emerald-600' : 'text-gray-500'} uppercase truncate mb-1 w-full bg-transparent border-none p-0 focus:outline-none focus:ring-0">
-                <input type="text" inputmode="decimal" data-id="${id}" data-mkey="${mKey}" data-okey="${oKey}" value="${toEngNum(opt.val || '1.00')}" placeholder="Odds" class="custom-option-val w-full px-2 py-2 text-xs font-bold text-gray-800 bg-white border border-gray-200 rounded-full text-center focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-sm">
+                
+                <div class="flex items-center gap-1">
+                  <input type="text" inputmode="decimal" data-id="${id}" data-mkey="${mKey}" data-okey="${oKey}" value="${toEngNum(opt.val || '1.00')}" placeholder="Odds" class="custom-option-val w-full px-2 py-1.5 text-xs font-bold text-gray-800 bg-white border border-gray-200 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-xs">
+                  
+                  <!-- WIN Button for Each Option -->
+                  <button 
+                    data-id="${id}" 
+                    data-mkey="${mKey}" 
+                    data-okey="${oKey}" 
+                    title="Declare Winner"
+                    class="set-option-win-btn text-[10px] font-extrabold px-2 py-1.5 rounded-lg transition-all flex items-center justify-center cursor-pointer ${
+                      isWinner 
+                        ? 'bg-emerald-600 text-white shadow-sm ring-2 ring-emerald-300' 
+                        : 'bg-gray-100 hover:bg-emerald-500 hover:text-white text-gray-500 border border-gray-200'
+                    }"
+                  >
+                    ${isWinner ? '<i class="fa-solid fa-trophy mr-0.5"></i>WIN' : 'WIN'}
+                  </button>
+                </div>
               </div>
             `;
           });
@@ -438,7 +441,7 @@
               <div class="flex items-center justify-between mb-2">
                 <input type="text" data-id="${id}" data-mkey="${mKey}" value="${market.title || 'Total Six'}" placeholder="Market Title" class="market-title-input text-xs font-bold text-gray-700 bg-transparent border-b border-dashed border-gray-300 focus:border-purple-600 focus:outline-none w-full uppercase">
               </div>
-              <div class="grid ${gridColsClass} gap-3">
+              <div class="grid ${gridColsClass} gap-2.5">
                 ${optionsHTML || '<p class="text-[10px] text-gray-400 italic col-span-full">No options added.</p>'}
               </div>
             </div>
@@ -466,8 +469,8 @@
 
           <div class="flex items-center justify-between my-4 gap-2">
             <div class="flex flex-col items-center text-center w-1/3">
-              <img src="${data.team1?.logo || ''}" alt="${team1Name}" class="w-12 h-12 object-contain mb-2 rounded-full bg-gray-50 p-1 border border-gray-100" onerror="this.src='https://via.placeholder.com/50?text=T1'">
-              <span class="text-xs font-bold text-gray-800 line-clamp-1">${team1Name}</span>
+              <img src="${data.team1?.logo || ''}" alt="${data.team1?.name || ''}" class="w-12 h-12 object-contain mb-2 rounded-full bg-gray-50 p-1 border border-gray-100" onerror="this.src='https://via.placeholder.com/50?text=T1'">
+              <span class="text-xs font-bold text-gray-800 line-clamp-1">${data.team1?.name || 'Pakistan'}</span>
             </div>
 
             <div class="text-center">
@@ -475,8 +478,8 @@
             </div>
 
             <div class="flex flex-col items-center text-center w-1/3">
-              <img src="${data.team2?.logo || ''}" alt="${team2Name}" class="w-12 h-12 object-contain mb-2 rounded-full bg-gray-50 p-1 border border-gray-100" onerror="this.src='https://via.placeholder.com/50?text=T2'">
-              <span class="text-xs font-bold text-gray-800 line-clamp-1">${team2Name}</span>
+              <img src="${data.team2?.logo || ''}" alt="${data.team2?.name || ''}" class="w-12 h-12 object-contain mb-2 rounded-full bg-gray-50 p-1 border border-gray-100" onerror="this.src='https://via.placeholder.com/50?text=T2'">
+              <span class="text-xs font-bold text-gray-800 line-clamp-1">${data.team2?.name || 'Afghanistan'}</span>
             </div>
           </div>
 
@@ -493,7 +496,7 @@
           <div class="bg-purple-50/30 border border-purple-100 rounded-2xl p-4 my-4">
             <div class="flex items-center justify-between mb-3">
               <span class="text-xs font-bold text-purple-900 flex items-center gap-1.5">
-                <i class="fa-solid fa-chart-line text-purple-600"></i> Betting Markets <span class="text-[10px] text-gray-400 font-normal">Multiplier (x)</span>
+                <i class="fa-solid fa-chart-line text-purple-600"></i> Betting Markets & Odds Control
               </span>
               <button data-id="${id}" class="toggle-add-market-btn text-xs bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded-xl font-bold transition flex items-center gap-1 cursor-pointer shadow-sm">
                 <i class="fa-solid fa-plus text-[9px]"></i>
@@ -540,36 +543,20 @@
           </div>
         </div>
 
-        <div class="pt-3 border-t border-gray-100 flex flex-col gap-3 mt-2">
-          
-          <!-- Win / Draw / Loss Result Control System -->
-          <div class="bg-gray-50 border border-gray-200 rounded-xl p-2.5">
-            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1 flex items-center gap-1">
-              <i class="fa-solid fa-gamepad text-purple-600"></i> Match Outcome Control
-            </label>
-            <select data-id="${id}" class="outcome-select w-full px-3 py-1.5 text-xs font-semibold bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-gray-800">
-              <option value="auto" ${(!data.outcomeControl || data.outcomeControl === 'auto') ? 'selected' : ''}>Auto (AI Random Simulation)</option>
-              <option value="team1" ${data.outcomeControl === 'team1' ? 'selected' : ''}>Force Win: ${team1Name}</option>
-              <option value="team2" ${data.outcomeControl === 'team2' ? 'selected' : ''}>Force Win: ${team2Name}</option>
-              <option value="draw" ${data.outcomeControl === 'draw' ? 'selected' : ''}>Force Draw / Tied</option>
+        <div class="pt-3 border-t border-gray-100 flex items-center justify-between gap-2 mt-2">
+          <div class="flex-1">
+            <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">STATUS</label>
+            <select data-id="${id}" class="status-select w-full px-3 py-2 text-xs font-semibold bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500">
+              <option value="upcoming" ${data.status === 'upcoming' ? 'selected' : ''}>Upcoming</option>
+              <option value="live" ${data.status === 'live' ? 'selected' : ''}>Live Now</option>
+              <option value="finished" ${data.status === 'finished' ? 'selected' : ''}>Finished</option>
             </select>
           </div>
 
-          <div class="flex items-center justify-between gap-2">
-            <div class="flex-1">
-              <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">STATUS</label>
-              <select data-id="${id}" class="status-select w-full px-3 py-2 text-xs font-semibold bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500">
-                <option value="upcoming" ${data.status === 'upcoming' ? 'selected' : ''}>Upcoming</option>
-                <option value="live" ${data.status === 'live' ? 'selected' : ''}>Live Now</option>
-                <option value="finished" ${data.status === 'finished' ? 'selected' : ''}>Finished</option>
-              </select>
-            </div>
-
-            <div class="pt-4">
-              <button data-id="${id}" class="delete-btn text-xs text-red-500 hover:bg-red-50 px-3 py-1.5 rounded-xl transition cursor-pointer flex items-center gap-1 font-bold">
-                <i class="fa-solid fa-trash-can"></i> Delete
-              </button>
-            </div>
+          <div class="pt-4">
+            <button data-id="${id}" class="delete-btn text-xs text-red-500 hover:bg-red-50 px-3 py-1.5 rounded-xl transition cursor-pointer flex items-center gap-1 font-bold">
+              <i class="fa-solid fa-trash-can"></i> Delete
+            </button>
           </div>
         </div>
       `;
@@ -636,22 +623,6 @@
     });
 
     matchesContainer.addEventListener('change', async (e) => {
-      // Outcome Control Update (Win / Loss / Draw)
-      if (e.target.classList.contains('outcome-select')) {
-        const matchId = e.target.getAttribute('data-id');
-        const newOutcome = e.target.value;
-        const matchData = allMatchesData[matchId];
-
-        const updateData = { outcomeControl: newOutcome };
-        
-        // If match is already finished, re-calculate the winner immediately
-        if (matchData && matchData.status === 'finished') {
-          updateData.winner = determineWinner(matchData, matchData.aiScore);
-        }
-
-        await update(ref(db, `bets/${matchId}`), updateData);
-      }
-
       // Status update
       if (e.target.classList.contains('status-select')) {
         const matchId = e.target.getAttribute('data-id');
@@ -664,8 +635,15 @@
           updateData.startTime = Date.now();
         } else if (newStatus === 'finished' && matchData) {
           const finalScore = calculateScoreFromTimestamp(matchData, Date.now());
+          let winner = 'draw';
+          if (finalScore.runs >= finalScore.target && finalScore.innings === 2) {
+            winner = finalScore.battingTeam;
+          } else if (finalScore.innings === 2) {
+            winner = finalScore.bowlingTeam;
+          }
+
           updateData.aiScore = finalScore;
-          updateData.winner = determineWinner(matchData, finalScore);
+          updateData.winner = winner;
         }
 
         await update(ref(db, `bets/${matchId}`), updateData);
@@ -678,7 +656,7 @@
         await update(ref(db, `bets/${matchId}/customMarkets/${mKey}`), { title: e.target.value });
       }
 
-      // Custom Option Name Update
+      // Custom Option Name Update (Strips bracket amount if user edits)
       if (e.target.classList.contains('custom-option-name')) {
         const matchId = e.target.getAttribute('data-id');
         const mKey = e.target.getAttribute('data-mkey');
@@ -697,6 +675,36 @@
     });
 
     matchesContainer.addEventListener('click', async (e) => {
+      // Declare Winner Option Button Click Handler
+      const winBtn = e.target.closest('.set-option-win-btn');
+      if (winBtn) {
+        const matchId = winBtn.getAttribute('data-id');
+        const mKey = winBtn.getAttribute('data-mkey');
+        const targetOKey = winBtn.getAttribute('data-okey');
+
+        const market = allMatchesData[matchId]?.customMarkets?.[mKey];
+        if (!market || !market.options) return;
+
+        const updates = {};
+        
+        // Mark selected option as WIN, and rest of options in that market as LOSS
+        Object.keys(market.options).forEach((oKey) => {
+          const basePath = `bets/${matchId}/customMarkets/${mKey}/options/${oKey}`;
+          if (oKey === targetOKey) {
+            updates[`${basePath}/isWinner`] = true;
+            updates[`${basePath}/status`] = 'win';
+          } else {
+            updates[`${basePath}/isWinner`] = false;
+            updates[`${basePath}/status`] = 'loss';
+          }
+        });
+
+        updates[`bets/${matchId}/customMarkets/${mKey}/winningOptionKey`] = targetOKey;
+
+        await update(ref(db), updates);
+        return;
+      }
+
       // Delete whole match
       const deleteBtn = e.target.closest('.delete-btn');
       if (deleteBtn && confirm('Are you sure you want to delete this match?')) {
@@ -761,7 +769,9 @@
           const oddsVal = toEngNum(row.querySelector('.opt-val-input')?.value) || "1.85";
           optionsData[`opt_${idx + 1}`] = {
             name: nameVal,
-            val: oddsVal
+            val: oddsVal,
+            isWinner: false,
+            status: 'pending'
           };
         });
 
@@ -796,4 +806,4 @@
     });
   </script>
 </body>
-</html>
+  </html>
