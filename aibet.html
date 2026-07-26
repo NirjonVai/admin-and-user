@@ -150,6 +150,7 @@
     const matchesContainer = document.getElementById('matches-container');
 
     let allMatchesData = {};
+    let allPlacedBetsData = {};
 
     const toEngNum = (num) => {
       if (num === undefined || num === null) return '';
@@ -268,17 +269,44 @@
       return currentScore;
     }
 
-    function listenToBets() {
+    function listenToData() {
+      // Listen to bets data
       const betsRef = ref(db, 'bets');
       onValue(betsRef, (snapshot) => {
-        if (!snapshot.exists()) {
-          allMatchesData = {};
-          renderAIMatches();
-          return;
-        }
-        allMatchesData = snapshot.val();
+        allMatchesData = snapshot.exists() ? snapshot.val() : {};
         renderAIMatches();
       });
+
+      // Listen to placed bets to aggregate option bet amounts
+      const placedBetsRef = ref(db, 'placedBets');
+      onValue(placedBetsRef, (snapshot) => {
+        allPlacedBetsData = snapshot.exists() ? snapshot.val() : {};
+        renderAIMatches();
+      });
+    }
+
+    // Helper to calculate total bet placed for a specific match option
+    function getOptionTotalBet(matchId, mKey, oKey, optionName) {
+      let total = 0;
+      if (!allPlacedBetsData) return 0;
+
+      Object.values(allPlacedBetsData).forEach(userBets => {
+        if (!userBets) return;
+        Object.values(userBets).forEach(bet => {
+          if (
+            bet.matchId === matchId && 
+            (
+              bet.optionKey === oKey || 
+              bet.marketKey === mKey || 
+              (bet.selectedOption && optionName && bet.selectedOption.toLowerCase().trim() === optionName.toLowerCase().trim()) ||
+              (bet.optionName && optionName && bet.optionName.toLowerCase().trim() === optionName.toLowerCase().trim())
+            )
+          ) {
+            total += Number(bet.amount || bet.betAmount || bet.stake || 0);
+          }
+        });
+      });
+      return total;
     }
 
     function renderAIMatches() {
@@ -329,7 +357,7 @@
       card.className = "bg-white rounded-2xl shadow-sm border border-gray-200 p-6 flex flex-col justify-between";
       card.setAttribute('data-card-id', id);
 
-      // Render Dynamic Custom Title Markets
+      // Render Dynamic Custom Title Markets with Bet Amounts
       let customMarketsHTML = '';
       const marketKeys = Object.keys(customMarkets);
 
@@ -345,9 +373,16 @@
           let optionsHTML = '';
           optionKeys.forEach((oKey) => {
             const opt = options[oKey] || {};
+            const optName = opt.name || '';
+            const totalBetAmount = getOptionTotalBet(id, mKey, oKey, optName);
+            const betDisplayStr = totalBetAmount > 0 ? ` (${totalBetAmount})` : '';
+
             optionsHTML += `
               <div class="relative group">
-                <input type="text" data-id="${id}" data-mkey="${mKey}" data-okey="${oKey}" value="${opt.name || ''}" placeholder="NAME" class="custom-option-name block text-[9px] font-bold text-gray-400 uppercase truncate mb-1 w-full bg-transparent border-none p-0 focus:outline-none focus:ring-0">
+                <div class="flex items-center justify-between mb-1 gap-1">
+                  <input type="text" data-id="${id}" data-mkey="${mKey}" data-okey="${oKey}" value="${optName}" placeholder="NAME" class="custom-option-name block text-[9px] font-bold text-gray-400 uppercase truncate w-full bg-transparent border-none p-0 focus:outline-none focus:ring-0">
+                  <span class="text-[9px] font-bold text-emerald-600 whitespace-nowrap bg-emerald-50 px-1 py-0.5 rounded">${betDisplayStr}</span>
+                </div>
                 <input type="text" inputmode="decimal" data-id="${id}" data-mkey="${mKey}" data-okey="${oKey}" value="${toEngNum(opt.val || '1.00')}" placeholder="Odds" class="custom-option-val w-full px-2 py-2 text-xs font-bold text-gray-800 bg-white border border-gray-200 rounded-full text-center focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-sm">
               </div>
             `;
@@ -679,7 +714,7 @@
 
     onAuthStateChanged(auth, async (user) => {
       if (user) {
-        listenToBets();
+        listenToData();
       } else {
         window.location.href = "login.html";
       }
