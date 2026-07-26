@@ -68,11 +68,11 @@
     </div>
   </aside>
 
-  <!-- Main Content Wrapper -->
-  <div class="flex-1 md:ml-64 flex flex-col min-h-screen">
+  <!-- Main Content Wrapper (Full Width) -->
+  <div class="flex-1 md:ml-64 flex flex-col min-h-screen w-full">
 
     <!-- Top Header -->
-    <header class="bg-white border-b border-gray-200 px-6 md:px-8 py-4 flex justify-between items-center shadow-sm sticky top-0 z-20">
+    <header class="bg-white border-b border-gray-200 px-6 md:px-8 py-4 flex justify-between items-center shadow-sm sticky top-0 z-20 w-full">
       <div class="flex items-center gap-3">
         <button id="sidebar-open-btn" class="md:hidden text-gray-700 hover:text-purple-600 text-xl p-1 focus:outline-none cursor-pointer">
           <i class="fa-solid fa-bars"></i>
@@ -86,8 +86,8 @@
       </div>
     </header>
 
-    <!-- Main Content Area -->
-    <main class="flex-1 p-4 md:p-8 max-w-6xl w-full mx-auto">
+    <!-- Main Content Area (Full Screen Area) -->
+    <main class="flex-1 p-4 md:p-8 w-full">
       
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
@@ -101,7 +101,7 @@
       </div>
 
       <!-- Live Matches Grid Container -->
-      <div id="matches-container" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div id="matches-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
         <div class="col-span-full text-center py-12 bg-white rounded-2xl border border-gray-200">
           <i class="fa-solid fa-spinner fa-spin text-3xl text-purple-600 mb-3"></i>
           <p class="text-gray-500 font-medium text-sm">Loading AI Matches...</p>
@@ -270,13 +270,11 @@
     }
 
     function listenToData() {
-      // 1. Listen to bets
       onValue(ref(db, 'bets'), (snapshot) => {
         allMatchesData = snapshot.exists() ? snapshot.val() : {};
         renderAIMatches();
       });
 
-      // 2. Listen to placedBets (Supports both 'placedBets' and 'userBets')
       onValue(ref(db, 'placedBets'), (snapshot) => {
         allPlacedBetsData = snapshot.exists() ? snapshot.val() : {};
         renderAIMatches();
@@ -384,10 +382,9 @@
       const customMarkets = data.customMarkets || {};
 
       const card = document.createElement('div');
-      card.className = "bg-white rounded-2xl shadow-sm border border-gray-200 p-6 flex flex-col justify-between";
+      card.className = "bg-white rounded-2xl shadow-sm border border-gray-200 p-6 flex flex-col justify-between h-full";
       card.setAttribute('data-card-id', id);
 
-      // Render Dynamic Custom Title Markets
       let customMarketsHTML = '';
       const marketKeys = Object.keys(customMarkets);
 
@@ -407,29 +404,28 @@
             const totalBet = getOptionTotalBet(id, mKey, oKey, optName);
             const formattedName = totalBet > 0 ? `${optName} (${totalBet})` : optName;
             
-            // Check if this option is declared as Winner
             const isWinner = opt.isWinner === true || opt.status === 'win' || market.winningOptionKey === oKey;
 
             optionsHTML += `
-              <div class="relative group p-2 rounded-xl border ${isWinner ? 'bg-emerald-50 border-emerald-400 shadow-sm' : 'bg-white border-gray-100'} transition-all">
+              <div class="relative group p-1.5 rounded-xl border ${isWinner ? 'bg-emerald-50 border-emerald-400 shadow-sm' : 'bg-white border-gray-100'} transition-all">
                 <input type="text" data-id="${id}" data-mkey="${mKey}" data-okey="${oKey}" value="${formattedName}" placeholder="NAME" class="custom-option-name block text-[10px] font-bold ${totalBet > 0 ? 'text-emerald-600' : 'text-gray-500'} uppercase truncate mb-1 w-full bg-transparent border-none p-0 focus:outline-none focus:ring-0">
                 
                 <div class="flex items-center gap-1">
-                  <input type="text" inputmode="decimal" data-id="${id}" data-mkey="${mKey}" data-okey="${oKey}" value="${toEngNum(opt.val || '1.00')}" placeholder="Odds" class="custom-option-val w-full px-2 py-1.5 text-xs font-bold text-gray-800 bg-white border border-gray-200 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-xs">
+                  <input type="text" inputmode="decimal" data-id="${id}" data-mkey="${mKey}" data-okey="${oKey}" value="${toEngNum(opt.val || '1.00')}" placeholder="Odds" class="custom-option-val w-full px-1.5 py-1 text-xs font-bold text-gray-800 bg-white border border-gray-200 rounded-lg text-center focus:outline-none focus:ring-1 focus:ring-purple-500 shadow-xs">
                   
-                  <!-- WIN Button for Each Option -->
+                  <!-- Ultra Small WIN Button -->
                   <button 
                     data-id="${id}" 
                     data-mkey="${mKey}" 
                     data-okey="${oKey}" 
                     title="Declare Winner"
-                    class="set-option-win-btn text-[10px] font-extrabold px-2 py-1.5 rounded-lg transition-all flex items-center justify-center cursor-pointer ${
+                    class="set-option-win-btn text-[8px] font-black px-1.5 py-1 rounded-md transition-all flex items-center justify-center shrink-0 cursor-pointer ${
                       isWinner 
-                        ? 'bg-emerald-600 text-white shadow-sm ring-2 ring-emerald-300' 
+                        ? 'bg-emerald-600 text-white shadow-xs' 
                         : 'bg-gray-100 hover:bg-emerald-500 hover:text-white text-gray-500 border border-gray-200'
                     }"
                   >
-                    ${isWinner ? '<i class="fa-solid fa-trophy mr-0.5"></i>WIN' : 'WIN'}
+                    ${isWinner ? 'WIN' : 'WIN'}
                   </button>
                 </div>
               </div>
@@ -437,11 +433,11 @@
           });
 
           customMarketsHTML += `
-            <div class="mt-4 pt-3 border-t border-gray-100">
-              <div class="flex items-center justify-between mb-2">
+            <div class="mt-3 pt-2 border-t border-gray-100">
+              <div class="flex items-center justify-between mb-1.5">
                 <input type="text" data-id="${id}" data-mkey="${mKey}" value="${market.title || 'Total Six'}" placeholder="Market Title" class="market-title-input text-xs font-bold text-gray-700 bg-transparent border-b border-dashed border-gray-300 focus:border-purple-600 focus:outline-none w-full uppercase">
               </div>
-              <div class="grid ${gridColsClass} gap-2.5">
+              <div class="grid ${gridColsClass} gap-1.5">
                 ${optionsHTML || '<p class="text-[10px] text-gray-400 italic col-span-full">No options added.</p>'}
               </div>
             </div>
@@ -598,7 +594,6 @@
       `;
     }
 
-    // Realtime scoreboard update interval
     setInterval(() => {
       if (allMatchesData && Object.keys(allMatchesData).length > 0) {
         Object.keys(allMatchesData).forEach(matchId => {
@@ -623,7 +618,6 @@
     });
 
     matchesContainer.addEventListener('change', async (e) => {
-      // Status update
       if (e.target.classList.contains('status-select')) {
         const matchId = e.target.getAttribute('data-id');
         const newStatus = e.target.value;
@@ -649,14 +643,12 @@
         await update(ref(db, `bets/${matchId}`), updateData);
       }
 
-      // Market Category Title Update
       if (e.target.classList.contains('market-title-input')) {
         const matchId = e.target.getAttribute('data-id');
         const mKey = e.target.getAttribute('data-mkey');
         await update(ref(db, `bets/${matchId}/customMarkets/${mKey}`), { title: e.target.value });
       }
 
-      // Custom Option Name Update (Strips bracket amount if user edits)
       if (e.target.classList.contains('custom-option-name')) {
         const matchId = e.target.getAttribute('data-id');
         const mKey = e.target.getAttribute('data-mkey');
@@ -665,7 +657,6 @@
         await update(ref(db, `bets/${matchId}/customMarkets/${mKey}/options/${oKey}`), { name: cleanVal });
       }
 
-      // Custom Option Odds Value Update
       if (e.target.classList.contains('custom-option-val')) {
         const matchId = e.target.getAttribute('data-id');
         const mKey = e.target.getAttribute('data-mkey');
@@ -675,7 +666,6 @@
     });
 
     matchesContainer.addEventListener('click', async (e) => {
-      // Declare Winner Option Button Click Handler
       const winBtn = e.target.closest('.set-option-win-btn');
       if (winBtn) {
         const matchId = winBtn.getAttribute('data-id');
@@ -687,7 +677,6 @@
 
         const updates = {};
         
-        // Mark selected option as WIN, and rest of options in that market as LOSS
         Object.keys(market.options).forEach((oKey) => {
           const basePath = `bets/${matchId}/customMarkets/${mKey}/options/${oKey}`;
           if (oKey === targetOKey) {
@@ -705,7 +694,6 @@
         return;
       }
 
-      // Delete whole match
       const deleteBtn = e.target.closest('.delete-btn');
       if (deleteBtn && confirm('Are you sure you want to delete this match?')) {
         const matchId = deleteBtn.getAttribute('data-id');
@@ -713,7 +701,6 @@
         return;
       }
 
-      // Toggle Open Add Market Form
       const toggleAddMarketBtn = e.target.closest('.toggle-add-market-btn');
       if (toggleAddMarketBtn) {
         const matchId = toggleAddMarketBtn.getAttribute('data-id');
@@ -724,7 +711,6 @@
         return;
       }
 
-      // Cancel Add Market Form
       const cancelAddMarketBtn = e.target.closest('.cancel-add-market-btn');
       if (cancelAddMarketBtn) {
         const matchId = cancelAddMarketBtn.getAttribute('data-id');
@@ -735,7 +721,6 @@
         return;
       }
 
-      // Add Option inside "Add Title Market" form
       const addMoreOptionBtn = e.target.closest('.add-more-option-field-btn');
       if (addMoreOptionBtn) {
         const matchId = addMoreOptionBtn.getAttribute('data-id');
@@ -752,7 +737,6 @@
         return;
       }
 
-      // Save New Title Market
       const saveMarketBtn = e.target.closest('.save-market-btn');
       if (saveMarketBtn) {
         const matchId = saveMarketBtn.getAttribute('data-id');
@@ -783,7 +767,6 @@
           options: optionsData
         });
 
-        // Hide Form after saving
         titleInput.value = '';
         const formDiv = document.getElementById(`add-market-form-${matchId}`);
         if (formDiv) {
@@ -806,4 +789,4 @@
     });
   </script>
 </body>
-  </html>
+</html>
