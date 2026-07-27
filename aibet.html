@@ -92,7 +92,7 @@
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
           <h2 class="text-xl font-bold text-gray-800">AI Matches & Odds</h2>
-          <p class="text-xs text-gray-500">Real-time status, Per-option Win control & dynamic custom bet categories</p>
+          <p class="text-xs text-gray-500">Real-time status, Per-option Win/Loss control & dynamic custom bet categories</p>
         </div>
         
         <a href="add-bet.html" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold shadow-md transition flex items-center gap-2">
@@ -404,27 +404,36 @@
             const totalBet = getOptionTotalBet(id, mKey, oKey, optName);
             const formattedName = totalBet > 0 ? `${optName} (${totalBet})` : optName;
             
-            // Check if this option is explicitly declared as winner
+            // Check if this option is explicitly declared as winner or loser
             const isWinner = opt.isWinner === true || opt.status === 'win' || market.winningOptionKey === oKey;
+            const isLoss = opt.status === 'loss' || (market.winningOptionKey && market.winningOptionKey !== oKey);
+
+            // Determine Button Text & Style based on WIN / LOSS / Default
+            let buttonText = 'WIN';
+            let buttonStyle = 'bg-gray-100 hover:bg-emerald-500 hover:text-white text-gray-500 border border-gray-200';
+
+            if (isWinner) {
+              buttonText = 'WIN';
+              buttonStyle = 'bg-emerald-600 text-white font-black shadow-xs';
+            } else if (isLoss) {
+              buttonText = 'LOSS';
+              buttonStyle = 'bg-red-600 text-white font-black shadow-xs';
+            }
 
             optionsHTML += `
               <div class="relative group p-1.5 rounded-xl border bg-white border-gray-100 transition-all">
                 <div class="flex items-center justify-between gap-1 mb-1">
                   <input type="text" data-id="${id}" data-mkey="${mKey}" data-okey="${oKey}" value="${formattedName}" placeholder="NAME" class="custom-option-name block text-[10px] font-bold ${totalBet > 0 ? 'text-emerald-600' : 'text-gray-500'} uppercase truncate w-full bg-transparent border-none p-0 focus:outline-none focus:ring-0">
                   
-                  <!-- WIN Button -->
+                  <!-- Dynamic WIN / LOSS Button -->
                   <button 
                     data-id="${id}" 
                     data-mkey="${mKey}" 
                     data-okey="${oKey}" 
-                    title="Declare Winner"
-                    class="set-option-win-btn text-[8px] font-black px-1.5 py-0.5 rounded-md transition-all flex items-center justify-center shrink-0 cursor-pointer ${
-                      isWinner 
-                        ? 'bg-emerald-600 text-white shadow-xs font-bold' 
-                        : 'bg-gray-100 hover:bg-emerald-500 hover:text-white text-gray-500 border border-gray-200'
-                    }"
+                    title="Click to set WIN (others become LOSS)"
+                    class="set-option-win-btn text-[8px] px-1.5 py-0.5 rounded-md transition-all flex items-center justify-center shrink-0 cursor-pointer ${buttonStyle}"
                   >
-                    WIN
+                    ${buttonText}
                   </button>
                 </div>
                 
@@ -680,7 +689,7 @@
 
         const updates = {};
         
-        // Loop through all options in this market to ensure selected option is WIN and ALL others are set to LOSS
+        // Loop through all options in this market: set clicked option as WIN and ALL others as LOSS
         Object.keys(market.options).forEach((oKey) => {
           const basePath = `bets/${matchId}/customMarkets/${mKey}/options/${oKey}`;
           if (oKey === targetOKey) {
