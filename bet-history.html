@@ -134,7 +134,7 @@
             let userBets = [];
 
             const processBetData = () => {
-                if (userBets.length === 0) {
+                if (!userBets || userBets.length === 0) {
                     historyListContainer.innerHTML = `
                         <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-8 text-center backdrop-blur-md shadow-xl">
                             <i class="fa-solid fa-receipt text-3xl text-amber-400/40 mb-2"></i>
@@ -144,8 +144,12 @@
                     return;
                 }
 
-                // Sort by timestamp descending (newest first)
-                userBets.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+                // Safe Sorting for both Number Timestamp and ISO Date String
+                userBets.sort((a, b) => {
+                    const timeA = new Date(a.timestamp || 0).getTime();
+                    const timeB = new Date(b.timestamp || 0).getTime();
+                    return timeB - timeA;
+                });
 
                 let htmlContent = '';
 
@@ -154,23 +158,25 @@
                     let dateStr = 'N/A';
                     if (item.timestamp) {
                         const d = new Date(item.timestamp);
-                        dateStr = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                        if (!isNaN(d.getTime())) {
+                            dateStr = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                        }
                     }
 
-                    // Status Badge Mapping
+                    // Strict Status Badge Checking based on Database JSON Structure
                     let statusBadge = '';
-                    const statusLower = String(item.status || 'pending').toLowerCase();
+                    const statusVal = String(item.status || '').toLowerCase().trim();
 
-                    if (statusLower === 'win' || statusLower === 'won' || item.isWinner === true) {
+                    if (statusVal === 'win' || statusVal === 'won' || item.isWinner === true) {
                         statusBadge = `<span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider"><i class="fa-solid fa-circle-check mr-1"></i> Won</span>`;
-                    } else if (statusLower === 'loss' || statusLower === 'lost' || item.isWinner === false) {
+                    } else if (statusVal === 'loss' || statusVal === 'lost' || item.isWinner === false) {
                         statusBadge = `<span class="bg-rose-500/10 text-rose-400 border border-rose-500/20 text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider"><i class="fa-solid fa-circle-xmark mr-1"></i> Lost</span>`;
                     } else {
                         statusBadge = `<span class="bg-amber-400/10 text-amber-400 border border-amber-400/20 text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider"><i class="fa-solid fa-hourglass-half mr-1 animate-pulse"></i> Pending</span>`;
                     }
 
                     const betAmount = parseFloat(item.amount || item.betAmount || item.stake || 0);
-                    const odds = parseFloat(item.odds || item.rate || item.val || 1.00);
+                    const odds = parseFloat(item.odds || item.rate || 1.00);
                     const potentialReturn = parseFloat(item.potentialReturn || (betAmount * odds) || 0);
 
                     htmlContent += `
@@ -178,8 +184,8 @@
                         <!-- Top Row: Match Name & Status -->
                         <div class="flex justify-between items-start border-b border-slate-800/80 pb-2.5">
                             <div>
-                                <span class="text-[10px] font-bold text-amber-400 uppercase tracking-wider block mb-0.5">${item.marketTitle || item.marketName || 'Betting Market'}</span>
-                                <h3 class="font-extrabold text-sm text-slate-100">${item.matchTitle || item.matchName || 'Match Title'}</h3>
+                                <span class="text-[10px] font-bold text-amber-400 uppercase tracking-wider block mb-0.5">${item.marketTitle || 'Betting Market'}</span>
+                                <h3 class="font-extrabold text-sm text-slate-100">${item.matchTitle || 'Match Title'}</h3>
                             </div>
                             <div>
                                 ${statusBadge}
@@ -190,7 +196,7 @@
                         <div class="grid grid-cols-2 gap-2 bg-slate-950/60 p-3 rounded-xl border border-slate-800/60 text-xs">
                             <div>
                                 <span class="text-[10px] text-slate-400 block font-medium">Selected Option:</span>
-                                <span class="font-black text-amber-400">${item.selectedOption || item.optionName || item.option || 'N/A'}</span>
+                                <span class="font-black text-amber-400">${item.optionName || item.selectedOption || 'N/A'}</span>
                             </div>
                             <div class="text-right">
                                 <span class="text-[10px] text-slate-400 block font-medium">Odds:</span>
@@ -220,7 +226,7 @@
                 historyListContainer.innerHTML = htmlContent;
             };
 
-            // Recursive function to filter bets by User ID
+            // Recursive function to search for user bets dynamically
             const extractUserBets = (obj) => {
                 let bets = [];
                 if (!obj || typeof obj !== 'object') return bets;
@@ -228,8 +234,8 @@
                 Object.values(obj).forEach(item => {
                     if (!item) return;
                     if (typeof item === 'object') {
-                        const itemUserId = String(item.userId || item.uid || item.user_id || '').trim();
-                        if (itemUserId === String(userId).trim()) {
+                        const itemUserId = String(item.userId || item.uid || '').trim();
+                        if (itemUserId && itemUserId === String(userId).trim()) {
                             bets.push(item);
                         } else {
                             bets = bets.concat(extractUserBets(item));
@@ -239,7 +245,7 @@
                 return bets;
             };
 
-            // Listen across possible nodes in Firebase
+            // Fetch from placedBets node
             onValue(ref(db, 'placedBets'), (snapshot) => {
                 if (snapshot.exists()) {
                     userBets = extractUserBets(snapshot.val());
@@ -247,7 +253,7 @@
                     userBets = [];
                 }
 
-                // Fallback check in betsHistory if placedBets has no records
+                // If placedBets empty, fallback to betsHistory node
                 if (userBets.length === 0) {
                     onValue(ref(db, `betsHistory/${userId}`), (histSnapshot) => {
                         if (histSnapshot.exists()) {
