@@ -404,6 +404,7 @@
             const totalBet = getOptionTotalBet(id, mKey, oKey, optName);
             const formattedName = totalBet > 0 ? `${optName} (${totalBet})` : optName;
             
+            // Check if this option is explicitly declared as winner
             const isWinner = opt.isWinner === true || opt.status === 'win' || market.winningOptionKey === oKey;
 
             optionsHTML += `
@@ -411,7 +412,7 @@
                 <div class="flex items-center justify-between gap-1 mb-1">
                   <input type="text" data-id="${id}" data-mkey="${mKey}" data-okey="${oKey}" value="${formattedName}" placeholder="NAME" class="custom-option-name block text-[10px] font-bold ${totalBet > 0 ? 'text-emerald-600' : 'text-gray-500'} uppercase truncate w-full bg-transparent border-none p-0 focus:outline-none focus:ring-0">
                   
-                  <!-- WIN Button (Only button becomes green when active) -->
+                  <!-- WIN Button -->
                   <button 
                     data-id="${id}" 
                     data-mkey="${mKey}" 
@@ -679,6 +680,7 @@
 
         const updates = {};
         
+        // Loop through all options in this market to ensure selected option is WIN and ALL others are set to LOSS
         Object.keys(market.options).forEach((oKey) => {
           const basePath = `bets/${matchId}/customMarkets/${mKey}/options/${oKey}`;
           if (oKey === targetOKey) {
@@ -690,6 +692,7 @@
           }
         });
 
+        // Set the winning option key on the market level as well
         updates[`bets/${matchId}/customMarkets/${mKey}/winningOptionKey`] = targetOKey;
 
         await update(ref(db), updates);
