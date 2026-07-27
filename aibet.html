@@ -92,7 +92,7 @@
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
           <h2 class="text-xl font-bold text-gray-800">AI Matches & Odds</h2>
-          <p class="text-xs text-gray-500">Real-time status, Per-option Win/Loss control & dynamic custom bet categories</p>
+          <p class="text-xs text-gray-500">Real-time status, Per-option Win/Loss control & automatic payouts</p>
         </div>
         
         <a href="add-bet.html" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold shadow-md transition flex items-center gap-2">
@@ -115,7 +115,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { getDatabase, ref, onValue, update, remove, push } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    import { getDatabase, ref, onValue, update, remove, push, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyBzQaaXhTtiGpMjRMBUXZaCIrDRoNyEkU4",
@@ -404,20 +404,20 @@
             const totalBet = getOptionTotalBet(id, mKey, oKey, optName);
             const formattedName = totalBet > 0 ? `${optName} (${totalBet})` : optName;
             
-            // Check if this option is explicitly declared as winner or loser
+            // Check win/loss status
             const isWinner = opt.isWinner === true || opt.status === 'win' || market.winningOptionKey === oKey;
             const isLoss = opt.status === 'loss' || (market.winningOptionKey && market.winningOptionKey !== oKey);
 
-            // Determine Button Text & Style based on WIN / LOSS / Default
+            // Light Green & Light Red Colors
             let buttonText = 'WIN';
-            let buttonStyle = 'bg-gray-100 hover:bg-emerald-500 hover:text-white text-gray-500 border border-gray-200';
+            let buttonStyle = 'bg-gray-100 hover:bg-emerald-200 hover:text-emerald-800 text-gray-500 border border-gray-200';
 
             if (isWinner) {
               buttonText = 'WIN';
-              buttonStyle = 'bg-emerald-600 text-white font-black shadow-xs';
+              buttonStyle = 'bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold shadow-xs';
             } else if (isLoss) {
               buttonText = 'LOSS';
-              buttonStyle = 'bg-red-600 text-white font-black shadow-xs';
+              buttonStyle = 'bg-red-100 text-red-800 border border-red-300 font-bold shadow-xs';
             }
 
             optionsHTML += `
@@ -425,12 +425,12 @@
                 <div class="flex items-center justify-between gap-1 mb-1">
                   <input type="text" data-id="${id}" data-mkey="${mKey}" data-okey="${oKey}" value="${formattedName}" placeholder="NAME" class="custom-option-name block text-[10px] font-bold ${totalBet > 0 ? 'text-emerald-600' : 'text-gray-500'} uppercase truncate w-full bg-transparent border-none p-0 focus:outline-none focus:ring-0">
                   
-                  <!-- Dynamic WIN / LOSS Button -->
+                  <!-- Light Color WIN / LOSS Button -->
                   <button 
                     data-id="${id}" 
                     data-mkey="${mKey}" 
                     data-okey="${oKey}" 
-                    title="Click to set WIN (others become LOSS)"
+                    title="Click to set WIN (others become LOSS & payout users)"
                     class="set-option-win-btn text-[8px] px-1.5 py-0.5 rounded-md transition-all flex items-center justify-center shrink-0 cursor-pointer ${buttonStyle}"
                   >
                     ${buttonText}
@@ -606,6 +606,88 @@
       `;
     }
 
+    // Function to payout winning bets to user balances
+    async function processBetPayouts(matchId, targetMKey, winningOKey, winOptName) {
+      if (!allPlacedBetsData) return;
+
+      const cleanMatchId = String(matchId).trim();
+      const targetOptName = winOptName ? String(winOptName).trim().toLowerCase() : '';
+      const targetOptKey = winningOKey ? String(winningOKey).trim().toLowerCase() : '';
+
+      // Function to recursively traverse placedBets DB tree
+      const processNode = async (node, nodePath) => {
+        if (!node || typeof node !== 'object') return;
+
+        for (const [key, item] of Object.entries(node)) {
+          if (!item) continue;
+          
+          const currentPath = `${nodePath}/${key}`;
+
+          // Check if this object is a placed bet entry
+          if (item.matchId || item.match_id || item.selectedOption || item.amount || item.betAmount) {
+            const betMatchId = String(item.matchId || item.match_id || item.betId || '').trim();
+            if (betMatchId === cleanMatchId) {
+              const betOptKey = String(item.optionKey || item.option_key || item.optKey || item.optionId || '').trim().toLowerCase();
+              const betOptName = String(item.selectedOption || item.optionName || item.option || item.team || item.betOn || '').trim().toLowerCase();
+
+              const isMatch = (targetOptKey && betOptKey === targetOptKey) || (targetOptName && betOptName === targetOptName);
+
+              // Check if payout is already done to avoid duplicate balance additions
+              if (item.payoutProcessed) continue;
+
+              const userId = item.userId || item.uid || item.user_id;
+              const betAmount = Number(item.amount || item.betAmount || item.stake || 0);
+              const odds = Number(item.odds || item.rate || item.val || 1);
+              const winAmount = betAmount * odds;
+
+              if (isMatch) {
+                // User WON
+                await update(ref(db, currentPath), { status: 'win', isWinner: true, payoutProcessed: true });
+
+                if (userId && winAmount > 0) {
+                  // Add Winning Money to User Balance
+                  try {
+                    const userRef = ref(db, `users/${userId}/balance`);
+                    const userSnap = await get(userRef);
+                    let currentBal = userSnap.exists() ? Number(userSnap.val() || 0) : 0;
+                    await update(ref(db, `users/${userId}`), { balance: currentBal + winAmount });
+
+                    // Update wallet balance if applicable
+                    const walletRef = ref(db, `wallets/${userId}/balance`);
+                    const walletSnap = await get(walletRef);
+                    if (walletSnap.exists()) {
+                      let walletBal = Number(walletSnap.val() || 0);
+                      await update(ref(db, `wallets/${userId}`), { balance: walletBal + winAmount });
+                    }
+                  } catch (e) {
+                    console.error("Payout update failed for user:", userId, e);
+                  }
+                }
+              } else {
+                // User LOST
+                await update(ref(db, currentPath), { status: 'loss', isWinner: false, payoutProcessed: true });
+              }
+            }
+          } else if (typeof item === 'object') {
+            await processNode(item, currentPath);
+          }
+        }
+      };
+
+      // Process placedBets node
+      if (allPlacedBetsData.placedBets) {
+        await processNode(allPlacedBetsData.placedBets, 'placedBets');
+      } else {
+        await processNode(allPlacedBetsData, 'placedBets');
+      }
+
+      // Process userBets node if exists
+      const userBetsSnap = await get(ref(db, 'userBets'));
+      if (userBetsSnap.exists()) {
+        await processNode(userBetsSnap.val(), 'userBets');
+      }
+    }
+
     setInterval(() => {
       if (allMatchesData && Object.keys(allMatchesData).length > 0) {
         Object.keys(allMatchesData).forEach(matchId => {
@@ -688,23 +770,28 @@
         if (!market || !market.options) return;
 
         const updates = {};
+        let winningOptionName = '';
         
-        // Loop through all options in this market: set clicked option as WIN and ALL others as LOSS
+        // Loop through all options in this market to set WIN and LOSS status
         Object.keys(market.options).forEach((oKey) => {
           const basePath = `bets/${matchId}/customMarkets/${mKey}/options/${oKey}`;
           if (oKey === targetOKey) {
             updates[`${basePath}/isWinner`] = true;
             updates[`${basePath}/status`] = 'win';
+            winningOptionName = market.options[oKey].name || '';
           } else {
             updates[`${basePath}/isWinner`] = false;
             updates[`${basePath}/status`] = 'loss';
           }
         });
 
-        // Set the winning option key on the market level as well
+        // Save market winner state
         updates[`bets/${matchId}/customMarkets/${mKey}/winningOptionKey`] = targetOKey;
 
         await update(ref(db), updates);
+
+        // Process Payout for winning users
+        await processBetPayouts(matchId, mKey, targetOKey, winningOptionName);
         return;
       }
 
