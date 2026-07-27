@@ -408,18 +408,16 @@
 
             optionsHTML += `
               <div class="relative group p-1.5 rounded-xl border ${isWinner ? 'bg-emerald-50 border-emerald-400 shadow-sm' : 'bg-white border-gray-100'} transition-all">
-                <input type="text" data-id="${id}" data-mkey="${mKey}" data-okey="${oKey}" value="${formattedName}" placeholder="NAME" class="custom-option-name block text-[10px] font-bold ${totalBet > 0 ? 'text-emerald-600' : 'text-gray-500'} uppercase truncate mb-1 w-full bg-transparent border-none p-0 focus:outline-none focus:ring-0">
-                
-                <div class="flex items-center gap-1">
-                  <input type="text" inputmode="decimal" data-id="${id}" data-mkey="${mKey}" data-okey="${oKey}" value="${toEngNum(opt.val || '1.00')}" placeholder="Odds" class="custom-option-val w-full px-1.5 py-1 text-xs font-bold text-gray-800 bg-white border border-gray-200 rounded-lg text-center focus:outline-none focus:ring-1 focus:ring-purple-500 shadow-xs">
+                <div class="flex items-center gap-1 mb-1">
+                  <input type="text" data-id="${id}" data-mkey="${mKey}" data-okey="${oKey}" value="${formattedName}" placeholder="NAME" class="custom-option-name block text-[10px] font-bold ${totalBet > 0 ? 'text-emerald-600' : 'text-gray-500'} uppercase truncate w-full bg-transparent border-none p-0 focus:outline-none focus:ring-0">
                   
-                  <!-- WIN Button moved to the right side of Odds -->
+                  <!-- WIN Button moved to the right side of the option name -->
                   <button 
                     data-id="${id}" 
                     data-mkey="${mKey}" 
                     data-okey="${oKey}" 
                     title="Declare Winner"
-                    class="set-option-win-btn text-[8px] font-black px-1.5 py-1 rounded-md transition-all flex items-center justify-center shrink-0 cursor-pointer ${
+                    class="set-option-win-btn text-[8px] font-black px-1.5 py-0.5 rounded-md transition-all flex items-center justify-center shrink-0 cursor-pointer ${
                       isWinner 
                         ? 'bg-emerald-600 text-white shadow-xs' 
                         : 'bg-gray-100 hover:bg-emerald-500 hover:text-white text-gray-500 border border-gray-200'
@@ -427,6 +425,10 @@
                   >
                     ${isWinner ? 'WIN' : 'WIN'}
                   </button>
+                </div>
+                
+                <div class="flex items-center gap-1">
+                  <input type="text" inputmode="decimal" data-id="${id}" data-mkey="${mKey}" data-okey="${oKey}" value="${toEngNum(opt.val || '1.00')}" placeholder="Odds" class="custom-option-val w-full px-1.5 py-1 text-xs font-bold text-gray-800 bg-white border border-gray-200 rounded-lg text-center focus:outline-none focus:ring-1 focus:ring-purple-500 shadow-xs">
                 </div>
               </div>
             `;
