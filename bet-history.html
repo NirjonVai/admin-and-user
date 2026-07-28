@@ -1,88 +1,190 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BetX - My Bet History</title>
+    
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#fffbe6',
+                            400: '#facc15',
+                            500: '#eab308',
+                            600: '#ca8a04',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- FontAwesome & Google Fonts -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
     <style>
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #030712;
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #334155;
+        }
+
+        /* Glassmorphism Effect */
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        
+        .glass-card {
+            background: rgba(17, 24, 39, 0.6);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* Hide scrollbar for category tabs */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
         }
     </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen selection:bg-amber-400 selection:text-slate-950 pb-20 lg:pb-0">
+<body class="text-slate-100 min-h-screen selection:bg-amber-400 selection:text-slate-950 pb-24 lg:pb-8 flex flex-col justify-between">
 
-    <!-- Header (Dashboard Theme) -->
-    <header class="bg-slate-900/80 backdrop-blur-md border-b border-slate-800/80 sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 py-3.5 flex justify-between items-center">
+    <!-- Header Section -->
+    <header class="glass-panel sticky top-0 z-50 transition-all duration-200">
+        <div class="max-w-5xl mx-auto px-4 py-3.5 flex justify-between items-center">
+            
+            <!-- Brand Logo -->
             <div class="flex items-center space-x-2 group cursor-pointer" onclick="window.location.href='index.html'">
-                <span class="text-xl font-black tracking-widest text-white">BET<span class="text-amber-400 bg-gradient-to-r from-yellow-400 to-amber-300 bg-clip-text text-transparent">X</span></span>
+                <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-500 to-yellow-300 flex items-center justify-center shadow-lg shadow-amber-500/20 group-hover:scale-105 transition-transform">
+                    <i class="fa-solid fa-bolt text-slate-950 font-black text-lg"></i>
+                </div>
+                <span class="text-xl font-extrabold tracking-wider text-white">BET<span class="text-amber-400">X</span></span>
             </div>
 
-            <div class="flex items-center space-x-3 sm:space-x-4">
-                <!-- User Profile Display -->
-                <div class="flex items-center space-x-2 bg-slate-800/40 border border-slate-700/60 px-3 py-1.5 rounded-xl text-xs sm:text-sm font-semibold text-slate-200">
-                    <i class="fa-solid fa-user-circle text-amber-400 text-sm sm:text-base"></i>
-                    <span id="user-display-name" class="max-w-[100px] sm:max-w-[150px] truncate">Loading...</span>
+            <!-- Profile & Balance Bar -->
+            <div class="flex items-center space-x-2.5 sm:space-x-4">
+                <div class="flex items-center space-x-2 bg-slate-900/90 border border-slate-800 px-3 py-1.5 rounded-xl text-xs sm:text-sm font-semibold text-slate-300 shadow-inner">
+                    <i class="fa-solid fa-circle-user text-amber-400 text-base"></i>
+                    <span id="user-display-name" class="max-w-[90px] sm:max-w-[140px] truncate">Loading...</span>
                 </div>
 
-                <!-- Balance Box -->
-                <div class="bg-slate-800/40 backdrop-blur-sm px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl flex items-center space-x-2 sm:space-x-3 border border-slate-700/60 shadow-inner">
-                    <span class="text-xs sm:text-sm font-extrabold text-amber-400 tracking-wide" id="user-balance">৳0.00</span>
+                <div class="bg-gradient-to-r from-amber-500/10 to-yellow-500/5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl flex items-center space-x-2 border border-amber-500/20 shadow-lg shadow-amber-500/5">
+                    <i class="fa-solid fa-wallet text-amber-400 text-xs sm:text-sm"></i>
+                    <span class="text-xs sm:text-sm font-black text-amber-400 tracking-wide" id="user-balance">৳0.00</span>
                 </div>
             </div>
+            
         </div>
     </header>
         
-    <!-- Main Content Container -->
-    <main class="max-w-4xl mx-auto px-3 py-6 space-y-6">
-        <div class="flex justify-between items-center px-1">
-            <h2 class="text-sm sm:text-base font-black tracking-widest text-slate-200 flex items-center space-x-2">
-                <i class="fa-solid fa-clock-rotate-left text-amber-400 text-base"></i>
-                <span>MY BET HISTORY</span>
-            </h2>
-        </div>
+    <!-- Main Content Area -->
+    <main class="max-w-4xl mx-auto px-4 py-6 w-full space-y-6 flex-grow">
+        
+        <!-- Header Title & Stats -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 glass-panel p-5 rounded-2xl">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-amber-400/10 border border-amber-400/20 flex items-center justify-center">
+                    <i class="fa-solid fa-clock-rotate-left text-amber-400 text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-black tracking-wide text-white uppercase">My Bet History</h1>
+                    <p class="text-xs text-slate-400">Track and manage your live & settled wagers</p>
+                </div>
+            </div>
 
-        <!-- History Items Container -->
-        <div id="history-list" class="space-y-4">
-            <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-8 text-center backdrop-blur-md shadow-xl">
-                <i class="fa-solid fa-spinner fa-spin text-3xl text-amber-400 mb-3"></i>
-                <p class="text-slate-400 text-xs font-semibold uppercase tracking-wider">Fetching Bet History...</p>
+            <!-- Summary Chips -->
+            <div class="flex items-center space-x-2 text-xs font-semibold">
+                <div class="bg-slate-900/80 border border-slate-800 px-3 py-1.5 rounded-lg text-slate-400">
+                    Total Bets: <span id="total-bets-count" class="text-white font-bold">0</span>
+                </div>
             </div>
         </div>
+
+        <!-- Filter Navigation Tabs -->
+        <div class="flex items-center space-x-2 overflow-x-auto no-scrollbar pb-1">
+            <button onclick="filterBets('all')" id="btn-filter-all" class="px-5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap bg-amber-400 text-slate-950 shadow-lg shadow-amber-400/10">
+                All Bets
+            </button>
+            <button onclick="filterBets('pending')" id="btn-filter-pending" class="px-5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:border-slate-700">
+                Pending
+            </button>
+            <button onclick="filterBets('won')" id="btn-filter-won" class="px-5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:border-slate-700">
+                Won
+            </button>
+            <button onclick="filterBets('lost')" id="btn-filter-lost" class="px-5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:border-slate-700">
+                Lost
+            </button>
+        </div>
+
+        <!-- History List Container -->
+        <div id="history-list" class="space-y-3.5">
+            <div class="glass-panel rounded-2xl p-12 text-center shadow-2xl space-y-3">
+                <i class="fa-solid fa-spinner fa-spin text-3xl text-amber-400"></i>
+                <p class="text-slate-400 text-xs font-bold uppercase tracking-widest">Fetching Bet History...</p>
+            </div>
+        </div>
+
     </main>
 
-    <!-- Bottom Nav (Dashboard Style) -->
-    <nav class="lg:hidden fixed bottom-0 left-0 right-0 bg-slate-900/90 backdrop-blur-xl border-t border-slate-800/80 px-2 py-2 z-50 flex justify-around items-center shadow-2xl rounded-t-2xl">
-        <a href="index.html" class="flex flex-col items-center justify-center text-slate-400 hover:text-slate-200 px-3 py-1 rounded-xl transition-all">
-            <i class="fa-solid fa-fire text-lg mb-1"></i>
-            <span class="text-[10px] font-medium tracking-wide">Popular</span>
+    <!-- Bottom Navigation Bar (Mobile Display) -->
+    <nav class="lg:hidden fixed bottom-0 left-0 right-0 glass-panel border-t border-slate-800/80 px-3 py-2.5 z-50 flex justify-around items-center rounded-t-2xl shadow-2xl">
+        <a href="index.html" class="flex flex-col items-center justify-center text-slate-400 hover:text-amber-400 px-3 py-1 rounded-xl transition-colors">
+            <i class="fa-solid fa-fire text-lg mb-0.5"></i>
+            <span class="text-[10px] font-semibold tracking-tight">Popular</span>
         </a>
-        <a href="#" class="flex flex-col items-center justify-center text-slate-400 hover:text-slate-200 px-3 py-1 rounded-xl transition-all relative">
-            <i class="fa-solid fa-star text-lg mb-1"></i>
-            <span class="text-[10px] font-medium tracking-wide">Favorite</span>
+        <a href="#" class="flex flex-col items-center justify-center text-slate-400 hover:text-amber-400 px-3 py-1 rounded-xl transition-colors">
+            <i class="fa-solid fa-star text-lg mb-0.5"></i>
+            <span class="text-[10px] font-semibold tracking-tight">Favorites</span>
         </a>
-        <a href="index.html" class="flex flex-col items-center justify-center text-slate-400 hover:text-slate-200 px-3 py-1 rounded-xl transition-all relative">
-            <i class="fa-solid fa-receipt text-lg mb-1"></i>
-            <span class="text-[10px] font-medium tracking-wide">Bet Slip</span>
+        <a href="index.html" class="flex flex-col items-center justify-center text-slate-400 hover:text-amber-400 px-3 py-1 rounded-xl transition-colors">
+            <i class="fa-solid fa-receipt text-lg mb-0.5"></i>
+            <span class="text-[10px] font-semibold tracking-tight">Bet Slip</span>
         </a>
-        <a href="#" class="flex flex-col items-center justify-center text-amber-400 px-3 py-1 rounded-xl transition-all">
-            <i class="fa-solid fa-history text-lg mb-1"></i>
-            <span class="text-[10px] font-bold tracking-wide">History</span>
+        <a href="#" class="flex flex-col items-center justify-center text-amber-400 px-3 py-1 rounded-xl transition-colors">
+            <i class="fa-solid fa-clock-rotate-left text-lg mb-0.5"></i>
+            <span class="text-[10px] font-bold tracking-tight">History</span>
         </a>
-        <a href="#" class="flex flex-col items-center justify-center text-slate-400 hover:text-slate-200 px-3 py-1 rounded-xl transition-all">
-            <i class="fa-solid fa-bars text-lg mb-1"></i>
-            <span class="text-[10px] font-medium tracking-wide">Menu</span>
+        <a href="#" class="flex flex-col items-center justify-center text-slate-400 hover:text-amber-400 px-3 py-1 rounded-xl transition-colors">
+            <i class="fa-solid fa-bars text-lg mb-0.5"></i>
+            <span class="text-[10px] font-semibold tracking-tight">Menu</span>
         </a>
     </nav>
 
-    <!-- Firebase Realtime Database Script -->
+    <!-- Firebase SDK Logic -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
@@ -106,11 +208,15 @@
         const userNameDisplay = document.getElementById('user-display-name');
         const userBalanceDisplay = document.getElementById('user-balance');
         const historyListContainer = document.getElementById('history-list');
+        const totalBetsCount = document.getElementById('total-bets-count');
+
+        let rawUserBets = [];
+        let currentFilter = 'all';
 
         // Check Auth State
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                // Fetch User Details & Balance
+                // User Details listener
                 const userRef = ref(db, `users/${user.uid}`);
                 onValue(userRef, (snapshot) => {
                     if (snapshot.exists()) {
@@ -129,104 +235,153 @@
             }
         });
 
-        // Function to Fetch History
-        function fetchBetHistory(userId) {
-            let userBets = [];
+        // Filter functionality exposing globally
+        window.filterBets = (type) => {
+            currentFilter = type;
+            
+            // Update filter buttons appearance
+            ['all', 'pending', 'won', 'lost'].forEach(f => {
+                const btn = document.getElementById(`btn-filter-${f}`);
+                if (f === type) {
+                    btn.className = "px-5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap bg-amber-400 text-slate-950 shadow-lg shadow-amber-400/10";
+                } else {
+                    btn.className = "px-5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:border-slate-700";
+                }
+            });
 
-            const processBetData = () => {
-                if (!userBets || userBets.length === 0) {
-                    historyListContainer.innerHTML = `
-                        <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-8 text-center backdrop-blur-md shadow-xl">
-                            <i class="fa-solid fa-receipt text-3xl text-amber-400/40 mb-2"></i>
-                            <p class="text-slate-400 text-xs font-semibold">No bet history found.</p>
+            renderBetList();
+        };
+
+        function renderBetList() {
+            if (!rawUserBets || rawUserBets.length === 0) {
+                historyListContainer.innerHTML = `
+                    <div class="glass-panel rounded-2xl p-10 text-center shadow-2xl space-y-3">
+                        <div class="w-12 h-12 rounded-full bg-amber-400/10 border border-amber-400/20 flex items-center justify-center mx-auto text-amber-400">
+                            <i class="fa-solid fa-receipt text-xl"></i>
                         </div>
-                    `;
-                    return;
+                        <p class="text-slate-300 font-bold text-sm">No Bet Records Found</p>
+                        <p class="text-slate-500 text-xs max-w-xs mx-auto">You haven't placed any bets yet or no data matched your filter.</p>
+                    </div>
+                `;
+                totalBetsCount.innerText = "0";
+                return;
+            }
+
+            // Filter logic based on status
+            const filteredBets = rawUserBets.filter(item => {
+                const statusVal = String(item.status || '').toLowerCase().trim();
+                const isWin = statusVal === 'win' || statusVal === 'won' || item.isWinner === true;
+                const isLoss = statusVal === 'loss' || statusVal === 'lost' || item.isWinner === false;
+                
+                if (currentFilter === 'won') return isWin;
+                if (currentFilter === 'lost') return isLoss;
+                if (currentFilter === 'pending') return !isWin && !isLoss;
+                return true; // 'all'
+            });
+
+            totalBetsCount.innerText = filteredBets.length.toString();
+
+            if (filteredBets.length === 0) {
+                historyListContainer.innerHTML = `
+                    <div class="glass-panel rounded-2xl p-8 text-center text-slate-400 text-xs font-semibold">
+                        No bets match the category filter "${currentFilter.toUpperCase()}".
+                    </div>
+                `;
+                return;
+            }
+
+            let htmlContent = '';
+
+            filteredBets.forEach((item) => {
+                // Date formatting
+                let dateStr = 'N/A';
+                if (item.timestamp) {
+                    const d = new Date(item.timestamp);
+                    if (!isNaN(d.getTime())) {
+                        dateStr = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) + ' • ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    }
                 }
 
-                // Safe Sorting for both Number Timestamp and ISO Date String
-                userBets.sort((a, b) => {
-                    const timeA = new Date(a.timestamp || 0).getTime();
-                    const timeB = new Date(b.timestamp || 0).getTime();
-                    return timeB - timeA;
-                });
+                // Determine Status Display
+                let statusBadge = '';
+                const statusVal = String(item.status || '').toLowerCase().trim();
 
-                let htmlContent = '';
+                if (statusVal === 'win' || statusVal === 'won' || item.isWinner === true) {
+                    statusBadge = `
+                        <span class="inline-flex items-center gap-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider">
+                            <i class="fa-solid fa-circle-check text-xs"></i> Won
+                        </span>`;
+                } else if (statusVal === 'loss' || statusVal === 'lost' || item.isWinner === false) {
+                    statusBadge = `
+                        <span class="inline-flex items-center gap-1 bg-rose-500/10 text-rose-400 border border-rose-500/20 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider">
+                            <i class="fa-solid fa-circle-xmark text-xs"></i> Lost
+                        </span>`;
+                } else {
+                    statusBadge = `
+                        <span class="inline-flex items-center gap-1 bg-amber-400/10 text-amber-400 border border-amber-400/20 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider">
+                            <i class="fa-solid fa-clock text-xs animate-spin"></i> Pending
+                        </span>`;
+                }
 
-                userBets.forEach((item) => {
-                    // Date formatting
-                    let dateStr = 'N/A';
-                    if (item.timestamp) {
-                        const d = new Date(item.timestamp);
-                        if (!isNaN(d.getTime())) {
-                            dateStr = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                        }
-                    }
+                const betAmount = parseFloat(item.amount || item.betAmount || item.stake || 0);
+                const odds = parseFloat(item.odds || item.rate || 1.00);
+                const potentialReturn = parseFloat(item.potentialReturn || (betAmount * odds) || 0);
 
-                    // Strict Status Badge Checking based on Database JSON Structure
-                    let statusBadge = '';
-                    const statusVal = String(item.status || '').toLowerCase().trim();
-
-                    if (statusVal === 'win' || statusVal === 'won' || item.isWinner === true) {
-                        statusBadge = `<span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider"><i class="fa-solid fa-circle-check mr-1"></i> Won</span>`;
-                    } else if (statusVal === 'loss' || statusVal === 'lost' || item.isWinner === false) {
-                        statusBadge = `<span class="bg-rose-500/10 text-rose-400 border border-rose-500/20 text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider"><i class="fa-solid fa-circle-xmark mr-1"></i> Lost</span>`;
-                    } else {
-                        statusBadge = `<span class="bg-amber-400/10 text-amber-400 border border-amber-400/20 text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider"><i class="fa-solid fa-hourglass-half mr-1 animate-pulse"></i> Pending</span>`;
-                    }
-
-                    const betAmount = parseFloat(item.amount || item.betAmount || item.stake || 0);
-                    const odds = parseFloat(item.odds || item.rate || 1.00);
-                    const potentialReturn = parseFloat(item.potentialReturn || (betAmount * odds) || 0);
-
-                    htmlContent += `
-                    <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 shadow-xl space-y-3 relative overflow-hidden">
-                        <!-- Top Row: Match Name & Status -->
-                        <div class="flex justify-between items-start border-b border-slate-800/80 pb-2.5">
-                            <div>
-                                <span class="text-[10px] font-bold text-amber-400 uppercase tracking-wider block mb-0.5">${item.marketTitle || 'Betting Market'}</span>
-                                <h3 class="font-extrabold text-sm text-slate-100">${item.matchTitle || 'Match Title'}</h3>
-                            </div>
-                            <div>
-                                ${statusBadge}
-                            </div>
+                htmlContent += `
+                <div class="glass-card hover:border-slate-700/80 transition-all rounded-2xl p-4 sm:p-5 shadow-xl space-y-3.5 relative overflow-hidden group">
+                    
+                    <!-- Top Info Header -->
+                    <div class="flex justify-between items-start gap-2 border-b border-slate-800/80 pb-3">
+                        <div class="space-y-0.5">
+                            <span class="text-[10px] font-bold text-amber-400 uppercase tracking-widest block">${item.marketTitle || 'Match Odds'}</span>
+                            <h2 class="font-extrabold text-sm sm:text-base text-white tracking-wide">${item.matchTitle || 'Event Match'}</h2>
                         </div>
-
-                        <!-- Mid Row: Selection & Odds -->
-                        <div class="grid grid-cols-2 gap-2 bg-slate-950/60 p-3 rounded-xl border border-slate-800/60 text-xs">
-                            <div>
-                                <span class="text-[10px] text-slate-400 block font-medium">Selected Option:</span>
-                                <span class="font-black text-amber-400">${item.optionName || item.selectedOption || 'N/A'}</span>
-                            </div>
-                            <div class="text-right">
-                                <span class="text-[10px] text-slate-400 block font-medium">Odds:</span>
-                                <span class="font-black text-slate-200">@${odds.toFixed(2)}</span>
-                            </div>
-                        </div>
-
-                        <!-- Bottom Row: Financial Details & Date -->
-                        <div class="flex justify-between items-center text-xs pt-1">
-                            <div>
-                                <span class="text-slate-400 block text-[10px]">Bet Amount</span>
-                                <span class="font-extrabold text-white">৳${betAmount.toFixed(2)}</span>
-                            </div>
-                            <div class="text-right">
-                                <span class="text-slate-400 block text-[10px]">Potential Return</span>
-                                <span class="font-black text-emerald-400">৳${potentialReturn.toFixed(2)}</span>
-                            </div>
-                        </div>
-
-                        <div class="text-[9px] text-slate-500 font-semibold text-right border-t border-slate-800/40 pt-1.5">
-                            ${dateStr}
+                        <div class="shrink-0">
+                            ${statusBadge}
                         </div>
                     </div>
-                    `;
-                });
 
-                historyListContainer.innerHTML = htmlContent;
-            };
+                    <!-- Selected Option Bar -->
+                    <div class="flex items-center justify-between bg-slate-950/70 p-3 rounded-xl border border-slate-800/80 text-xs">
+                        <div>
+                            <span class="text-[10px] text-slate-400 block font-semibold uppercase tracking-wider mb-0.5">Pick</span>
+                            <span class="font-black text-amber-400 text-sm">${item.optionName || item.selectedOption || 'N/A'}</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-[10px] text-slate-400 block font-semibold uppercase tracking-wider mb-0.5">Odds</span>
+                            <span class="font-black text-white bg-slate-800 border border-slate-700 px-2 py-0.5 rounded-md">@${odds.toFixed(2)}</span>
+                        </div>
+                    </div>
 
-            // Recursive function to search for user bets dynamically
+                    <!-- Bet Values & Timestamp -->
+                    <div class="flex items-center justify-between text-xs pt-0.5">
+                        <div class="flex items-center space-x-4">
+                            <div>
+                                <span class="text-slate-400 block text-[10px] font-semibold uppercase tracking-wider">Stake</span>
+                                <span class="font-extrabold text-white text-sm">৳${betAmount.toFixed(2)}</span>
+                            </div>
+                            <div class="h-6 w-[1px] bg-slate-800"></div>
+                            <div>
+                                <span class="text-slate-400 block text-[10px] font-semibold uppercase tracking-wider">Return</span>
+                                <span class="font-black text-emerald-400 text-sm">৳${potentialReturn.toFixed(2)}</span>
+                            </div>
+                        </div>
+
+                        <div class="text-[10px] text-slate-500 font-semibold flex items-center gap-1">
+                            <i class="fa-regular fa-clock"></i>
+                            <span>${dateStr}</span>
+                        </div>
+                    </div>
+
+                </div>
+                `;
+            });
+
+            historyListContainer.innerHTML = htmlContent;
+        }
+
+        // Function to Fetch History Data from Realtime DB
+        function fetchBetHistory(userId) {
             const extractUserBets = (obj) => {
                 let bets = [];
                 if (!obj || typeof obj !== 'object') return bets;
@@ -245,26 +400,38 @@
                 return bets;
             };
 
-            // Fetch from placedBets node
+            // Listener for 'placedBets'
             onValue(ref(db, 'placedBets'), (snapshot) => {
+                let bets = [];
                 if (snapshot.exists()) {
-                    userBets = extractUserBets(snapshot.val());
-                } else {
-                    userBets = [];
+                    bets = extractUserBets(snapshot.val());
                 }
 
-                // If placedBets empty, fallback to betsHistory node
-                if (userBets.length === 0) {
+                if (bets.length === 0) {
+                    // Fallback to betsHistory node
                     onValue(ref(db, `betsHistory/${userId}`), (histSnapshot) => {
                         if (histSnapshot.exists()) {
-                            userBets = Object.values(histSnapshot.val());
+                            bets = Object.values(histSnapshot.val());
                         }
-                        processBetData();
+                        processAndSetBets(bets);
                     }, { onlyOnce: true });
                 } else {
-                    processBetData();
+                    processAndSetBets(bets);
                 }
             });
+        }
+
+        function processAndSetBets(bets) {
+            rawUserBets = bets || [];
+            
+            // Sort by Date (newest first)
+            rawUserBets.sort((a, b) => {
+                const timeA = new Date(a.timestamp || 0).getTime();
+                const timeB = new Date(b.timestamp || 0).getTime();
+                return timeB - timeA;
+            });
+
+            renderBetList();
         }
     </script>
 </body>
