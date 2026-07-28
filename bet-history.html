@@ -345,7 +345,7 @@
                     <div class="flex items-center justify-between bg-slate-950/70 p-3 rounded-xl border border-slate-800/80 text-xs">
                         <div>
                             <span class="text-[10px] text-slate-400 block font-semibold uppercase tracking-wider mb-0.5">Pick</span>
-                            <span class="font-black text-amber-400 text-sm">${item.optionName || item.selectedOption || 'N/A'}</span>
+                            <span class="font-black text-amber-400 text-sm uppercase">${item.optionName || item.selectedOption || 'N/A'}</span>
                         </div>
                         <div class="text-right">
                             <span class="text-[10px] text-slate-400 block font-semibold uppercase tracking-wider mb-0.5">Odds</span>
@@ -380,7 +380,7 @@
             historyListContainer.innerHTML = htmlContent;
         }
 
-        // Function to Fetch History Data Realtime from DB
+        // Function to Fetch History Data from Realtime DB
         function fetchBetHistory(userId) {
             const extractUserBets = (obj) => {
                 let bets = [];
@@ -400,31 +400,24 @@
                 return bets;
             };
 
-            // Realtime listener on 'placedBets'
+            // Listener for 'placedBets'
             onValue(ref(db, 'placedBets'), (snapshot) => {
                 let bets = [];
                 if (snapshot.exists()) {
                     bets = extractUserBets(snapshot.val());
                 }
 
-                // Attach real-time listener to user's specific history as well
-                onValue(ref(db, `betsHistory/${userId}`), (histSnapshot) => {
-                    let userHistBets = [];
-                    if (histSnapshot.exists()) {
-                        userHistBets = Object.values(histSnapshot.val());
-                    }
-
-                    // Combine and remove duplicate bets by checking unique bet identifiers
-                    const combinedBets = [...bets, ...userHistBets];
-                    const uniqueBetsMap = new Map();
-
-                    combinedBets.forEach(bet => {
-                        const id = bet.id || bet.matchId + '_' + bet.timestamp || JSON.stringify(bet);
-                        uniqueBetsMap.set(id, bet);
-                    });
-
-                    processAndSetBets(Array.from(uniqueBetsMap.values()));
-                });
+                if (bets.length === 0) {
+                    // Fallback to betsHistory node
+                    onValue(ref(db, `betsHistory/${userId}`), (histSnapshot) => {
+                        if (histSnapshot.exists()) {
+                            bets = Object.values(histSnapshot.val());
+                        }
+                        processAndSetBets(bets);
+                    }, { onlyOnce: true });
+                } else {
+                    processAndSetBets(bets);
+                }
             });
         }
 
