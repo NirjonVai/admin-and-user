@@ -380,7 +380,7 @@
             historyListContainer.innerHTML = htmlContent;
         }
 
-        // Function to Fetch History Data from Realtime DB
+        // Function to Fetch History Data Realtime from DB
         function fetchBetHistory(userId) {
             const extractUserBets = (obj) => {
                 let bets = [];
@@ -400,24 +400,31 @@
                 return bets;
             };
 
-            // Listener for 'placedBets'
+            // Realtime listener on 'placedBets'
             onValue(ref(db, 'placedBets'), (snapshot) => {
                 let bets = [];
                 if (snapshot.exists()) {
                     bets = extractUserBets(snapshot.val());
                 }
 
-                if (bets.length === 0) {
-                    // Fallback to betsHistory node
-                    onValue(ref(db, `betsHistory/${userId}`), (histSnapshot) => {
-                        if (histSnapshot.exists()) {
-                            bets = Object.values(histSnapshot.val());
-                        }
-                        processAndSetBets(bets);
-                    }, { onlyOnce: true });
-                } else {
-                    processAndSetBets(bets);
-                }
+                // Attach real-time listener to user's specific history as well
+                onValue(ref(db, `betsHistory/${userId}`), (histSnapshot) => {
+                    let userHistBets = [];
+                    if (histSnapshot.exists()) {
+                        userHistBets = Object.values(histSnapshot.val());
+                    }
+
+                    // Combine and remove duplicate bets by checking unique bet identifiers
+                    const combinedBets = [...bets, ...userHistBets];
+                    const uniqueBetsMap = new Map();
+
+                    combinedBets.forEach(bet => {
+                        const id = bet.id || bet.matchId + '_' + bet.timestamp || JSON.stringify(bet);
+                        uniqueBetsMap.set(id, bet);
+                    });
+
+                    processAndSetBets(Array.from(uniqueBetsMap.values()));
+                });
             });
         }
 
