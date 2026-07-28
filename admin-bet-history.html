@@ -1,149 +1,660 @@
 <!DOCTYPE html>
-<html lang="bn">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BetX Admin - Bet History</title>
-    <!-- Bootstrap 5 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>Bet History - BetX Admin Panel</title>
+    <!-- Tailwind CSS v4 CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        body { background-color: #f4f6f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        .card { border-radius: 10px; border: none; box-shadow: 0 4px 8px rgba(0,0,0,0.05); }
-        .table thead { background-color: #1e293b; color: #fff; }
-        .badge-pending { background-color: #ffc107; color: #000; }
-        .badge-won { background-color: #198754; color: #fff; }
-        .badge-lost { background-color: #dc3545; color: #fff; }
-        .badge-refunded { background-color: #6c757d; color: #fff; }
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #0d1117;
+            color: #c9d1d9;
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #161b22;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #30363d;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #484f58;
+        }
     </style>
 </head>
-<body>
+<body class="min-h-screen flex flex-col md:flex-row bg-[#0d1117]">
 
-<div class="container my-5">
-    <div class="card p-4">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h3 class="fw-bold text-dark">📊 BetX - Bet History Log</h3>
-            <span class="badge bg-primary fs-6">Total Bets: 1,245</span>
-        </div>
-
-        <!-- Filter / Search Section -->
-        <div class="row g-3 mb-4">
-            <div class="col-md-3">
-                <input type="text" class="form-control" placeholder="Search by Bet ID or User...">
-            </div>
-            <div class="col-md-3">
-                <select class="form-select">
-                    <option selected>All Status</option>
-                    <option value="won">Won</option>
-                    <option value="lost">Lost</option>
-                    <option value="pending">Pending</option>
-                    <option value="refunded">Refunded</option>
-                </select>
-            </div>
-            <div class="col-md-4">
-                <input type="date" class="form-control">
-            </div>
-            <div class="col-md-2">
-                <button class="btn btn-dark w-100">Filter</button>
+    <!-- Sidebar -->
+    <aside class="w-full md:w-64 bg-[#161b22] border-r border-[#30363d] flex-shrink-0 flex flex-col">
+        <div class="p-5 border-b border-[#30363d] flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center font-bold text-white text-xl shadow-lg shadow-blue-500/20">
+                    B
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg text-white tracking-wide">BetX Admin</h1>
+                    <p class="text-xs text-slate-400">Management Console</p>
+                </div>
             </div>
         </div>
 
-        <!-- Bet History Table -->
-        <div class="table-responsive">
-            <table class="table table-hover align-middle">
-                <thead>
-                    <tr>
-                        <th>Bet ID</th>
-                        <th>User ID / Name</th>
-                        <th>Match / Event</th>
-                        <th>Bet Type</th>
-                        <th>Odds</th>
-                        <th>Stake (৳)</th>
-                        <th>Est. Return (৳)</th>
-                        <th>Date & Time</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Row 1 -->
-                    <tr>
-                        <td><strong>#BX-90811</strong></td>
-                        <td>
-                            <div><strong>john_doe</strong></div>
-                            <small class="text-muted">ID: 1024</small>
-                        </td>
-                        <td>BAN vs IND (1st T20)</td>
-                        <td>Match Winner (BAN)</td>
-                        <td>1.85</td>
-                        <td>৳১,০০০</td>
-                        <td class="text-success fw-bold">৳১,৮৫০</td>
-                        <td>28 Jul 2026, 03:30 PM</td>
-                        <td><span class="badge badge-won px-3 py-2">Won</span></td>
-                    </tr>
-
-                    <!-- Row 2 -->
-                    <tr>
-                        <td><strong>#BX-90812</strong></td>
-                        <td>
-                            <div><strong>rahim_77</strong></div>
-                            <small class="text-muted">ID: 1089</small>
-                        </td>
-                        <td>Real Madrid vs Barca</td>
-                        <td>Total Goals (Over 2.5)</td>
-                        <td>2.10</td>
-                        <td>৳৫০০</td>
-                        <td>৳১,০৫০</td>
-                        <td>28 Jul 2026, 02:15 PM</td>
-                        <td><span class="badge badge-lost px-3 py-2">Lost</span></td>
-                    </tr>
-
-                    <!-- Row 3 -->
-                    <tr>
-                        <td><strong>#BX-90813</strong></td>
-                        <td>
-                            <div><strong>tanvir_bet</strong></div>
-                            <small class="text-muted">ID: 1150</small>
-                        </td>
-                        <td>ENG vs AUS (Test)</td>
-                        <td>1st Innings Runs (>350)</td>
-                        <td>1.50</td>
-                        <td>৳২,০০০</td>
-                        <td>৳৩,০০০</td>
-                        <td>28 Jul 2026, 01:00 PM</td>
-                        <td><span class="badge badge-pending px-3 py-2">Pending</span></td>
-                    </tr>
-
-                    <!-- Row 4 -->
-                    <tr>
-                        <td><strong>#BX-90814</strong></td>
-                        <td>
-                            <div><strong>karim_bkash</strong></div>
-                            <small class="text-muted">ID: 1201</small>
-                        </td>
-                        <td>PSG vs Bayern</td>
-                        <td>Draw</td>
-                        <td>3.40</td>
-                        <td>৳৩০০</td>
-                        <td>৳০</td>
-                        <td>27 Jul 2026, 11:45 PM</td>
-                        <td><span class="badge badge-refunded px-3 py-2">Refunded</span></td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-
-        <!-- Pagination -->
-        <nav class="d-flex justify-content-between align-items-center mt-3">
-            <small class="text-muted">Showing 1 to 4 of 1,245 entries</small>
-            <ul class="pagination pagination-sm mb-0">
-                <li class="page-item disabled"><a class="page-link" href="#">Previous</a></li>
-                <li class="page-item active"><a class="page-link" href="#">1</a></li>
-                <li class="page-item"><a class="page-link" href="#">2</a></li>
-                <li class="page-item"><a class="page-link" href="#">3</a></li>
-                <li class="page-item"><a class="page-link" href="#">Next</a></li>
-            </ul>
+        <nav class="p-4 space-y-1 flex-1">
+            <a href="dashboard.html" class="flex items-center space-x-3 px-4 py-3 rounded-xl text-slate-400 hover:bg-[#21262d] hover:text-white transition-all">
+                <i class="fa-solid fa-chart-pie w-5"></i>
+                <span class="font-medium text-sm">Dashboard</span>
+            </a>
+            <a href="users.html" class="flex items-center space-x-3 px-4 py-3 rounded-xl text-slate-400 hover:bg-[#21262d] hover:text-white transition-all">
+                <i class="fa-solid fa-users w-5"></i>
+                <span class="font-medium text-sm">Users</span>
+            </a>
+            <a href="add-bet.html" class="flex items-center space-x-3 px-4 py-3 rounded-xl text-slate-400 hover:bg-[#21262d] hover:text-white transition-all">
+                <i class="fa-solid fa-plus-circle w-5"></i>
+                <span class="font-medium text-sm">Add Match</span>
+            </a>
+            <a href="live-bet.html" class="flex items-center space-x-3 px-4 py-3 rounded-xl text-slate-400 hover:bg-[#21262d] hover:text-white transition-all">
+                <i class="fa-solid fa-tower-broadcast w-5"></i>
+                <span class="font-medium text-sm">Live Matches</span>
+            </a>
+            <a href="admin-bet-history.html" class="flex items-center space-x-3 px-4 py-3 rounded-xl bg-blue-600/10 text-blue-400 font-semibold border border-blue-500/20 transition-all">
+                <i class="fa-solid fa-receipt w-5"></i>
+                <span class="font-medium text-sm">Bet History</span>
+            </a>
         </nav>
-    </div>
-</div>
 
+        <div class="p-4 border-t border-[#30363d]">
+            <div class="flex items-center justify-between text-xs text-slate-500">
+                <span>Database Connected</span>
+                <span id="db-status-dot" class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 flex flex-col min-w-0 overflow-y-auto">
+        <!-- Top Navbar -->
+        <header class="bg-[#161b22] border-b border-[#30363d] px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4 sticky top-0 z-20">
+            <div>
+                <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-history text-blue-500"></i> Realtime Bet History
+                </h2>
+                <p class="text-xs text-slate-400 mt-0.5">Monitor and update all user placed bets in real-time</p>
+            </div>
+            
+            <div class="flex items-center gap-3 w-full sm:w-auto">
+                <button onclick="fetchBetData()" class="px-3 py-2 bg-[#21262d] hover:bg-[#30363d] text-slate-300 rounded-lg text-xs font-semibold border border-[#30363d] transition-all flex items-center gap-2">
+                    <i class="fa-solid fa-arrows-rotate" id="refresh-icon"></i> Refresh
+                </button>
+                <div class="text-right hidden sm:block">
+                    <div id="live-clock" class="text-xs font-mono font-bold text-slate-300">--:--:--</div>
+                    <div class="text-[10px] text-slate-500">System Time</div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Page Body Content -->
+        <div class="p-6 space-y-6">
+
+            <!-- Real-time Stats Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-[#161b22] border border-[#30363d] p-4 rounded-2xl relative overflow-hidden">
+                    <div class="text-xs text-slate-400 font-medium uppercase tracking-wider">Total Bets</div>
+                    <div id="stat-total-bets" class="text-2xl font-black text-white mt-2">0</div>
+                    <i class="fa-solid fa-ticket absolute -right-2 -bottom-2 text-5xl text-blue-500/10"></i>
+                </div>
+
+                <div class="bg-[#161b22] border border-[#30363d] p-4 rounded-2xl relative overflow-hidden">
+                    <div class="text-xs text-slate-400 font-medium uppercase tracking-wider">Total Stake</div>
+                    <div id="stat-total-amount" class="text-2xl font-black text-emerald-400 mt-2">৳0</div>
+                    <i class="fa-solid fa-coins absolute -right-2 -bottom-2 text-5xl text-emerald-500/10"></i>
+                </div>
+
+                <div class="bg-[#161b22] border border-[#30363d] p-4 rounded-2xl relative overflow-hidden">
+                    <div class="text-xs text-slate-400 font-medium uppercase tracking-wider">Pending Bets</div>
+                    <div id="stat-pending-bets" class="text-2xl font-black text-amber-400 mt-2">0</div>
+                    <i class="fa-solid fa-clock-rotate-left absolute -right-2 -bottom-2 text-5xl text-amber-500/10"></i>
+                </div>
+
+                <div class="bg-[#161b22] border border-[#30363d] p-4 rounded-2xl relative overflow-hidden">
+                    <div class="text-xs text-slate-400 font-medium uppercase tracking-wider">Total Won Payout</div>
+                    <div id="stat-won-payout" class="text-2xl font-black text-indigo-400 mt-2">৳0</div>
+                    <i class="fa-solid fa-trophy absolute -right-2 -bottom-2 text-5xl text-indigo-500/10"></i>
+                </div>
+            </div>
+
+            <!-- Filter & Search Control Panel -->
+            <div class="bg-[#161b22] border border-[#30363d] p-4 rounded-2xl flex flex-col md:flex-row gap-4 justify-between items-center">
+                <!-- Search Input -->
+                <div class="relative w-full md:w-80">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3.5 text-slate-500 text-sm"></i>
+                    <input type="text" id="search-input" oninput="applyFilters()" placeholder="Search by User ID, Match, Option, Bet ID..." 
+                           class="w-full bg-[#0d1117] border border-[#30363d] rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-all">
+                </div>
+
+                <!-- Status Filter Pills -->
+                <div class="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto pb-2 md:pb-0">
+                    <button onclick="setStatusFilter('all')" id="btn-filter-all" class="filter-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 text-white transition-all whitespace-nowrap">
+                        All
+                    </button>
+                    <button onclick="setStatusFilter('pending')" id="btn-filter-pending" class="filter-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-[#21262d] text-amber-400 border border-[#30363d] hover:bg-[#30363d] transition-all whitespace-nowrap">
+                        Pending
+                    </button>
+                    <button onclick="setStatusFilter('win')" id="btn-filter-win" class="filter-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-[#21262d] text-emerald-400 border border-[#30363d] hover:bg-[#30363d] transition-all whitespace-nowrap">
+                        Won
+                    </button>
+                    <button onclick="setStatusFilter('loss')" id="btn-filter-loss" class="filter-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-[#21262d] text-rose-400 border border-[#30363d] hover:bg-[#30363d] transition-all whitespace-nowrap">
+                        Lost
+                    </button>
+                    <button onclick="setStatusFilter('refunded')" id="btn-filter-refunded" class="filter-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-[#21262d] text-purple-400 border border-[#30363d] hover:bg-[#30363d] transition-all whitespace-nowrap">
+                        Refunded
+                    </button>
+                </div>
+            </div>
+
+            <!-- Table Container -->
+            <div class="bg-[#161b22] border border-[#30363d] rounded-2xl overflow-hidden shadow-xl">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-[#0d1117]/80 text-slate-400 text-[11px] font-bold uppercase tracking-wider border-b border-[#30363d]">
+                                <th class="py-3.5 px-4">Bet Details</th>
+                                <th class="py-3.5 px-4">User</th>
+                                <th class="py-3.5 px-4">Match / Event</th>
+                                <th class="py-3.5 px-4">Option & Rate</th>
+                                <th class="py-3.5 px-4">Stake / Return</th>
+                                <th class="py-3.5 px-4 text-center">Status</th>
+                                <th class="py-3.5 px-4 text-center">Date & Time</th>
+                                <th class="py-3.5 px-4 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="bet-table-body" class="divide-y divide-[#30363d]/50 text-xs text-slate-300">
+                            <!-- Loader row -->
+                            <tr id="table-loading-row">
+                                <td colspan="8" class="py-12 text-center text-slate-400">
+                                    <i class="fa-solid fa-spinner fa-spin text-2xl text-blue-500 mb-2"></i>
+                                    <p class="text-xs">Fetching real database bets...</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Footer Pagination & Count Info -->
+                <div class="p-4 border-t border-[#30363d] bg-[#0d1117]/50 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
+                    <div>
+                        Showing <span id="showing-count" class="font-bold text-white">0</span> of <span id="total-count" class="font-bold text-white">0</span> recorded bets
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button onclick="prevPage()" id="btn-prev-page" disabled class="px-3 py-1.5 bg-[#21262d] border border-[#30363d] rounded-lg disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#30363d] text-white transition-all">
+                            <i class="fa-solid fa-chevron-left"></i> Previous
+                        </button>
+                        <span id="page-num" class="px-2 font-mono text-slate-300">Page 1</span>
+                        <button onclick="nextPage()" id="btn-next-page" disabled class="px-3 py-1.5 bg-[#21262d] border border-[#30363d] rounded-lg disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#30363d] text-white transition-all">
+                            Next <i class="fa-solid fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Modal for Manual Status Update -->
+    <div id="status-modal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-[#161b22] border border-[#30363d] w-full max-w-md rounded-2xl p-6 shadow-2xl relative">
+            <button onclick="closeModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <h3 class="text-base font-bold text-white mb-1 flex items-center gap-2">
+                <i class="fa-solid fa-pen-to-square text-blue-400"></i> Manage Bet Outcome
+            </h3>
+            <p class="text-xs text-slate-400 mb-4">Manually settle win/loss status for this bet.</p>
+
+            <div id="modal-bet-summary" class="bg-[#0d1117] p-3 rounded-xl border border-[#30363d] mb-4 text-xs space-y-1">
+                <!-- Summary inserted dynamically -->
+            </div>
+
+            <div class="space-y-3">
+                <label class="block text-xs font-semibold text-slate-300">Update Status:</label>
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="setModalSelectedStatus('win')" id="modal-status-win" class="p-3 rounded-xl border border-[#30363d] bg-[#21262d] text-emerald-400 hover:border-emerald-500/50 font-bold text-xs flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-trophy"></i> Mark WIN
+                    </button>
+                    <button onclick="setModalSelectedStatus('loss')" id="modal-status-loss" class="p-3 rounded-xl border border-[#30363d] bg-[#21262d] text-rose-400 hover:border-rose-500/50 font-bold text-xs flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-xmark-circle"></i> Mark LOSS
+                    </button>
+                    <button onclick="setModalSelectedStatus('pending')" id="modal-status-pending" class="p-3 rounded-xl border border-[#30363d] bg-[#21262d] text-amber-400 hover:border-amber-500/50 font-bold text-xs flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-hourglass-start"></i> PENDING
+                    </button>
+                    <button onclick="setModalSelectedStatus('refunded')" id="modal-status-refunded" class="p-3 rounded-xl border border-[#30363d] bg-[#21262d] text-purple-400 hover:border-purple-500/50 font-bold text-xs flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-rotate-left"></i> REFUND
+                    </button>
+                </div>
+
+                <div class="pt-3 flex justify-end gap-2">
+                    <button onclick="closeModal()" class="px-4 py-2 bg-[#21262d] text-slate-300 hover:bg-[#30363d] rounded-xl text-xs font-semibold">
+                        Cancel
+                    </button>
+                    <button onclick="saveBetStatusChange()" id="btn-save-status" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-2">
+                        Save Changes
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase v10 SDK Scripts -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { 
+            getDatabase, 
+            ref, 
+            onValue, 
+            update, 
+            get, 
+            child 
+        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        // Your Firebase Config (Matched with BetX Project)
+        const firebaseConfig = {
+            apiKey: "AIzaSyBzQaaXhTtiGpMjRMBUXZaCIrDRoNyEkU4",
+            authDomain: "betx-904da.firebaseapp.com",
+            databaseURL: "https://betx-904da-default-rtdb.firebaseio.com",
+            projectId: "betx-904da",
+            storageBucket: "betx-904da.appspot.com",
+            messagingSenderId: "338870308006",
+            appId: "1:338870308006:web:03f7e6f851da01e5130bc3"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // Global State Variables
+        let rawBetsList = [];
+        let filteredBetsList = [];
+        let currentStatusFilter = 'all';
+        let currentPage = 1;
+        const pageSize = 15;
+        let selectedBetForUpdate = null;
+        let targetModalStatus = null;
+
+        // Clock Update
+        setInterval(() => {
+            const clockEl = document.getElementById('live-clock');
+            if (clockEl) {
+                clockEl.innerText = new Date().toLocaleTimeString();
+            }
+        }, 1000);
+
+        // Fetch Bet History from Realtime Database
+        window.fetchBetData = function() {
+            const refreshIcon = document.getElementById('refresh-icon');
+            if (refreshIcon) refreshIcon.classList.add('fa-spin');
+
+            const placedBetsRef = ref(db, 'placedBets');
+
+            onValue(placedBetsRef, (snapshot) => {
+                rawBetsList = [];
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    
+                    // Normalize database object structure
+                    Object.keys(data).forEach(key => {
+                        const item = data[key];
+                        // Handle key flat structure or nested structures
+                        rawBetsList.push({
+                            id: key,
+                            userId: item.userId || item.uid || item.user_id || 'N/A',
+                            userName: item.userName || item.username || item.userEmail || 'User',
+                            matchTitle: item.matchTitle || item.match_name || item.match || 'Match Event',
+                            selectedOption: item.selectedOption || item.optionName || item.option || item.team || 'Option',
+                            odds: parseFloat(item.odds || item.rate || item.val || 1.0),
+                            amount: parseFloat(item.amount || item.betAmount || item.stake || item.bet_amount || 0),
+                            status: (item.status || 'pending').toLowerCase(),
+                            payoutProcessed: item.payoutProcessed || false,
+                            timestamp: item.timestamp || item.createdAt || item.date || Date.now(),
+                            rawObj: item
+                        });
+                    });
+
+                    // Sort newest first
+                    rawBetsList.sort((a, b) => b.timestamp - a.timestamp);
+                } else {
+                    // Fallback to check userBets if placedBets is empty
+                    fetchAlternativeUserBets();
+                }
+
+                updateStats();
+                applyFilters();
+
+                if (refreshIcon) refreshIcon.classList.remove('fa-spin');
+            }, (error) => {
+                console.error("Firebase read error:", error);
+                showToast("Failed to fetch data from Firebase database", "error");
+                if (refreshIcon) refreshIcon.classList.remove('fa-spin');
+            });
+        };
+
+        // Fallback helper if database stores under userBets/{userId}/{betId}
+        function fetchAlternativeUserBets() {
+            get(child(ref(db), 'userBets')).then(snapshot => {
+                if (snapshot.exists()) {
+                    const allUsersBets = snapshot.val();
+                    rawBetsList = [];
+                    Object.keys(allUsersBets).forEach(userId => {
+                        const userBets = allUsersBets[userId];
+                        Object.keys(userBets).forEach(betId => {
+                            const item = userBets[betId];
+                            rawBetsList.push({
+                                id: betId,
+                                userId: userId,
+                                matchTitle: item.matchTitle || item.match_name || 'Match Event',
+                                selectedOption: item.selectedOption || item.optionName || item.option || 'Option',
+                                odds: parseFloat(item.odds || item.rate || 1.0),
+                                amount: parseFloat(item.amount || item.betAmount || item.stake || 0),
+                                status: (item.status || 'pending').toLowerCase(),
+                                timestamp: item.timestamp || Date.now(),
+                                path: `userBets/${userId}/${betId}`
+                            });
+                        });
+                    });
+                    rawBetsList.sort((a, b) => b.timestamp - a.timestamp);
+                    updateStats();
+                    applyFilters();
+                }
+            }).catch(err => console.error(err));
+        }
+
+        // Apply Search & Filter
+        window.applyFilters = function() {
+            const searchQuery = document.getElementById('search-input').value.toLowerCase().trim();
+
+            filteredBetsList = rawBetsList.filter(bet => {
+                const matchesStatus = (currentStatusFilter === 'all') || (bet.status === currentStatusFilter);
+                const matchesSearch = 
+                    bet.id.toLowerCase().includes(searchQuery) ||
+                    bet.userId.toLowerCase().includes(searchQuery) ||
+                    bet.matchTitle.toLowerCase().includes(searchQuery) ||
+                    bet.selectedOption.toLowerCase().includes(searchQuery);
+
+                return matchesStatus && matchesSearch;
+            });
+
+            currentPage = 1;
+            renderTable();
+        };
+
+        // Set Filter Button Active State
+        window.setStatusFilter = function(status) {
+            currentStatusFilter = status;
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('bg-blue-600', 'text-white');
+                btn.classList.add('bg-[#21262d]', 'border-[#30363d]');
+            });
+
+            const activeBtn = document.getElementById(`btn-filter-${status}`);
+            if (activeBtn) {
+                activeBtn.classList.remove('bg-[#21262d]');
+                activeBtn.classList.add('bg-blue-600', 'text-white');
+            }
+
+            applyFilters();
+        };
+
+        // Render Table Data
+        function renderTable() {
+            const tbody = document.getElementById('bet-table-body');
+            tbody.innerHTML = '';
+
+            const total = filteredBetsList.length;
+            document.getElementById('total-count').innerText = rawBetsList.length;
+
+            if (total === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="py-12 text-center text-slate-500">
+                            <i class="fa-solid fa-folder-open text-3xl mb-2"></i>
+                            <p class="text-xs font-semibold">No bet records found in database</p>
+                        </td>
+                    </tr>
+                `;
+                document.getElementById('showing-count').innerText = '0';
+                updatePaginationControls(0);
+                return;
+            }
+
+            const startIndex = (currentPage - 1) * pageSize;
+            const endIndex = Math.min(startIndex + pageSize, total);
+            const pageData = filteredBetsList.slice(startIndex, endIndex);
+
+            document.getElementById('showing-count').innerText = pageData.length;
+
+            pageData.forEach(bet => {
+                const possibleReturn = (bet.amount * bet.odds).toFixed(2);
+                const formattedDate = formatTimestamp(bet.timestamp);
+                const statusBadge = getStatusBadgeHTML(bet.status);
+
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-[#21262d]/50 transition-colors border-b border-[#30363d]/40';
+                tr.innerHTML = `
+                    <td class="py-3 px-4">
+                        <div class="font-mono text-[11px] text-blue-400 font-bold">#${bet.id.substring(0, 8)}</div>
+                        <div class="text-[10px] text-slate-500">${bet.id}</div>
+                    </td>
+                    <td class="py-3 px-4">
+                        <div class="font-semibold text-slate-200">${bet.userName}</div>
+                        <div class="text-[10px] font-mono text-slate-400">UID: ${bet.userId}</div>
+                    </td>
+                    <td class="py-3 px-4">
+                        <div class="font-semibold text-slate-200">${bet.matchTitle}</div>
+                    </td>
+                    <td class="py-3 px-4">
+                        <div class="font-semibold text-amber-400">${bet.selectedOption}</div>
+                        <div class="text-[10px] text-slate-400">Rate: <span class="text-white font-bold">${bet.odds.toFixed(2)}</span></div>
+                    </td>
+                    <td class="py-3 px-4">
+                        <div class="font-bold text-white">৳${bet.amount.toLocaleString()}</div>
+                        <div class="text-[10px] text-emerald-400">Est: ৳${possibleReturn}</div>
+                    </td>
+                    <td class="py-3 px-4 text-center">
+                        ${statusBadge}
+                    </td>
+                    <td class="py-3 px-4 text-center text-[11px] text-slate-400 font-mono">
+                        ${formattedDate}
+                    </td>
+                    <td class="py-3 px-4 text-right">
+                        <button onclick="openStatusModal('${bet.id}')" class="px-2.5 py-1.5 bg-[#21262d] hover:bg-blue-600 hover:text-white text-slate-300 rounded-lg text-xs font-semibold border border-[#30363d] transition-all flex items-center gap-1.5 ml-auto">
+                            <i class="fa-solid fa-gear text-[10px]"></i> Action
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            updatePaginationControls(total);
+        }
+
+        // Helper Badge Renderer
+        function getStatusBadgeHTML(status) {
+            switch (status) {
+                case 'win':
+                case 'won':
+                    return `<span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"><i class="fa-solid fa-check"></i> WON</span>`;
+                case 'loss':
+                case 'lost':
+                    return `<span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-rose-500/10 text-rose-400 border border-rose-500/20"><i class="fa-solid fa-xmark"></i> LOST</span>`;
+                case 'refunded':
+                    return `<span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-purple-500/10 text-purple-400 border border-purple-500/20"><i class="fa-solid fa-rotate-left"></i> REFUNDED</span>`;
+                default:
+                    return `<span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-amber-500/10 text-amber-400 border border-amber-500/20"><i class="fa-solid fa-spinner fa-spin"></i> PENDING</span>`;
+            }
+        }
+
+        // Helper Date Formatter
+        function formatTimestamp(ts) {
+            if (!ts) return 'N/A';
+            const date = new Date(ts);
+            return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+
+        // Update Statistics
+        function updateStats() {
+            let totalAmount = 0;
+            let pendingCount = 0;
+            let wonPayout = 0;
+
+            rawBetsList.forEach(b => {
+                totalAmount += b.amount;
+                if (b.status === 'pending') pendingCount++;
+                if (b.status === 'win' || b.status === 'won') {
+                    wonPayout += (b.amount * b.odds);
+                }
+            });
+
+            document.getElementById('stat-total-bets').innerText = rawBetsList.length;
+            document.getElementById('stat-total-amount').innerText = '৳' + totalAmount.toLocaleString();
+            document.getElementById('stat-pending-bets').innerText = pendingCount;
+            document.getElementById('stat-won-payout').innerText = '৳' + Math.round(wonPayout).toLocaleString();
+        }
+
+        // Pagination Handlers
+        function updatePaginationControls(totalItems) {
+            const maxPages = Math.ceil(totalItems / pageSize) || 1;
+            document.getElementById('page-num').innerText = `Page ${currentPage} of ${maxPages}`;
+            document.getElementById('btn-prev-page').disabled = (currentPage === 1);
+            document.getElementById('btn-next-page').disabled = (currentPage >= maxPages);
+        }
+
+        window.prevPage = function() {
+            if (currentPage > 1) {
+                currentPage--;
+                renderTable();
+            }
+        };
+
+        window.nextPage = function() {
+            const maxPages = Math.ceil(filteredBetsList.length / pageSize);
+            if (currentPage < maxPages) {
+                currentPage++;
+                renderTable();
+            }
+        };
+
+        // Open Modal to Edit Bet Status
+        window.openStatusModal = function(betId) {
+            selectedBetForUpdate = rawBetsList.find(b => b.id === betId);
+            if (!selectedBetForUpdate) return;
+
+            targetModalStatus = selectedBetForUpdate.status;
+
+            const summaryEl = document.getElementById('modal-bet-summary');
+            summaryEl.innerHTML = `
+                <div><span class="text-slate-400">Bet ID:</span> <span class="font-mono font-bold text-white">${selectedBetForUpdate.id}</span></div>
+                <div><span class="text-slate-400">User ID:</span> <span class="font-mono text-slate-300">${selectedBetForUpdate.userId}</span></div>
+                <div><span class="text-slate-400">Match:</span> <span class="text-slate-200 font-semibold">${selectedBetForUpdate.matchTitle}</span></div>
+                <div><span class="text-slate-400">Option:</span> <span class="text-amber-400 font-bold">${selectedBetForUpdate.selectedOption}</span> @ ${selectedBetForUpdate.odds}</div>
+                <div><span class="text-slate-400">Stake:</span> <span class="text-white font-bold">৳${selectedBetForUpdate.amount}</span></div>
+            `;
+
+            highlightModalStatusBtn(targetModalStatus);
+            document.getElementById('status-modal').classList.remove('hidden');
+        };
+
+        window.closeModal = function() {
+            document.getElementById('status-modal').classList.add('hidden');
+            selectedBetForUpdate = null;
+            targetModalStatus = null;
+        };
+
+        window.setModalSelectedStatus = function(status) {
+            targetModalStatus = status;
+            highlightModalStatusBtn(status);
+        };
+
+        function highlightModalStatusBtn(status) {
+            ['win', 'loss', 'pending', 'refunded'].forEach(s => {
+                const btn = document.getElementById(`modal-status-${s}`);
+                if (btn) {
+                    btn.classList.remove('ring-2', 'ring-blue-500', 'bg-blue-600/20');
+                }
+            });
+            const activeBtn = document.getElementById(`modal-status-${status}`);
+            if (activeBtn) {
+                activeBtn.classList.add('ring-2', 'ring-blue-500', 'bg-blue-600/20');
+            }
+        }
+
+        // Save Status Change directly to Realtime Database
+        window.saveBetStatusChange = async function() {
+            if (!selectedBetForUpdate || !targetModalStatus) return;
+
+            const saveBtn = document.getElementById('btn-save-status');
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Saving...`;
+
+            try {
+                const updates = {};
+                
+                // Primary update path in placedBets
+                updates[`placedBets/${selectedBetForUpdate.id}/status`] = targetModalStatus;
+
+                // Also update in userBets path if structured by user
+                if (selectedBetForUpdate.userId && selectedBetForUpdate.userId !== 'N/A') {
+                    updates[`userBets/${selectedBetForUpdate.userId}/${selectedBetForUpdate.id}/status`] = targetModalStatus;
+                }
+
+                await update(ref(db), updates);
+
+                // If marked as WIN and payout not processed, auto refund/payout user balance if needed
+                if (targetModalStatus === 'win' && selectedBetForUpdate.userId) {
+                    const winAmount = selectedBetForUpdate.amount * selectedBetForUpdate.odds;
+                    const userRef = ref(db, `users/${selectedBetForUpdate.userId}`);
+                    const userSnap = await get(userRef);
+                    
+                    if (userSnap.exists()) {
+                        const currentBalance = parseFloat(userSnap.val().balance || userSnap.val().coins || 0);
+                        await update(userRef, {
+                            balance: currentBalance + winAmount
+                        });
+                    }
+                }
+
+                closeModal();
+                showToast("Bet status successfully updated!", "success");
+            } catch (err) {
+                console.error("Error updating bet status:", err);
+                showToast("Failed to update status in database", "error");
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.innerText = `Save Changes`;
+            }
+        };
+
+        // Simple Helper Toast Notification
+        function showToast(message, type = "info") {
+            const toast = document.createElement('div');
+            toast.className = `fixed bottom-5 right-5 z-50 px-4 py-3 rounded-xl shadow-2xl text-xs font-bold text-white flex items-center gap-2 border ${
+                type === 'success' ? 'bg-emerald-600 border-emerald-400' : 'bg-rose-600 border-rose-400'
+            }`;
+            toast.innerHTML = `<i class="fa-solid ${type === 'success' ? 'fa-circle-check' : 'fa-triangle-exclamation'}"></i> ${message}`;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        // Initialize Data Load
+        fetchBetData();
+    </script>
 </body>
-</html>
+    </html>
