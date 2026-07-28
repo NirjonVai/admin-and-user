@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BetX Admin - Bet History</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f4f6f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .card { border-radius: 10px; border: none; box-shadow: 0 4px 8px rgba(0,0,0,0.05); }
+        .table thead { background-color: #1e293b; color: #fff; }
+        .badge-pending { background-color: #ffc107; color: #000; }
+        .badge-won { background-color: #198754; color: #fff; }
+        .badge-lost { background-color: #dc3545; color: #fff; }
+        .badge-refunded { background-color: #6c757d; color: #fff; }
+    </style>
+</head>
+<body>
+
+<div class="container my-5">
+    <div class="card p-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3 class="fw-bold text-dark">📊 BetX - Bet History Log</h3>
+            <span class="badge bg-primary fs-6">Total Bets: 1,245</span>
+        </div>
+
+        <!-- Filter / Search Section -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-3">
+                <input type="text" class="form-control" placeholder="Search by Bet ID or User...">
+            </div>
+            <div class="col-md-3">
+                <select class="form-select">
+                    <option selected>All Status</option>
+                    <option value="won">Won</option>
+                    <option value="lost">Lost</option>
+                    <option value="pending">Pending</option>
+                    <option value="refunded">Refunded</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <input type="date" class="form-control">
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-dark w-100">Filter</button>
+            </div>
+        </div>
+
+        <!-- Bet History Table -->
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>Bet ID</th>
+                        <th>User ID / Name</th>
+                        <th>Match / Event</th>
+                        <th>Bet Type</th>
+                        <th>Odds</th>
+                        <th>Stake (৳)</th>
+                        <th>Est. Return (৳)</th>
+                        <th>Date & Time</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Row 1 -->
+                    <tr>
+                        <td><strong>#BX-90811</strong></td>
+                        <td>
+                            <div><strong>john_doe</strong></div>
+                            <small class="text-muted">ID: 1024</small>
+                        </td>
+                        <td>BAN vs IND (1st T20)</td>
+                        <td>Match Winner (BAN)</td>
+                        <td>1.85</td>
+                        <td>৳১,০০০</td>
+                        <td class="text-success fw-bold">৳১,৮৫০</td>
+                        <td>28 Jul 2026, 03:30 PM</td>
+                        <td><span class="badge badge-won px-3 py-2">Won</span></td>
+                    </tr>
+
+                    <!-- Row 2 -->
+                    <tr>
+                        <td><strong>#BX-90812</strong></td>
+                        <td>
+                            <div><strong>rahim_77</strong></div>
+                            <small class="text-muted">ID: 1089</small>
+                        </td>
+                        <td>Real Madrid vs Barca</td>
+                        <td>Total Goals (Over 2.5)</td>
+                        <td>2.10</td>
+                        <td>৳৫০০</td>
+                        <td>৳১,০৫০</td>
+                        <td>28 Jul 2026, 02:15 PM</td>
+                        <td><span class="badge badge-lost px-3 py-2">Lost</span></td>
+                    </tr>
+
+                    <!-- Row 3 -->
+                    <tr>
+                        <td><strong>#BX-90813</strong></td>
+                        <td>
+                            <div><strong>tanvir_bet</strong></div>
+                            <small class="text-muted">ID: 1150</small>
+                        </td>
+                        <td>ENG vs AUS (Test)</td>
+                        <td>1st Innings Runs (>350)</td>
+                        <td>1.50</td>
+                        <td>৳২,০০০</td>
+                        <td>৳৩,০০০</td>
+                        <td>28 Jul 2026, 01:00 PM</td>
+                        <td><span class="badge badge-pending px-3 py-2">Pending</span></td>
+                    </tr>
+
+                    <!-- Row 4 -->
+                    <tr>
+                        <td><strong>#BX-90814</strong></td>
+                        <td>
+                            <div><strong>karim_bkash</strong></div>
+                            <small class="text-muted">ID: 1201</small>
+                        </td>
+                        <td>PSG vs Bayern</td>
+                        <td>Draw</td>
+                        <td>3.40</td>
+                        <td>৳৩০০</td>
+                        <td>৳০</td>
+                        <td>27 Jul 2026, 11:45 PM</td>
+                        <td><span class="badge badge-refunded px-3 py-2">Refunded</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        <nav class="d-flex justify-content-between align-items-center mt-3">
+            <small class="text-muted">Showing 1 to 4 of 1,245 entries</small>
+            <ul class="pagination pagination-sm mb-0">
+                <li class="page-item disabled"><a class="page-link" href="#">Previous</a></li>
+                <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                <li class="page-item"><a class="page-link" href="#">2</a></li>
+                <li class="page-item"><a class="page-link" href="#">3</a></li>
+                <li class="page-item"><a class="page-link" href="#">Next</a></li>
+            </ul>
+        </nav>
+    </div>
+</div>
+
+</body>
+</html>
