@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bet History - BetX Admin Panel</title>
-    <!-- Tailwind CSS v4 CDN -->
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -266,7 +266,7 @@
             child 
         } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        // Your Firebase Config (Matched with BetX Project)
+        // Firebase Config
         const firebaseConfig = {
             apiKey: "AIzaSyBzQaaXhTtiGpMjRMBUXZaCIrDRoNyEkU4",
             authDomain: "betx-904da.firebaseapp.com",
@@ -310,15 +310,16 @@
                 if (snapshot.exists()) {
                     const data = snapshot.val();
                     
-                    // Normalize database object structure
                     Object.keys(data).forEach(key => {
                         const item = data[key];
-                        // Handle key flat structure or nested structures
                         rawBetsList.push({
                             id: key,
                             userId: item.userId || item.uid || item.user_id || 'N/A',
                             userName: item.userName || item.username || item.userEmail || 'User',
                             matchTitle: item.matchTitle || item.match_name || item.match || 'Match Event',
+                            teamA: item.teamA || item.homeTeam || item.team1 || '',
+                            teamB: item.teamB || item.awayTeam || item.team2 || '',
+                            tournament: item.tournament || item.league || item.category || 'Sports Event',
                             selectedOption: item.selectedOption || item.optionName || item.option || item.team || 'Option',
                             odds: parseFloat(item.odds || item.rate || item.val || 1.0),
                             amount: parseFloat(item.amount || item.betAmount || item.stake || item.bet_amount || 0),
@@ -329,10 +330,8 @@
                         });
                     });
 
-                    // Sort newest first
                     rawBetsList.sort((a, b) => b.timestamp - a.timestamp);
                 } else {
-                    // Fallback to check userBets if placedBets is empty
                     fetchAlternativeUserBets();
                 }
 
@@ -347,7 +346,7 @@
             });
         };
 
-        // Fallback helper if database stores under userBets/{userId}/{betId}
+        // Alternative Backup Fetch
         function fetchAlternativeUserBets() {
             get(child(ref(db), 'userBets')).then(snapshot => {
                 if (snapshot.exists()) {
@@ -360,7 +359,11 @@
                             rawBetsList.push({
                                 id: betId,
                                 userId: userId,
+                                userName: item.userName || 'User',
                                 matchTitle: item.matchTitle || item.match_name || 'Match Event',
+                                teamA: item.teamA || '',
+                                teamB: item.teamB || '',
+                                tournament: item.tournament || 'Sports Event',
                                 selectedOption: item.selectedOption || item.optionName || item.option || 'Option',
                                 odds: parseFloat(item.odds || item.rate || 1.0),
                                 amount: parseFloat(item.amount || item.betAmount || item.stake || 0),
@@ -377,7 +380,7 @@
             }).catch(err => console.error(err));
         }
 
-        // Apply Search & Filter
+        // Search & Filters
         window.applyFilters = function() {
             const searchQuery = document.getElementById('search-input').value.toLowerCase().trim();
 
@@ -396,7 +399,6 @@
             renderTable();
         };
 
-        // Set Filter Button Active State
         window.setStatusFilter = function(status) {
             currentStatusFilter = status;
             document.querySelectorAll('.filter-btn').forEach(btn => {
@@ -412,6 +414,55 @@
 
             applyFilters();
         };
+
+        // Helper to format Match Card HTML with rich colors
+        function renderMatchTitleCell(bet) {
+            let teamA = bet.teamA;
+            let teamB = bet.teamB;
+
+            // If teamA & teamB aren't explicitly saved, try parsing from "Team A vs Team B" string
+            if (!teamA || !teamB) {
+                const parts = bet.matchTitle.split(/\s+(?:vs|VS|v|V|-)\s+/);
+                if (parts.length >= 2) {
+                    teamA = parts[0].trim();
+                    teamB = parts[1].trim();
+                } else {
+                    teamA = bet.matchTitle;
+                    teamB = "";
+                }
+            }
+
+            if (teamB) {
+                return `
+                    <div class="inline-flex items-center gap-2 bg-[#0d1117] border border-[#30363d] rounded-xl p-2 max-w-xs shadow-inner">
+                        <div class="flex items-center gap-1.5 flex-1 min-w-0">
+                            <span class="w-5 h-5 rounded-full bg-gradient-to-tr from-blue-600 to-cyan-500 text-white font-extrabold text-[9px] flex items-center justify-center flex-shrink-0 shadow">
+                                ${teamA.charAt(0).toUpperCase()}
+                            </span>
+                            <span class="font-bold text-slate-100 truncate text-[11px]">${teamA}</span>
+                        </div>
+                        <span class="px-1.5 py-0.5 rounded text-[9px] font-black bg-blue-500/20 text-blue-400 border border-blue-500/30">VS</span>
+                        <div class="flex items-center gap-1.5 flex-1 min-w-0 justify-end">
+                            <span class="font-bold text-slate-100 truncate text-[11px] text-right">${teamB}</span>
+                            <span class="w-5 h-5 rounded-full bg-gradient-to-tr from-rose-600 to-amber-500 text-white font-extrabold text-[9px] flex items-center justify-center flex-shrink-0 shadow">
+                                ${teamB.charAt(0).toUpperCase()}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="text-[10px] text-slate-500 mt-1 flex items-center gap-1 font-medium">
+                        <i class="fa-solid fa-trophy text-amber-500/80 text-[9px]"></i> ${bet.tournament}
+                    </div>
+                `;
+            } else {
+                return `
+                    <div class="inline-flex items-center gap-2 bg-[#0d1117] border border-blue-500/30 rounded-xl px-3 py-1.5">
+                        <i class="fa-solid fa-gamepad text-blue-400"></i>
+                        <span class="font-bold text-blue-300 text-[11px]">${bet.matchTitle}</span>
+                    </div>
+                    <div class="text-[10px] text-slate-500 mt-1">${bet.tournament}</div>
+                `;
+            }
+        }
 
         // Render Table Data
         function renderTable() {
@@ -445,6 +496,7 @@
                 const possibleReturn = (bet.amount * bet.odds).toFixed(2);
                 const formattedDate = formatTimestamp(bet.timestamp);
                 const statusBadge = getStatusBadgeHTML(bet.status);
+                const matchCellHTML = renderMatchTitleCell(bet);
 
                 const tr = document.createElement('tr');
                 tr.className = 'hover:bg-[#21262d]/50 transition-colors border-b border-[#30363d]/40';
@@ -458,15 +510,17 @@
                         <div class="text-[10px] font-mono text-slate-400">UID: ${bet.userId}</div>
                     </td>
                     <td class="py-3 px-4">
-                        <div class="font-semibold text-slate-200">${bet.matchTitle}</div>
+                        ${matchCellHTML}
                     </td>
                     <td class="py-3 px-4">
-                        <div class="font-semibold text-amber-400">${bet.selectedOption}</div>
-                        <div class="text-[10px] text-slate-400">Rate: <span class="text-white font-bold">${bet.odds.toFixed(2)}</span></div>
+                        <div class="font-semibold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-1 rounded-lg inline-block text-[11px]">
+                            ${bet.selectedOption}
+                        </div>
+                        <div class="text-[10px] text-slate-400 mt-1">Rate: <span class="text-white font-bold bg-[#0d1117] px-1.5 py-0.5 rounded border border-[#30363d]">${bet.odds.toFixed(2)}</span></div>
                     </td>
                     <td class="py-3 px-4">
                         <div class="font-bold text-white">৳${bet.amount.toLocaleString()}</div>
-                        <div class="text-[10px] text-emerald-400">Est: ৳${possibleReturn}</div>
+                        <div class="text-[10px] text-emerald-400 font-semibold">Est: ৳${possibleReturn}</div>
                     </td>
                     <td class="py-3 px-4 text-center">
                         ${statusBadge}
@@ -552,7 +606,7 @@
             }
         };
 
-        // Open Modal to Edit Bet Status
+        // Modal Controls
         window.openStatusModal = function(betId) {
             selectedBetForUpdate = rawBetsList.find(b => b.id === betId);
             if (!selectedBetForUpdate) return;
@@ -596,7 +650,7 @@
             }
         }
 
-        // Save Status Change directly to Realtime Database
+        // Save Status Change
         window.saveBetStatusChange = async function() {
             if (!selectedBetForUpdate || !targetModalStatus) return;
 
@@ -606,18 +660,14 @@
 
             try {
                 const updates = {};
-                
-                // Primary update path in placedBets
                 updates[`placedBets/${selectedBetForUpdate.id}/status`] = targetModalStatus;
 
-                // Also update in userBets path if structured by user
                 if (selectedBetForUpdate.userId && selectedBetForUpdate.userId !== 'N/A') {
                     updates[`userBets/${selectedBetForUpdate.userId}/${selectedBetForUpdate.id}/status`] = targetModalStatus;
                 }
 
                 await update(ref(db), updates);
 
-                // If marked as WIN and payout not processed, auto refund/payout user balance if needed
                 if (targetModalStatus === 'win' && selectedBetForUpdate.userId) {
                     const winAmount = selectedBetForUpdate.amount * selectedBetForUpdate.odds;
                     const userRef = ref(db, `users/${selectedBetForUpdate.userId}`);
@@ -642,7 +692,6 @@
             }
         };
 
-        // Simple Helper Toast Notification
         function showToast(message, type = "info") {
             const toast = document.createElement('div');
             toast.className = `fixed bottom-5 right-5 z-50 px-4 py-3 rounded-xl shadow-2xl text-xs font-bold text-white flex items-center gap-2 border ${
@@ -653,8 +702,8 @@
             setTimeout(() => toast.remove(), 3000);
         }
 
-        // Initialize Data Load
+        // Initial Load
         fetchBetData();
     </script>
 </body>
-    </html>
+</html>
