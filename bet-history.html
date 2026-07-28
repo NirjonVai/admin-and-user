@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BetX - My Bet History</title>
-
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -15,198 +14,258 @@
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
         }
-        /* Hide scrollbar for horizontal scrolling */
-        .no-scrollbar::-webkit-scrollbar {
-            display: none;
-        }
-        .no-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
     </style>
 </head>
+<body class="bg-slate-950 text-slate-100 min-h-screen selection:bg-amber-400 selection:text-slate-950 pb-20 lg:pb-0">
 
-<body class="bg-slate-950 text-white pb-20">
-
-    <!-- Header -->
-    <header class="bg-slate-900/80 backdrop-blur-md border-b border-slate-800 sticky top-0 z-50 transition-all">
-        <div class="max-w-5xl mx-auto px-4 py-3.5 flex justify-between items-center">
-            <!-- Logo -->
-            <div class="flex items-center space-x-2 cursor-pointer hover:opacity-80 transition-opacity">
-                <span class="text-xl font-black tracking-widest">
-                    BET<span class="text-amber-400">X</span>
-                </span>
+    <!-- Header (Dashboard Theme) -->
+    <header class="bg-slate-900/80 backdrop-blur-md border-b border-slate-800/80 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3.5 flex justify-between items-center">
+            <div class="flex items-center space-x-2 group cursor-pointer" onclick="window.location.href='index.html'">
+                <span class="text-xl font-black tracking-widest text-white">BET<span class="text-amber-400 bg-gradient-to-r from-yellow-400 to-amber-300 bg-clip-text text-transparent">X</span></span>
             </div>
 
-            <!-- User Info -->
-            <div class="flex items-center space-x-3">
-                <div class="flex items-center space-x-2 bg-slate-800 px-3 py-2 rounded-xl cursor-pointer hover:bg-slate-700 transition-colors">
-                    <i class="fa-solid fa-user text-amber-400"></i>
-                    <span id="user-display-name" class="font-medium text-sm md:text-base">Nirjon</span>
+            <div class="flex items-center space-x-3 sm:space-x-4">
+                <!-- User Profile Display -->
+                <div class="flex items-center space-x-2 bg-slate-800/40 border border-slate-700/60 px-3 py-1.5 rounded-xl text-xs sm:text-sm font-semibold text-slate-200">
+                    <i class="fa-solid fa-user-circle text-amber-400 text-sm sm:text-base"></i>
+                    <span id="user-display-name" class="max-w-[100px] sm:max-w-[150px] truncate">Loading...</span>
                 </div>
 
-                <div class="bg-slate-800 px-4 py-2 rounded-xl border border-slate-700 cursor-pointer hover:border-amber-400/50 transition-colors">
-                    <span class="font-bold text-amber-400" id="user-balance">
-                        ৳15,250
-                    </span>
+                <!-- Balance Box -->
+                <div class="bg-slate-800/40 backdrop-blur-sm px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl flex items-center space-x-2 sm:space-x-3 border border-slate-700/60 shadow-inner">
+                    <span class="text-xs sm:text-sm font-extrabold text-amber-400 tracking-wide" id="user-balance">৳0.00</span>
                 </div>
             </div>
         </div>
     </header>
-
-    <!-- Main Page Content -->
-    <main class="max-w-5xl mx-auto p-4 md:p-6 mt-2">
         
-        <!-- Page Title -->
-        <div class="flex items-center justify-between mb-6">
-            <div>
-                <h1 class="text-3xl font-black">My Bet History</h1>
-                <p class="text-slate-400 mt-1">View all your betting records.</p>
-            </div>
-            <div class="bg-amber-400/10 p-3 rounded-2xl">
-                <i class="fa-solid fa-clock-rotate-left text-3xl text-amber-400"></i>
-            </div>
+    <!-- Main Content Container -->
+    <main class="max-w-4xl mx-auto px-3 py-6 space-y-6">
+        <div class="flex justify-between items-center px-1">
+            <h2 class="text-sm sm:text-base font-black tracking-widest text-slate-200 flex items-center space-x-2">
+                <i class="fa-solid fa-clock-rotate-left text-amber-400 text-base"></i>
+                <span>MY BET HISTORY</span>
+            </h2>
         </div>
 
-        <!-- Filters -->
-        <div class="flex gap-3 overflow-x-auto pb-2 mb-6 no-scrollbar">
-            <button class="px-6 py-2 rounded-xl bg-amber-400 text-black font-bold whitespace-nowrap transition-transform active:scale-95">
-                All
-            </button>
-            <button class="px-6 py-2 rounded-xl bg-slate-800 text-slate-300 font-medium hover:bg-slate-700 hover:text-white whitespace-nowrap transition-all active:scale-95">
-                Won
-            </button>
-            <button class="px-6 py-2 rounded-xl bg-slate-800 text-slate-300 font-medium hover:bg-slate-700 hover:text-white whitespace-nowrap transition-all active:scale-95">
-                Lost
-            </button>
-            <button class="px-6 py-2 rounded-xl bg-slate-800 text-slate-300 font-medium hover:bg-slate-700 hover:text-white whitespace-nowrap transition-all active:scale-95">
-                Pending
-            </button>
-        </div>
-
-        <!-- Bet Cards Container -->
-        <div class="space-y-4">
-
-            <!-- Card 1 (Won) -->
-            <div class="bg-slate-900 rounded-2xl border border-slate-800 p-5 hover:border-green-500/30 transition-colors duration-300">
-                <div class="flex justify-between items-center mb-5 border-b border-slate-800/50 pb-4">
-                    <div>
-                        <h2 class="font-bold text-lg">Real Madrid vs Barcelona</h2>
-                        <p class="text-slate-400 text-sm mt-0.5">Football • Today 9:00 PM</p>
-                    </div>
-                    <span class="bg-green-500/20 border border-green-500/20 text-green-400 px-4 py-1.5 rounded-full text-xs tracking-wider font-bold">
-                        WON
-                    </span>
-                </div>
-                
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-                    <div>
-                        <p class="text-slate-400 text-xs uppercase tracking-wider mb-1">Bet Amount</p>
-                        <p class="font-bold text-lg">৳500</p>
-                    </div>
-                    <div>
-                        <p class="text-slate-400 text-xs uppercase tracking-wider mb-1">Odds</p>
-                        <p class="font-bold text-lg">2.15x</p>
-                    </div>
-                    <div>
-                        <p class="text-slate-400 text-xs uppercase tracking-wider mb-1">Return</p>
-                        <p class="font-bold text-green-400 text-lg">৳1075</p>
-                    </div>
-                    <div>
-                        <p class="text-slate-400 text-xs uppercase tracking-wider mb-1">Bet On</p>
-                        <p class="font-bold text-white bg-slate-800 inline-block px-3 py-1 rounded-lg">Real Madrid</p>
-                    </div>
-                </div>
+        <!-- History Items Container -->
+        <div id="history-list" class="space-y-4">
+            <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-8 text-center backdrop-blur-md shadow-xl">
+                <i class="fa-solid fa-spinner fa-spin text-3xl text-amber-400 mb-3"></i>
+                <p class="text-slate-400 text-xs font-semibold uppercase tracking-wider">Fetching Bet History...</p>
             </div>
-
-            <!-- Card 2 (Lost) -->
-            <div class="bg-slate-900 rounded-2xl border border-slate-800 p-5 hover:border-red-500/30 transition-colors duration-300">
-                <div class="flex justify-between items-center mb-5 border-b border-slate-800/50 pb-4">
-                    <div>
-                        <h2 class="font-bold text-lg">Manchester City vs Arsenal</h2>
-                        <p class="text-slate-400 text-sm mt-0.5">Football • Yesterday</p>
-                    </div>
-                    <span class="bg-red-500/20 border border-red-500/20 text-red-400 px-4 py-1.5 rounded-full text-xs tracking-wider font-bold">
-                        LOST
-                    </span>
-                </div>
-                
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-                    <div>
-                        <p class="text-slate-400 text-xs uppercase tracking-wider mb-1">Bet Amount</p>
-                        <p class="font-bold text-lg">৳300</p>
-                    </div>
-                    <div>
-                        <p class="text-slate-400 text-xs uppercase tracking-wider mb-1">Odds</p>
-                        <p class="font-bold text-lg">1.95x</p>
-                    </div>
-                    <div>
-                        <p class="text-slate-400 text-xs uppercase tracking-wider mb-1">Return</p>
-                        <p class="font-bold text-red-400 text-lg">৳0</p>
-                    </div>
-                    <div>
-                        <p class="text-slate-400 text-xs uppercase tracking-wider mb-1">Bet On</p>
-                        <p class="font-bold text-white bg-slate-800 inline-block px-3 py-1 rounded-lg">Arsenal</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Card 3 (Pending) -->
-            <div class="bg-slate-900 rounded-2xl border border-slate-800 p-5 hover:border-yellow-500/30 transition-colors duration-300">
-                <div class="flex justify-between items-center mb-5 border-b border-slate-800/50 pb-4">
-                    <div>
-                        <h2 class="font-bold text-lg">Liverpool vs Chelsea</h2>
-                        <p class="text-slate-400 text-sm mt-0.5">Football • Tomorrow</p>
-                    </div>
-                    <span class="bg-yellow-500/20 border border-yellow-500/20 text-yellow-400 px-4 py-1.5 rounded-full text-xs tracking-wider font-bold">
-                        PENDING
-                    </span>
-                </div>
-                
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-                    <div>
-                        <p class="text-slate-400 text-xs uppercase tracking-wider mb-1">Bet Amount</p>
-                        <p class="font-bold text-lg">৳700</p>
-                    </div>
-                    <div>
-                        <p class="text-slate-400 text-xs uppercase tracking-wider mb-1">Odds</p>
-                        <p class="font-bold text-lg">2.50x</p>
-                    </div>
-                    <div>
-                        <p class="text-slate-400 text-xs uppercase tracking-wider mb-1">Possible Win</p>
-                        <p class="font-bold text-yellow-400 text-lg">৳1750</p>
-                    </div>
-                    <div>
-                        <p class="text-slate-400 text-xs uppercase tracking-wider mb-1">Bet On</p>
-                        <p class="font-bold text-white bg-slate-800 inline-block px-3 py-1 rounded-lg">Liverpool</p>
-                    </div>
-                </div>
-            </div>
-
         </div>
     </main>
 
-    <!-- Bottom Navigation Bar -->
-    <nav class="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 z-50">
-        <div class="max-w-5xl mx-auto px-6 py-3 flex justify-between items-center text-xs md:text-sm">
-            <a href="#" class="flex flex-col items-center gap-1 text-slate-400 hover:text-amber-400 transition-colors w-16">
-                <i class="fa-solid fa-house text-xl"></i>
-                <span class="font-medium">Home</span>
-            </a>
-            <a href="#" class="flex flex-col items-center gap-1 text-slate-400 hover:text-amber-400 transition-colors w-16">
-                <i class="fa-solid fa-bolt text-xl"></i>
-                <span class="font-medium">Live</span>
-            </a>
-            <a href="#" class="flex flex-col items-center gap-1 text-amber-400 w-16">
-                <i class="fa-solid fa-clock-rotate-left text-xl"></i>
-                <span class="font-medium">History</span>
-            </a>
-            <a href="#" class="flex flex-col items-center gap-1 text-slate-400 hover:text-amber-400 transition-colors w-16">
-                <i class="fa-solid fa-bars text-xl"></i>
-                <span class="font-medium">Menu</span>
-            </a>
-        </div>
+    <!-- Bottom Nav (Dashboard Style) -->
+    <nav class="lg:hidden fixed bottom-0 left-0 right-0 bg-slate-900/90 backdrop-blur-xl border-t border-slate-800/80 px-2 py-2 z-50 flex justify-around items-center shadow-2xl rounded-t-2xl">
+        <a href="index.html" class="flex flex-col items-center justify-center text-slate-400 hover:text-slate-200 px-3 py-1 rounded-xl transition-all">
+            <i class="fa-solid fa-fire text-lg mb-1"></i>
+            <span class="text-[10px] font-medium tracking-wide">Popular</span>
+        </a>
+        <a href="#" class="flex flex-col items-center justify-center text-slate-400 hover:text-slate-200 px-3 py-1 rounded-xl transition-all relative">
+            <i class="fa-solid fa-star text-lg mb-1"></i>
+            <span class="text-[10px] font-medium tracking-wide">Favorite</span>
+        </a>
+        <a href="index.html" class="flex flex-col items-center justify-center text-slate-400 hover:text-slate-200 px-3 py-1 rounded-xl transition-all relative">
+            <i class="fa-solid fa-receipt text-lg mb-1"></i>
+            <span class="text-[10px] font-medium tracking-wide">Bet Slip</span>
+        </a>
+        <a href="#" class="flex flex-col items-center justify-center text-amber-400 px-3 py-1 rounded-xl transition-all">
+            <i class="fa-solid fa-history text-lg mb-1"></i>
+            <span class="text-[10px] font-bold tracking-wide">History</span>
+        </a>
+        <a href="#" class="flex flex-col items-center justify-center text-slate-400 hover:text-slate-200 px-3 py-1 rounded-xl transition-all">
+            <i class="fa-solid fa-bars text-lg mb-1"></i>
+            <span class="text-[10px] font-medium tracking-wide">Menu</span>
+        </a>
     </nav>
 
+    <!-- Firebase Realtime Database Script -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBzQaaXhTtiGpMjRMBUXZaCIrDRoNyEkU4",
+            authDomain: "betx-904da.firebaseapp.com",
+            databaseURL: "https://betx-904da-default-rtdb.firebaseio.com",
+            projectId: "betx-904da",
+            storageBucket: "betx-904da.firebasestorage.app",
+            messagingSenderId: "1076536561200",
+            appId: "1:1076536561200:web:87ddeee59d73ed3a08e7f5",
+            measurementId: "G-ER5HGVL74K"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
+
+        const userNameDisplay = document.getElementById('user-display-name');
+        const userBalanceDisplay = document.getElementById('user-balance');
+        const historyListContainer = document.getElementById('history-list');
+
+        // Check Auth State
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // Fetch User Details & Balance
+                const userRef = ref(db, `users/${user.uid}`);
+                onValue(userRef, (snapshot) => {
+                    if (snapshot.exists()) {
+                        const userData = snapshot.val();
+                        userNameDisplay.innerText = userData.username || userData.name || user.email.split('@')[0];
+                        userBalanceDisplay.innerText = `৳${(parseFloat(userData.balance) || 0).toFixed(2)}`;
+                    } else {
+                        userNameDisplay.innerText = user.email.split('@')[0];
+                    }
+                });
+
+                // Fetch Bet History Realtime
+                fetchBetHistory(user.uid);
+            } else {
+                window.location.href = "login.html";
+            }
+        });
+
+        // Function to Fetch History
+        function fetchBetHistory(userId) {
+            let userBets = [];
+
+            const processBetData = () => {
+                if (!userBets || userBets.length === 0) {
+                    historyListContainer.innerHTML = `
+                        <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-8 text-center backdrop-blur-md shadow-xl">
+                            <i class="fa-solid fa-receipt text-3xl text-amber-400/40 mb-2"></i>
+                            <p class="text-slate-400 text-xs font-semibold">No bet history found.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Safe Sorting for both Number Timestamp and ISO Date String
+                userBets.sort((a, b) => {
+                    const timeA = new Date(a.timestamp || 0).getTime();
+                    const timeB = new Date(b.timestamp || 0).getTime();
+                    return timeB - timeA;
+                });
+
+                let htmlContent = '';
+
+                userBets.forEach((item) => {
+                    // Date formatting
+                    let dateStr = 'N/A';
+                    if (item.timestamp) {
+                        const d = new Date(item.timestamp);
+                        if (!isNaN(d.getTime())) {
+                            dateStr = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                        }
+                    }
+
+                    // Strict Status Badge Checking based on Database JSON Structure
+                    let statusBadge = '';
+                    const statusVal = String(item.status || '').toLowerCase().trim();
+
+                    if (statusVal === 'win' || statusVal === 'won' || item.isWinner === true) {
+                        statusBadge = `<span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider"><i class="fa-solid fa-circle-check mr-1"></i> Won</span>`;
+                    } else if (statusVal === 'loss' || statusVal === 'lost' || item.isWinner === false) {
+                        statusBadge = `<span class="bg-rose-500/10 text-rose-400 border border-rose-500/20 text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider"><i class="fa-solid fa-circle-xmark mr-1"></i> Lost</span>`;
+                    } else {
+                        statusBadge = `<span class="bg-amber-400/10 text-amber-400 border border-amber-400/20 text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider"><i class="fa-solid fa-hourglass-half mr-1 animate-pulse"></i> Pending</span>`;
+                    }
+
+                    const betAmount = parseFloat(item.amount || item.betAmount || item.stake || 0);
+                    const odds = parseFloat(item.odds || item.rate || 1.00);
+                    const potentialReturn = parseFloat(item.potentialReturn || (betAmount * odds) || 0);
+
+                    htmlContent += `
+                    <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 shadow-xl space-y-3 relative overflow-hidden">
+                        <!-- Top Row: Match Name & Status -->
+                        <div class="flex justify-between items-start border-b border-slate-800/80 pb-2.5">
+                            <div>
+                                <span class="text-[10px] font-bold text-amber-400 uppercase tracking-wider block mb-0.5">${item.marketTitle || 'Betting Market'}</span>
+                                <h3 class="font-extrabold text-sm text-slate-100">${item.matchTitle || 'Match Title'}</h3>
+                            </div>
+                            <div>
+                                ${statusBadge}
+                            </div>
+                        </div>
+
+                        <!-- Mid Row: Selection & Odds -->
+                        <div class="grid grid-cols-2 gap-2 bg-slate-950/60 p-3 rounded-xl border border-slate-800/60 text-xs">
+                            <div>
+                                <span class="text-[10px] text-slate-400 block font-medium">Selected Option:</span>
+                                <span class="font-black text-amber-400">${item.optionName || item.selectedOption || 'N/A'}</span>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-[10px] text-slate-400 block font-medium">Odds:</span>
+                                <span class="font-black text-slate-200">@${odds.toFixed(2)}</span>
+                            </div>
+                        </div>
+
+                        <!-- Bottom Row: Financial Details & Date -->
+                        <div class="flex justify-between items-center text-xs pt-1">
+                            <div>
+                                <span class="text-slate-400 block text-[10px]">Bet Amount</span>
+                                <span class="font-extrabold text-white">৳${betAmount.toFixed(2)}</span>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-slate-400 block text-[10px]">Potential Return</span>
+                                <span class="font-black text-emerald-400">৳${potentialReturn.toFixed(2)}</span>
+                            </div>
+                        </div>
+
+                        <div class="text-[9px] text-slate-500 font-semibold text-right border-t border-slate-800/40 pt-1.5">
+                            ${dateStr}
+                        </div>
+                    </div>
+                    `;
+                });
+
+                historyListContainer.innerHTML = htmlContent;
+            };
+
+            // Recursive function to search for user bets dynamically
+            const extractUserBets = (obj) => {
+                let bets = [];
+                if (!obj || typeof obj !== 'object') return bets;
+
+                Object.values(obj).forEach(item => {
+                    if (!item) return;
+                    if (typeof item === 'object') {
+                        const itemUserId = String(item.userId || item.uid || '').trim();
+                        if (itemUserId && itemUserId === String(userId).trim()) {
+                            bets.push(item);
+                        } else {
+                            bets = bets.concat(extractUserBets(item));
+                        }
+                    }
+                });
+                return bets;
+            };
+
+            // Fetch from placedBets node
+            onValue(ref(db, 'placedBets'), (snapshot) => {
+                if (snapshot.exists()) {
+                    userBets = extractUserBets(snapshot.val());
+                } else {
+                    userBets = [];
+                }
+
+                // If placedBets empty, fallback to betsHistory node
+                if (userBets.length === 0) {
+                    onValue(ref(db, `betsHistory/${userId}`), (histSnapshot) => {
+                        if (histSnapshot.exists()) {
+                            userBets = Object.values(histSnapshot.val());
+                        }
+                        processBetData();
+                    }, { onlyOnce: true });
+                } else {
+                    processBetData();
+                }
+            });
+        }
+    </script>
 </body>
 </html>
