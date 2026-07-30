@@ -188,7 +188,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getDatabase, ref, onValue, query, orderByChild, equalTo } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBzQaaXhTtiGpMjRMBUXZaCIrDRoNyEkU4",
@@ -228,7 +228,7 @@
                     }
                 });
 
-                // Fetch User's Bet History
+                // Fetch User's Bet History from userBets node
                 fetchBetHistory(user.uid);
             } else {
                 window.location.href = "login.html";
@@ -407,76 +407,50 @@
             historyListContainer.innerHTML = htmlContent;
         }
 
-        // Optimized Function to Fetch History Data Realtime Only for Current User
+        // Fetch History Data ONLY from userBets
         function fetchBetHistory(userId) {
-            const betsStore = {
-                betsHistory: {},
-                userBets: {}
-            };
+            // Check if user bets are nested directly inside userBets/{userId} or under userBets with userId child
+            const userBetsRef = ref(db, 'userBets');
+            const userBetsQuery = query(userBetsRef, orderByChild('userId'), equalTo(userId));
 
-            const extractUserBetsFromObj = (obj) => {
+            onValue(userBetsQuery, (snapshot) => {
                 let betsList = [];
-                if (!obj || typeof obj !== 'object') return betsList;
 
-                Object.entries(obj).forEach(([key, item]) => {
-                    if (!item) return;
-                    if (typeof item === 'object') {
-                        betsList.push({ _key: key, ...item });
-                    }
-                });
-                return betsList;
-            };
-
-            const mergeAndSyncAllBets = () => {
-                const allFetched = [
-                    ...Object.values(betsStore.betsHistory),
-                    ...Object.values(betsStore.userBets)
-                ];
-
-                const uniqueMap = new Map();
-
-                allFetched.forEach(bet => {
-                    // Unique identifier calculation
-                    const uniqueKey = bet._key || bet.id || (bet.matchId ? (bet.matchId + '_' + (bet.timestamp || '')) : JSON.stringify(bet));
-                    
-                    if (!uniqueMap.has(uniqueKey)) {
-                        uniqueMap.set(uniqueKey, bet);
-                    } else {
-                        // If bet already exists, prefer the one with updated status over pending
-                        const existing = uniqueMap.get(uniqueKey);
-                        const existingStatus = getBetStatusType(existing);
-                        const newStatus = getBetStatusType(bet);
-
-                        if (existingStatus === 'pending' && newStatus !== 'pending') {
-                            uniqueMap.set(uniqueKey, bet);
-                        } else {
-                            uniqueMap.set(uniqueKey, { ...existing, ...bet });
+                if (snapshot.exists()) {
+                    snapshot.forEach((childSnapshot) => {
+                        const betData = childSnapshot.val();
+                        betsList.push({
+                            _key: childSnapshot.key,
+                            ...betData
+                        });
+                    });
+                } else {
+                    // Fallback check: in case userBets structure is userBets/{userId}/{betId}
+                    const userDirectRef = ref(db, `userBets/${userId}`);
+                    onValue(userDirectRef, (directSnapshot) => {
+                        betsList = [];
+                        if (directSnapshot.exists()) {
+                            directSnapshot.forEach((childSnap) => {
+                                betsList.push({
+                                    _key: childSnap.key,
+                                    ...childSnap.val()
+                                });
+                            });
                         }
-                    }
-                });
-
-                rawUserBets = Array.from(uniqueMap.values());
-                rawUserBets.sort((a, b) => new Date(b.timestamp || 0).getTime() - new Date(a.timestamp || 0).getTime());
-                renderBetList();
-            };
-
-            // Listener 1: betsHistory/{userId}
-            onValue(ref(db, `betsHistory/${userId}`), (snapshot) => {
-                betsStore.betsHistory = {};
-                if (snapshot.exists()) {
-                    extractUserBetsFromObj(snapshot.val()).forEach(b => betsStore.betsHistory[b._key || JSON.stringify(b)] = b);
+                        processAndRenderBets(betsList);
+                    }, { onlyOnce: true });
+                    return;
                 }
-                mergeAndSyncAllBets();
-            });
 
-            // Listener 2: userBets/{userId}
-            onValue(ref(db, `userBets/${userId}`), (snapshot) => {
-                betsStore.userBets = {};
-                if (snapshot.exists()) {
-                    extractUserBetsFromObj(snapshot.val()).forEach(b => betsStore.userBets[b._key || JSON.stringify(b)] = b);
-                }
-                mergeAndSyncAllBets();
+                processAndRenderBets(betsList);
             });
+        }
+
+        function processAndRenderBets(betsList) {
+            rawUserBets = betsList;
+            // Sort by latest timestamp first
+            rawUserBets.sort((a, b) => new Date(b.timestamp || 0).getTime() - new Date(a.timestamp || 0).getTime());
+            renderBetList();
         }
     </script>
 </body>
