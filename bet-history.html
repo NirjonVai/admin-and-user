@@ -228,7 +228,7 @@
                     }
                 });
 
-                // Fetch All Nodes Realtime
+                // Fetch User's Bet History
                 fetchBetHistory(user.uid);
             } else {
                 window.location.href = "login.html";
@@ -407,10 +407,9 @@
             historyListContainer.innerHTML = htmlContent;
         }
 
-        // Function to Fetch History Data Realtime Across ALL Nodes
+        // Optimized Function to Fetch History Data Realtime Only for Current User
         function fetchBetHistory(userId) {
             const betsStore = {
-                placedBets: {},
                 betsHistory: {},
                 userBets: {}
             };
@@ -422,12 +421,7 @@
                 Object.entries(obj).forEach(([key, item]) => {
                     if (!item) return;
                     if (typeof item === 'object') {
-                        const itemUserId = String(item.userId || item.uid || '').trim();
-                        if (itemUserId && itemUserId === String(userId).trim()) {
-                            betsList.push({ _key: key, ...item });
-                        } else {
-                            betsList = betsList.concat(extractUserBetsFromObj(item));
-                        }
+                        betsList.push({ _key: key, ...item });
                     }
                 });
                 return betsList;
@@ -435,7 +429,6 @@
 
             const mergeAndSyncAllBets = () => {
                 const allFetched = [
-                    ...Object.values(betsStore.placedBets),
                     ...Object.values(betsStore.betsHistory),
                     ...Object.values(betsStore.userBets)
                 ];
@@ -457,7 +450,6 @@
                         if (existingStatus === 'pending' && newStatus !== 'pending') {
                             uniqueMap.set(uniqueKey, bet);
                         } else {
-                            // Merge objects so latest attributes overwrite
                             uniqueMap.set(uniqueKey, { ...existing, ...bet });
                         }
                     }
@@ -468,16 +460,7 @@
                 renderBetList();
             };
 
-            // Listener 1: placedBets
-            onValue(ref(db, 'placedBets'), (snapshot) => {
-                betsStore.placedBets = {};
-                if (snapshot.exists()) {
-                    extractUserBetsFromObj(snapshot.val()).forEach(b => betsStore.placedBets[b._key || JSON.stringify(b)] = b);
-                }
-                mergeAndSyncAllBets();
-            });
-
-            // Listener 2: betsHistory
+            // Listener 1: betsHistory/{userId}
             onValue(ref(db, `betsHistory/${userId}`), (snapshot) => {
                 betsStore.betsHistory = {};
                 if (snapshot.exists()) {
@@ -486,7 +469,7 @@
                 mergeAndSyncAllBets();
             });
 
-            // Listener 3: userBets
+            // Listener 2: userBets/{userId}
             onValue(ref(db, `userBets/${userId}`), (snapshot) => {
                 betsStore.userBets = {};
                 if (snapshot.exists()) {
