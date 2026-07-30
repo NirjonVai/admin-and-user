@@ -333,26 +333,37 @@
                 let statusBadge = '';
                 const statusType = getBetStatusType(item);
 
+                const betAmount = parseFloat(item.amount || item.betAmount || item.stake || 0);
+                const odds = parseFloat(item.odds || item.rate || 1.00);
+                
+                // Return Amount & Color Logic based on Lost / Won status
+                let returnText = '';
+                let returnColorClass = '';
+
                 if (statusType === 'won') {
                     statusBadge = `
                         <span class="inline-flex items-center gap-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider">
                             <i class="fa-solid fa-circle-check text-xs"></i> Won
                         </span>`;
+                    const calcReturn = parseFloat(item.potentialReturn || (betAmount * odds) || 0);
+                    returnText = `৳${calcReturn.toFixed(2)}`;
+                    returnColorClass = 'text-emerald-400';
                 } else if (statusType === 'lost') {
                     statusBadge = `
                         <span class="inline-flex items-center gap-1 bg-rose-500/10 text-rose-400 border border-rose-500/20 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider">
                             <i class="fa-solid fa-circle-xmark text-xs"></i> Lost
                         </span>`;
+                    returnText = '৳0.00';
+                    returnColorClass = 'text-rose-400';
                 } else {
                     statusBadge = `
                         <span class="inline-flex items-center gap-1 bg-amber-400/10 text-amber-400 border border-amber-400/20 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider">
                             <i class="fa-solid fa-clock text-xs animate-spin"></i> Pending
                         </span>`;
+                    const calcReturn = parseFloat(item.potentialReturn || (betAmount * odds) || 0);
+                    returnText = `৳${calcReturn.toFixed(2)}`;
+                    returnColorClass = 'text-emerald-400';
                 }
-
-                const betAmount = parseFloat(item.amount || item.betAmount || item.stake || 0);
-                const odds = parseFloat(item.odds || item.rate || 1.00);
-                const potentialReturn = parseFloat(item.potentialReturn || (betAmount * odds) || 0);
 
                 htmlContent += `
                 <div class="glass-card hover:border-slate-700/80 transition-all rounded-2xl p-4 sm:p-5 shadow-xl space-y-3.5 relative overflow-hidden group">
@@ -390,7 +401,7 @@
                             <div class="h-6 w-[1px] bg-slate-800"></div>
                             <div>
                                 <span class="text-slate-400 block text-[10px] font-semibold uppercase tracking-wider">Return</span>
-                                <span class="font-black text-emerald-400 text-sm">৳${potentialReturn.toFixed(2)}</span>
+                                <span class="font-black ${returnColorClass} text-sm">${returnText}</span>
                             </div>
                         </div>
 
@@ -409,7 +420,6 @@
 
         // Fetch History Data ONLY from userBets
         function fetchBetHistory(userId) {
-            // Check if user bets are nested directly inside userBets/{userId} or under userBets with userId child
             const userBetsRef = ref(db, 'userBets');
             const userBetsQuery = query(userBetsRef, orderByChild('userId'), equalTo(userId));
 
