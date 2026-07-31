@@ -393,6 +393,7 @@
       } else {
         marketKeys.forEach((mKey) => {
           const market = customMarkets[mKey] || {};
+          const isLocked = market.isLocked === true;
           const options = market.options || {};
           const optionKeys = Object.keys(options);
           const gridColsClass = optionKeys.length >= 3 ? 'grid-cols-3' : 'grid-cols-2';
@@ -421,7 +422,7 @@
             }
 
             optionsHTML += `
-              <div class="relative group p-1.5 rounded-xl border bg-white border-gray-100 transition-all">
+              <div class="relative group p-1.5 rounded-xl border bg-white border-gray-100 transition-all ${isLocked ? 'opacity-60 pointer-events-none' : ''}">
                 <div class="flex items-center justify-between gap-1 mb-1">
                   <input type="text" data-id="${id}" data-mkey="${mKey}" data-okey="${oKey}" value="${formattedName}" placeholder="NAME" class="custom-option-name block text-[10px] font-bold ${totalBet > 0 ? 'text-emerald-600' : 'text-gray-500'} uppercase truncate w-full bg-transparent border-none p-0 focus:outline-none focus:ring-0">
                   
@@ -445,10 +446,34 @@
           });
 
           customMarketsHTML += `
-            <div class="mt-3 pt-2 border-t border-gray-100">
+            <div class="mt-3 pt-2.5 border-t border-gray-100">
+              
+              <!-- Action Buttons Bar ABOVE Market Title (Return, Lock, Delete) -->
+              <div class="flex items-center justify-between mb-1">
+                <div class="flex items-center gap-1">
+                  <!-- Small Return Button -->
+                  <button data-id="${id}" data-mkey="${mKey}" class="return-market-btn text-[9px] px-1.5 py-0.5 rounded font-bold bg-amber-50 text-amber-600 hover:bg-amber-100 border border-amber-200 transition flex items-center gap-1 cursor-pointer" title="Refund All Stakes for this Market">
+                    <i class="fa-solid fa-rotate-left text-[8px]"></i> Return
+                  </button>
+
+                  <!-- Small Lock Button -->
+                  <button data-id="${id}" data-mkey="${mKey}" data-locked="${isLocked}" class="lock-market-btn text-[9px] px-1.5 py-0.5 rounded font-bold ${isLocked ? 'bg-red-500 text-white border border-red-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border border-gray-200'} transition flex items-center gap-1 cursor-pointer" title="${isLocked ? 'Unlock Market' : 'Lock Market'}">
+                    <i class="fa-solid ${isLocked ? 'fa-lock' : 'fa-lock-open'} text-[8px]"></i> ${isLocked ? 'Locked' : 'Lock'}
+                  </button>
+                </div>
+
+                <!-- Small Delete Market Button -->
+                <button data-id="${id}" data-mkey="${mKey}" class="delete-market-btn text-[9px] px-1.5 py-0.5 rounded font-bold bg-red-50 text-red-500 hover:bg-red-100 border border-red-200 transition flex items-center gap-1 cursor-pointer" title="Delete Market">
+                  <i class="fa-solid fa-trash-can text-[8px]"></i> Delete
+                </button>
+              </div>
+
+              <!-- Market Title Input -->
               <div class="flex items-center justify-between mb-1.5">
                 <input type="text" data-id="${id}" data-mkey="${mKey}" value="${market.title || 'Total Six'}" placeholder="Market Title" class="market-title-input text-xs font-bold text-gray-700 bg-transparent border-b border-dashed border-gray-300 focus:border-purple-600 focus:outline-none w-full uppercase">
               </div>
+
+              <!-- Market Options Grid -->
               <div class="grid ${gridColsClass} gap-1.5">
                 ${optionsHTML || '<p class="text-[10px] text-gray-400 italic col-span-full">No options added.</p>'}
               </div>
@@ -614,7 +639,6 @@
       const targetOptName = winOptName ? String(winOptName).trim().toLowerCase() : '';
       const targetOptKey = winningOKey ? String(winningOKey).trim().toLowerCase() : '';
 
-      // Function to recursively traverse placedBets DB tree
       const processNode = async (node, nodePath) => {
         if (!node || typeof node !== 'object') return;
 
@@ -623,7 +647,6 @@
           
           const currentPath = `${nodePath}/${key}`;
 
-          // Check if this object is a placed bet entry
           if (item.matchId || item.match_id || item.selectedOption || item.amount || item.betAmount) {
             const betMatchId = String(item.matchId || item.match_id || item.betId || '').trim();
             if (betMatchId === cleanMatchId) {
@@ -632,7 +655,6 @@
 
               const isMatch = (targetOptKey && betOptKey === targetOptKey) || (targetOptName && betOptName === targetOptName);
 
-              // Check if payout is already done to avoid duplicate balance additions
               if (item.payoutProcessed) continue;
 
               const userId = item.userId || item.uid || item.user_id;
@@ -645,14 +667,12 @@
                 await update(ref(db, currentPath), { status: 'win', isWinner: true, payoutProcessed: true });
 
                 if (userId && winAmount > 0) {
-                  // Add Winning Money to User Balance
                   try {
                     const userRef = ref(db, `users/${userId}/balance`);
                     const userSnap = await get(userRef);
                     let currentBal = userSnap.exists() ? Number(userSnap.val() || 0) : 0;
                     await update(ref(db, `users/${userId}`), { balance: currentBal + winAmount });
 
-                    // Update wallet balance if applicable
                     const walletRef = ref(db, `wallets/${userId}/balance`);
                     const walletSnap = await get(walletRef);
                     if (walletSnap.exists()) {
@@ -674,17 +694,80 @@
         }
       };
 
-      // Process placedBets node
       if (allPlacedBetsData.placedBets) {
         await processNode(allPlacedBetsData.placedBets, 'placedBets');
       } else {
         await processNode(allPlacedBetsData, 'placedBets');
       }
 
-      // Process userBets node if exists
       const userBetsSnap = await get(ref(db, 'userBets'));
       if (userBetsSnap.exists()) {
         await processNode(userBetsSnap.val(), 'userBets');
+      }
+    }
+
+    // Refund / Return all stakes placed for a specific market
+    async function processMarketReturn(matchId, mKey) {
+      if (!allPlacedBetsData) return;
+      const cleanMatchId = String(matchId).trim();
+      
+      const market = allMatchesData[matchId]?.customMarkets?.[mKey];
+      const marketTitle = market?.title ? String(market.title).trim().toLowerCase() : '';
+
+      const processReturnNode = async (node, nodePath) => {
+        if (!node || typeof node !== 'object') return;
+
+        for (const [key, item] of Object.entries(node)) {
+          if (!item) continue;
+          const currentPath = `${nodePath}/${key}`;
+
+          if (item.matchId || item.match_id || item.selectedOption || item.amount || item.betAmount) {
+            const betMatchId = String(item.matchId || item.match_id || item.betId || '').trim();
+            const betMarketTitle = String(item.marketTitle || item.market || item.title || '').trim().toLowerCase();
+
+            if (betMatchId === cleanMatchId && (!marketTitle || betMarketTitle === marketTitle)) {
+              if (item.payoutProcessed || item.status === 'refunded' || item.status === 'returned') continue;
+
+              const userId = item.userId || item.uid || item.user_id;
+              const betAmount = Number(item.amount || item.betAmount || item.stake || 0);
+
+              // Update Bet status to refunded
+              await update(ref(db, currentPath), { status: 'refunded', payoutProcessed: true });
+
+              // Refund stake amount back to User Balance
+              if (userId && betAmount > 0) {
+                try {
+                  const userRef = ref(db, `users/${userId}/balance`);
+                  const userSnap = await get(userRef);
+                  let currentBal = userSnap.exists() ? Number(userSnap.val() || 0) : 0;
+                  await update(ref(db, `users/${userId}`), { balance: currentBal + betAmount });
+
+                  const walletRef = ref(db, `wallets/${userId}/balance`);
+                  const walletSnap = await get(walletRef);
+                  if (walletSnap.exists()) {
+                    let walletBal = Number(walletSnap.val() || 0);
+                    await update(ref(db, `wallets/${userId}`), { balance: walletBal + betAmount });
+                  }
+                } catch (err) {
+                  console.error("Refund processing failed:", err);
+                }
+              }
+            }
+          } else if (typeof item === 'object') {
+            await processReturnNode(item, currentPath);
+          }
+        }
+      };
+
+      if (allPlacedBetsData.placedBets) {
+        await processReturnNode(allPlacedBetsData.placedBets, 'placedBets');
+      } else {
+        await processReturnNode(allPlacedBetsData, 'placedBets');
+      }
+
+      const userBetsSnap = await get(ref(db, 'userBets'));
+      if (userBetsSnap.exists()) {
+        await processReturnNode(userBetsSnap.val(), 'userBets');
       }
     }
 
@@ -760,6 +843,40 @@
     });
 
     matchesContainer.addEventListener('click', async (e) => {
+      // Return Button Action (Refund Market Bets)
+      const returnMarketBtn = e.target.closest('.return-market-btn');
+      if (returnMarketBtn) {
+        if (confirm("Are you sure you want to refund all user stakes placed on this market?")) {
+          const matchId = returnMarketBtn.getAttribute('data-id');
+          const mKey = returnMarketBtn.getAttribute('data-mkey');
+          await processMarketReturn(matchId, mKey);
+          alert("Market bets have been returned/refunded successfully!");
+        }
+        return;
+      }
+
+      // Lock Button Action (Toggle Lock State)
+      const lockMarketBtn = e.target.closest('.lock-market-btn');
+      if (lockMarketBtn) {
+        const matchId = lockMarketBtn.getAttribute('data-id');
+        const mKey = lockMarketBtn.getAttribute('data-mkey');
+        const currentlyLocked = lockMarketBtn.getAttribute('data-locked') === 'true';
+        
+        await update(ref(db, `bets/${matchId}/customMarkets/${mKey}`), { isLocked: !currentlyLocked });
+        return;
+      }
+
+      // Delete Market Button Action
+      const deleteMarketBtn = e.target.closest('.delete-market-btn');
+      if (deleteMarketBtn) {
+        if (confirm("Are you sure you want to delete this market?")) {
+          const matchId = deleteMarketBtn.getAttribute('data-id');
+          const mKey = deleteMarketBtn.getAttribute('data-mkey');
+          await remove(ref(db, `bets/${matchId}/customMarkets/${mKey}`));
+        }
+        return;
+      }
+
       const winBtn = e.target.closest('.set-option-win-btn');
       if (winBtn) {
         const matchId = winBtn.getAttribute('data-id');
@@ -772,7 +889,6 @@
         const updates = {};
         let winningOptionName = '';
         
-        // Loop through all options in this market to set WIN and LOSS status
         Object.keys(market.options).forEach((oKey) => {
           const basePath = `bets/${matchId}/customMarkets/${mKey}/options/${oKey}`;
           if (oKey === targetOKey) {
@@ -785,12 +901,9 @@
           }
         });
 
-        // Save market winner state
         updates[`bets/${matchId}/customMarkets/${mKey}/winningOptionKey`] = targetOKey;
 
         await update(ref(db), updates);
-
-        // Process Payout for winning users
         await processBetPayouts(matchId, mKey, targetOKey, winningOptionName);
         return;
       }
@@ -865,7 +978,8 @@
 
         await update(newMarketRef, {
           title: title,
-          options: optionsData
+          options: optionsData,
+          isLocked: false
         });
 
         titleInput.value = '';
@@ -890,4 +1004,4 @@
     });
   </script>
 </body>
-</html>
+  </html>
