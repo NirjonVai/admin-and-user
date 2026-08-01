@@ -86,7 +86,7 @@
       </div>
     </header>
 
-    <!-- Main Content Area (Full Screen Area) -->
+    <!-- Main Content Area -->
     <main class="flex-1 p-2 md:p-4 w-full">
       
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
@@ -394,6 +394,7 @@
         marketKeys.forEach((mKey) => {
           const market = customMarkets[mKey] || {};
           const isLocked = market.isLocked === true;
+          const isHidden = market.isHidden === true; // Hide Market Property
           const options = market.options || {};
           const optionKeys = Object.keys(options);
           const gridColsClass = optionKeys.length >= 3 ? 'grid-cols-3' : 'grid-cols-2';
@@ -409,7 +410,6 @@
             const isWinner = opt.isWinner === true || opt.status === 'win' || market.winningOptionKey === oKey;
             const isLoss = opt.status === 'loss' || (market.winningOptionKey && market.winningOptionKey !== oKey);
 
-            // Light Green & Light Red Colors
             let buttonText = 'WIN';
             let buttonStyle = 'bg-gray-100 hover:bg-emerald-200 hover:text-emerald-800 text-gray-500 border border-gray-200';
 
@@ -446,14 +446,19 @@
           });
 
           customMarketsHTML += `
-            <div class="mt-3 pt-2.5 border-t border-gray-100">
+            <div class="mt-3 pt-2.5 border-t border-gray-100 ${isHidden ? 'bg-gray-50/80 p-2 rounded-xl border border-dashed border-gray-300' : ''}">
               
-              <!-- Action Buttons Bar ABOVE Market Title (Return, Lock, Delete) -->
+              <!-- Action Buttons Bar ABOVE Market Title (Return, Hide, Lock, Delete) -->
               <div class="flex items-center justify-between mb-1">
-                <div class="flex items-center gap-1">
+                <div class="flex items-center gap-1 flex-wrap">
                   <!-- Small Return Button -->
-                  <button data-id="${id}" data-mkey="${mKey}" class="return-market-btn text-[9px] px-1.5 py-0.5 rounded font-bold bg-amber-50 text-amber-600 hover:bg-amber-100 border border-amber-200 transition flex items-center gap-1 cursor-pointer" title="Refund All Stakes for this Market">
+                  <button data-id="${id}" data-mkey="${mKey}" class="return-market-btn text-[9px] px-1.5 py-0.5 rounded font-bold bg-amber-50 text-amber-600 hover:bg-amber-100 border border-amber-200 transition flex items-center gap-1 cursor-pointer" title="Return market to NEW state & refund stakes">
                     <i class="fa-solid fa-rotate-left text-[8px]"></i> Return
+                  </button>
+
+                  <!-- Small Hide Button -->
+                  <button data-id="${id}" data-mkey="${mKey}" data-hidden="${isHidden}" class="hide-market-btn text-[9px] px-1.5 py-0.5 rounded font-bold ${isHidden ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border border-gray-200'} transition flex items-center gap-1 cursor-pointer" title="${isHidden ? 'Show Market' : 'Hide Market'}">
+                    <i class="fa-solid ${isHidden ? 'fa-eye' : 'fa-eye-slash'} text-[8px]"></i> ${isHidden ? 'Show' : 'Hide'}
                   </button>
 
                   <!-- Small Lock Button -->
@@ -470,11 +475,11 @@
 
               <!-- Market Title Input -->
               <div class="flex items-center justify-between mb-1.5">
-                <input type="text" data-id="${id}" data-mkey="${mKey}" value="${market.title || 'Total Six'}" placeholder="Market Title" class="market-title-input text-xs font-bold text-gray-700 bg-transparent border-b border-dashed border-gray-300 focus:border-purple-600 focus:outline-none w-full uppercase">
+                <input type="text" data-id="${id}" data-mkey="${mKey}" value="${market.title || 'Total Six'}" placeholder="Market Title" class="market-title-input text-xs font-bold ${isHidden ? 'text-gray-400 line-through' : 'text-gray-700'} bg-transparent border-b border-dashed border-gray-300 focus:border-purple-600 focus:outline-none w-full uppercase">
               </div>
 
-              <!-- Market Options Grid -->
-              <div class="grid ${gridColsClass} gap-1.5">
+              <!-- Market Options Grid (Hidden when Hide status is true) -->
+              <div class="${isHidden ? 'hidden' : 'grid'} ${gridColsClass} gap-1.5">
                 ${optionsHTML || '<p class="text-[10px] text-gray-400 italic col-span-full">No options added.</p>'}
               </div>
             </div>
@@ -706,13 +711,24 @@
       }
     }
 
-    // Refund / Return all stakes placed for a specific market
+    // Refund / Return Market to NEW State Logic
     async function processMarketReturn(matchId, mKey) {
       if (!allPlacedBetsData) return;
       const cleanMatchId = String(matchId).trim();
       
       const market = allMatchesData[matchId]?.customMarkets?.[mKey];
       const marketTitle = market?.title ? String(market.title).trim().toLowerCase() : '';
+
+      // Reset market options to NEW / pending status in DB
+      if (market && market.options) {
+        const optionResetUpdates = {};
+        Object.keys(market.options).forEach(oKey => {
+          optionResetUpdates[`bets/${matchId}/customMarkets/${mKey}/options/${oKey}/isWinner`] = false;
+          optionResetUpdates[`bets/${matchId}/customMarkets/${mKey}/options/${oKey}/status`] = 'pending';
+        });
+        optionResetUpdates[`bets/${matchId}/customMarkets/${mKey}/winningOptionKey`] = null;
+        await update(ref(db), optionResetUpdates);
+      }
 
       const processReturnNode = async (node, nodePath) => {
         if (!node || typeof node !== 'object') return;
@@ -726,16 +742,14 @@
             const betMarketTitle = String(item.marketTitle || item.market || item.title || '').trim().toLowerCase();
 
             if (betMatchId === cleanMatchId && (!marketTitle || betMarketTitle === marketTitle)) {
-              if (item.payoutProcessed || item.status === 'refunded' || item.status === 'returned') continue;
-
               const userId = item.userId || item.uid || item.user_id;
               const betAmount = Number(item.amount || item.betAmount || item.stake || 0);
 
-              // Update Bet status to refunded
-              await update(ref(db, currentPath), { status: 'refunded', payoutProcessed: true });
+              // Update Bet status to refunded / returned
+              await update(ref(db, currentPath), { status: 'returned', payoutProcessed: false });
 
-              // Refund stake amount back to User Balance
-              if (userId && betAmount > 0) {
+              // Refund stake amount back to User Balance if it wasn't already returned
+              if (userId && betAmount > 0 && item.status !== 'returned' && item.status !== 'refunded') {
                 try {
                   const userRef = ref(db, `users/${userId}/balance`);
                   const userSnap = await get(userRef);
@@ -843,15 +857,26 @@
     });
 
     matchesContainer.addEventListener('click', async (e) => {
-      // Return Button Action (Refund Market Bets)
+      // Return Button Action (Reset Win/Loss & Return Market)
       const returnMarketBtn = e.target.closest('.return-market-btn');
       if (returnMarketBtn) {
-        if (confirm("Are you sure you want to refund all user stakes placed on this market?")) {
+        if (confirm("Reset market to NEW state and refund all user stakes?")) {
           const matchId = returnMarketBtn.getAttribute('data-id');
           const mKey = returnMarketBtn.getAttribute('data-mkey');
           await processMarketReturn(matchId, mKey);
-          alert("Market bets have been returned/refunded successfully!");
+          alert("Market has been reset to NEW & stakes refunded!");
         }
+        return;
+      }
+
+      // Hide Button Action (Toggle Hide Market)
+      const hideMarketBtn = e.target.closest('.hide-market-btn');
+      if (hideMarketBtn) {
+        const matchId = hideMarketBtn.getAttribute('data-id');
+        const mKey = hideMarketBtn.getAttribute('data-mkey');
+        const currentlyHidden = hideMarketBtn.getAttribute('data-hidden') === 'true';
+        
+        await update(ref(db, `bets/${matchId}/customMarkets/${mKey}`), { isHidden: !currentlyHidden });
         return;
       }
 
@@ -979,7 +1004,8 @@
         await update(newMarketRef, {
           title: title,
           options: optionsData,
-          isLocked: false
+          isLocked: false,
+          isHidden: false
         });
 
         titleInput.value = '';
@@ -1004,4 +1030,4 @@
     });
   </script>
 </body>
-  </html>
+</html>
