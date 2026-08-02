@@ -448,12 +448,12 @@
           customMarketsHTML += `
             <div class="mt-3 pt-2.5 border-t border-gray-100 ${isHidden ? 'bg-gray-50/80 p-2 rounded-xl border border-dashed border-gray-300' : ''}">
               
-              <!-- Action Buttons Bar ABOVE Market Title (Return, Hide, Lock, Delete) -->
+              <!-- Action Buttons Bar ABOVE Market Title (Refund, Hide, Lock, Delete) -->
               <div class="flex items-center justify-between mb-1">
                 <div class="flex items-center gap-1 flex-wrap">
-                  <!-- Small Return Button -->
-                  <button data-id="${id}" data-mkey="${mKey}" class="return-market-btn text-[9px] px-1.5 py-0.5 rounded font-bold bg-amber-50 text-amber-600 hover:bg-amber-100 border border-amber-200 transition flex items-center gap-1 cursor-pointer" title="Return market to NEW state & refund stakes">
-                    <i class="fa-solid fa-rotate-left text-[8px]"></i> Return
+                  <!-- Small Refund Button -->
+                  <button data-id="${id}" data-mkey="${mKey}" class="return-market-btn text-[9px] px-1.5 py-0.5 rounded font-bold bg-amber-50 text-amber-600 hover:bg-amber-100 border border-amber-200 transition flex items-center gap-1 cursor-pointer" title="Refund market to NEW state & refund stakes">
+                    <i class="fa-solid fa-rotate-left text-[8px]"></i> Refund
                   </button>
 
                   <!-- Small Hide Button -->
@@ -746,7 +746,7 @@
               const betAmount = Number(item.amount || item.betAmount || item.stake || 0);
 
               // Update Bet status to refunded / returned
-              await update(ref(db, currentPath), { status: 'returned', payoutProcessed: false });
+              await update(ref(db, currentPath), { status: 'refunded', payoutProcessed: false });
 
               // Refund stake amount back to User Balance if it wasn't already returned
               if (userId && betAmount > 0 && item.status !== 'returned' && item.status !== 'refunded') {
@@ -857,7 +857,7 @@
     });
 
     matchesContainer.addEventListener('click', async (e) => {
-      // Return Button Action (Reset Win/Loss & Return Market)
+      // Refund Button Action (Reset Win/Loss & Refund Market)
       const returnMarketBtn = e.target.closest('.return-market-btn');
       if (returnMarketBtn) {
         if (confirm("Reset market to NEW state and refund all user stakes?")) {
