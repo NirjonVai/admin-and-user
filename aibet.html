@@ -230,6 +230,54 @@
       }
     }
 
+    // স্কোর অনুযায়ী ডায়নামিক ওডস বা পয়েন্ট হিসেব করার ফাংশন
+    function calculateDynamicOdds(score, matchData) {
+      const team1 = matchData.team1?.name?.toLowerCase() || '';
+      const team2 = matchData.team2?.name?.toLowerCase() || '';
+      
+      let winProbTeam1 = 0.50; // ডিফোল্ট ৫০% ৫০% সুযোগ
+      
+      if (score.innings === 1) {
+        const totalBalls = score.maxOvers * 6;
+        const playedBalls = (score.over * 6) + score.ball;
+        const currentRunRate = playedBalls > 0 ? (score.runs / playedBalls) * 6 : 6;
+        
+        // ১ম ইনিংসে রান রেট এবং উইকেটের ওপর ভিত্তি করে সম্ভাবনা
+        winProbTeam1 = 0.50 + (currentRunRate - 6) * 0.03 - (score.wickets * 0.04);
+      } else if (score.innings === 2) {
+        const totalBalls = score.maxOvers * 6;
+        const playedBalls = (score.over * 6) + score.ball;
+        const remainingBalls = Math.max(1, totalBalls - playedBalls);
+        const runsNeeded = Math.max(0, score.target - score.runs);
+        
+        const reqRunRate = (runsNeeded / remainingBalls) * 6;
+        
+        // ২য় ইনিংসে রিকোয়ার্ড রান রেট এবং উইকেটের প্রভাব
+        if (runsNeeded <= 0) {
+          winProbTeam1 = 0.01; // টিম ২ জিতেছে
+        } else {
+          let winProbTeam2 = 0.50 - (reqRunRate - 8) * 0.05 - (score.wickets * 0.06);
+          winProbTeam2 = Math.min(0.95, Math.max(0.05, winProbTeam2));
+          winProbTeam1 = 1 - winProbTeam2;
+        }
+      }
+
+      // লিমিট সেট করা
+      winProbTeam1 = Math.min(0.92, Math.max(0.08, winProbTeam1));
+      const winProbTeam2 = 1 - winProbTeam1;
+
+      // ওডস (Odds) ফর্মুলা: (1 / Probability) * Margin
+      const margin = 0.90; // ১০% বুকমেকার মার্জিন
+      const oddsTeam1 = ( (1 / winProbTeam1) * margin ).toFixed(2);
+      const oddsTeam2 = ( (1 / winProbTeam2) * margin ).toFixed(2);
+
+      return {
+        team1: oddsTeam1 < 1.05 ? "1.05" : oddsTeam1,
+        team2: oddsTeam2 < 1.05 ? "1.05" : oddsTeam2,
+        winProbTeam1
+      };
+    }
+
     function calculateScoreFromTimestamp(match, currentTime = Date.now()) {
       const startTime = match.startTime || currentTime;
       const status = match.status;
@@ -320,6 +368,29 @@
       if (currentBallCount > dbBallCount || !matchData.aiScore) {
         try {
           const updatePayload = { aiScore: currentScore };
+          
+          // লাইভ স্কোরের ওপর ভিত্তি করে ওডস বা পয়েন্ট আপডেট
+          const calculatedOdds = calculateDynamicOdds(currentScore, matchData);
+          
+          if (matchData.customMarkets) {
+            Object.keys(matchData.customMarkets).forEach(mKey => {
+              const market = matchData.customMarkets[mKey];
+              if (market && market.options) {
+                Object.keys(market.options).forEach(oKey => {
+                  const opt = market.options[oKey];
+                  const optName = (opt.name || '').toLowerCase();
+                  
+                  // টিম ১ ও টিম ২ এর ওডস ডায়নামিক আপডেট
+                  if (matchData.team1?.name && optName.includes(matchData.team1.name.toLowerCase())) {
+                    updatePayload[`customMarkets/${mKey}/options/${oKey}/val`] = calculatedOdds.team1;
+                  } else if (matchData.team2?.name && optName.includes(matchData.team2.name.toLowerCase())) {
+                    updatePayload[`customMarkets/${mKey}/options/${oKey}/val`] = calculatedOdds.team2;
+                  }
+                });
+              }
+            });
+          }
+
           if (currentScore.isMatchOver) {
             // ৮০% - ২০% লজিকের বিজয়ী সেট করা
             const forcedWinner = determineAutoWinnerWithProbability(matchId, matchData);
