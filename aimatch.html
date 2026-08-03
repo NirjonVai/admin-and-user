@@ -372,7 +372,7 @@
                     return acc + (parseInt(b) || 0);
                 }, 0);
 
-                // 🎯 Dynamically generate Admin added Custom Markets HTML (with Lock & Hide Support)
+                // 🎯 Dynamically generate Admin added Custom Markets HTML (Lock Icon Above Odds Support)
                 const customMarkets = match.customMarkets || {};
                 const customMarketKeys = Object.keys(customMarkets);
                 let customMarketsHTML = '';
@@ -393,13 +393,13 @@
                         const options = market.options || {};
                         const optionKeys = Object.keys(options);
                         
-                        // Filter active visible options
+                        // Hide logic for individual options
                         const visibleOptionKeys = optionKeys.filter(oKey => {
                             const opt = options[oKey] || {};
                             return !(opt.isHidden === true || opt.hidden === true);
                         });
 
-                        if (visibleOptionKeys.length === 0 && !isMarketLocked) return;
+                        if (visibleOptionKeys.length === 0) return;
 
                         visibleMarketsCount++;
 
@@ -407,48 +407,41 @@
 
                         let optionsHTML = '';
 
-                        if (isMarketLocked) {
-                            // Market is Locked UI Display
-                            optionsHTML = `
-                                <div class="col-span-full bg-slate-950/80 border border-slate-800 rounded-xl p-2.5 text-center flex items-center justify-center space-x-2 text-slate-500">
-                                    <i class="fa-solid fa-lock text-amber-500/80 text-xs"></i>
-                                    <span class="text-[10px] font-bold uppercase tracking-wider">Market Locked</span>
-                                </div>
-                            `;
-                        } else {
-                            visibleOptionKeys.forEach((oKey) => {
-                                const opt = options[oKey] || {};
-                                const optName = opt.name || 'OPTION';
-                                const optVal = opt.val || '1.00';
-                                const isOptLocked = opt.isLocked === true || opt.locked === true;
-                                const matchTitle = `${team1Name} vs ${team2Name}`;
+                        visibleOptionKeys.forEach((oKey) => {
+                            const opt = options[oKey] || {};
+                            const optName = opt.name || 'OPTION';
+                            const optVal = opt.val || '1.00';
+                            
+                            // Check option specific or whole market lock
+                            const isOptLocked = isMarketLocked || opt.isLocked === true || opt.locked === true;
+                            const matchTitle = `${team1Name} vs ${team2Name}`;
 
-                                if (isOptLocked) {
-                                    // Individual Locked Option
-                                    optionsHTML += `
-                                        <button disabled class="bg-slate-950/70 border border-slate-800/80 py-2 px-1 rounded-xl text-center cursor-not-allowed opacity-60 flex flex-col items-center justify-center relative overflow-hidden">
-                                            <i class="fa-solid fa-lock text-[10px] text-amber-500/70 absolute top-1 right-1.5"></i>
-                                            <span class="block text-[9px] font-extrabold text-slate-500 uppercase tracking-wider mb-0.5 truncate w-full px-1">${optName}</span>
-                                            <span class="font-extrabold text-xs sm:text-sm text-slate-500">${optVal}</span>
-                                        </button>
-                                    `;
-                                } else {
-                                    // Active Bet Option
-                                    optionsHTML += `
-                                        <button onclick="openBetModal('${matchId}', '${matchTitle}', '${market.title || 'Market'}', '${optName}', '${optVal}')" class="bg-slate-800/60 hover:bg-amber-400 border border-slate-700/60 hover:border-amber-400 py-2 px-1 rounded-xl transition-all duration-300 text-center group cursor-pointer shadow-md flex flex-col items-center justify-center">
-                                            <span class="block text-[9px] font-extrabold text-slate-400 group-hover:text-slate-950 uppercase tracking-wider mb-0.5 truncate w-full px-1">${optName}</span>
-                                            <span class="font-extrabold text-xs sm:text-sm text-amber-400 group-hover:text-slate-950">${optVal}</span>
-                                        </button>
-                                    `;
-                                }
-                            });
-                        }
+                            if (isOptLocked) {
+                                // 🔒 Locked Option Design: Lock Icon Placement directly ABOVE Odds Number
+                                optionsHTML += `
+                                    <button disabled class="bg-slate-900/90 border border-slate-800/80 py-2 px-1 rounded-xl text-center cursor-not-allowed opacity-60 flex flex-col items-center justify-center select-none shadow-sm">
+                                        <span class="block text-[9px] font-extrabold text-slate-500 uppercase tracking-wider mb-0.5 truncate w-full px-1">${optName}</span>
+                                        <div class="flex items-center space-x-1 justify-center text-slate-500">
+                                            <i class="fa-solid fa-lock text-[10px] text-amber-500/80"></i>
+                                            <span class="font-extrabold text-xs sm:text-sm text-slate-500 line-through decoration-slate-600">${optVal}</span>
+                                        </div>
+                                    </button>
+                                `;
+                            } else {
+                                // 🟢 Active Bet Option
+                                optionsHTML += `
+                                    <button onclick="openBetModal('${matchId}', '${matchTitle}', '${market.title || 'Market'}', '${optName}', '${optVal}')" class="bg-slate-800/60 hover:bg-amber-400 border border-slate-700/60 hover:border-amber-400 py-2 px-1 rounded-xl transition-all duration-300 text-center group cursor-pointer shadow-md flex flex-col items-center justify-center">
+                                        <span class="block text-[9px] font-extrabold text-slate-400 group-hover:text-slate-950 uppercase tracking-wider mb-0.5 truncate w-full px-1">${optName}</span>
+                                        <span class="font-extrabold text-xs sm:text-sm text-amber-400 group-hover:text-slate-950">${optVal}</span>
+                                    </button>
+                                `;
+                            }
+                        });
 
                         customMarketsHTML += `
                             <div class="mb-3 last:mb-0">
                                 <h3 class="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-2 flex items-center justify-between">
                                     <span>${market.title || 'Betting Market'}</span>
-                                    ${isMarketLocked ? '<i class="fa-solid fa-lock text-amber-500/80 text-[10px]"></i>' : ''}
                                 </h3>
                                 <div class="grid ${gridColsClass} gap-2">
                                     ${optionsHTML}
@@ -670,4 +663,4 @@
         }, 4000);
     </script>
 </body>
-</html>
+            </html>
