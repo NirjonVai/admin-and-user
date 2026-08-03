@@ -288,6 +288,7 @@
       });
     }
 
+    // Fixed & Strict Market Total Calculation Logic
     function getOptionTotalBet(matchId, mKey, oKey, optionName) {
       let total = 0;
       if (!allPlacedBetsData) return 0;
@@ -295,6 +296,10 @@
       const cleanMatchId = String(matchId).trim();
       const cleanOptName = optionName ? String(optionName).trim().toLowerCase() : '';
       const cleanOptKey = oKey ? String(oKey).trim().toLowerCase() : '';
+
+      // Get target market title to avoid cross-market option collision
+      const marketObj = allMatchesData[matchId]?.customMarkets?.[mKey];
+      const targetMarketTitle = marketObj?.title ? String(marketObj.title).trim().toLowerCase() : '';
 
       const extractBets = (node) => {
         if (!node || typeof node !== 'object') return [];
@@ -317,13 +322,20 @@
       allBetsList.forEach(bet => {
         if (!bet) return;
 
-        // Skip refunded or returned bets so that total resets after refund
+        // Ignore refunded or cancelled bets
         if (bet.status === 'refunded' || bet.status === 'returned' || bet.status === 'cancelled') {
           return;
         }
 
         const betMatchId = String(bet.matchId || bet.match_id || bet.betId || '').trim();
         if (betMatchId !== cleanMatchId) return;
+
+        // Validate Market Match if marketTitle or marketKey is available in bet object
+        const betMarketKey = String(bet.marketKey || bet.mKey || bet.marketId || '').trim();
+        const betMarketTitle = String(bet.marketTitle || bet.market || bet.title || '').trim().toLowerCase();
+
+        if (betMarketKey && betMarketKey !== mKey) return;
+        if (targetMarketTitle && betMarketTitle && betMarketTitle !== targetMarketTitle) return;
 
         const betOptKey = String(bet.optionKey || bet.option_key || bet.optKey || bet.optionId || '').trim().toLowerCase();
         const betOptName = String(bet.selectedOption || bet.optionName || bet.option || bet.team || bet.betOn || '').trim().toLowerCase();
@@ -649,6 +661,9 @@
       const targetOptName = winOptName ? String(winOptName).trim().toLowerCase() : '';
       const targetOptKey = winningOKey ? String(winningOKey).trim().toLowerCase() : '';
 
+      const marketObj = allMatchesData[matchId]?.customMarkets?.[targetMKey];
+      const targetMarketTitle = marketObj?.title ? String(marketObj.title).trim().toLowerCase() : '';
+
       const processNode = async (node, nodePath) => {
         if (!node || typeof node !== 'object') return;
 
@@ -660,6 +675,12 @@
           if (item.matchId || item.match_id || item.selectedOption || item.amount || item.betAmount) {
             const betMatchId = String(item.matchId || item.match_id || item.betId || '').trim();
             if (betMatchId === cleanMatchId) {
+              const betMarketKey = String(item.marketKey || item.mKey || item.marketId || '').trim();
+              const betMarketTitle = String(item.marketTitle || item.market || item.title || '').trim().toLowerCase();
+
+              if (betMarketKey && betMarketKey !== targetMKey) continue;
+              if (targetMarketTitle && betMarketTitle && betMarketTitle !== targetMarketTitle) continue;
+
               const betOptKey = String(item.optionKey || item.option_key || item.optKey || item.optionId || '').trim().toLowerCase();
               const betOptName = String(item.selectedOption || item.optionName || item.option || item.team || item.betOn || '').trim().toLowerCase();
 
@@ -745,11 +766,13 @@
           if (item.matchId || item.match_id || item.selectedOption || item.amount || item.betAmount) {
             const betMatchId = String(item.matchId || item.match_id || item.betId || '').trim();
             const betMarketTitle = String(item.marketTitle || item.market || item.title || '').trim().toLowerCase();
+            const betMarketKey = String(item.marketKey || item.mKey || item.marketId || '').trim();
 
-            if (betMatchId === cleanMatchId && (!marketTitle || betMarketTitle === marketTitle)) {
+            if (betMatchId === cleanMatchId && 
+               ((betMarketKey && betMarketKey === mKey) || (!marketTitle || betMarketTitle === marketTitle))) {
+              
               const userId = item.userId || item.uid || item.user_id;
               const betAmount = Number(item.amount || item.betAmount || item.stake || 0);
-
               const currentBetStatus = String(item.status || '').toLowerCase();
 
               // Update Bet status to refunded
@@ -1037,4 +1060,4 @@
     });
   </script>
 </body>
-  </html>
+</html>
