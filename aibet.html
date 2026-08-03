@@ -115,7 +115,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { getDatabase, ref, onValue, update, remove, push, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    import { getDatabase, ref, onValue, update, remove, push, get, runTransaction } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyBzQaaXhTtiGpMjRMBUXZaCIrDRoNyEkU4",
@@ -288,7 +288,6 @@
       });
     }
 
-    // Fixed & Strict Market Total Calculation Logic
     function getOptionTotalBet(matchId, mKey, oKey, optionName) {
       let total = 0;
       if (!allPlacedBetsData) return 0;
@@ -297,7 +296,6 @@
       const cleanOptName = optionName ? String(optionName).trim().toLowerCase() : '';
       const cleanOptKey = oKey ? String(oKey).trim().toLowerCase() : '';
 
-      // Get target market title to avoid cross-market option collision
       const marketObj = allMatchesData[matchId]?.customMarkets?.[mKey];
       const targetMarketTitle = marketObj?.title ? String(marketObj.title).trim().toLowerCase() : '';
 
@@ -322,7 +320,6 @@
       allBetsList.forEach(bet => {
         if (!bet) return;
 
-        // Ignore refunded or cancelled bets
         if (bet.status === 'refunded' || bet.status === 'returned' || bet.status === 'cancelled') {
           return;
         }
@@ -330,7 +327,6 @@
         const betMatchId = String(bet.matchId || bet.match_id || bet.betId || '').trim();
         if (betMatchId !== cleanMatchId) return;
 
-        // Validate Market Match if marketTitle or marketKey is available in bet object
         const betMarketKey = String(bet.marketKey || bet.mKey || bet.marketId || '').trim();
         const betMarketTitle = String(bet.marketTitle || bet.market || bet.title || '').trim().toLowerCase();
 
@@ -423,7 +419,6 @@
             const totalBet = getOptionTotalBet(id, mKey, oKey, optName);
             const formattedName = totalBet > 0 ? `${optName} (${totalBet})` : optName;
             
-            // Check win/loss status
             const isWinner = opt.isWinner === true || opt.status === 'win' || market.winningOptionKey === oKey;
             const isLoss = opt.status === 'loss' || (market.winningOptionKey && market.winningOptionKey !== oKey);
 
@@ -443,12 +438,11 @@
                 <div class="flex items-center justify-between gap-1 mb-1">
                   <input type="text" data-id="${id}" data-mkey="${mKey}" data-okey="${oKey}" value="${formattedName}" placeholder="NAME" class="custom-option-name block text-[10px] font-bold ${totalBet > 0 ? 'text-emerald-600' : 'text-gray-500'} uppercase truncate w-full bg-transparent border-none p-0 focus:outline-none focus:ring-0">
                   
-                  <!-- Light Color WIN / LOSS Button -->
                   <button 
                     data-id="${id}" 
                     data-mkey="${mKey}" 
                     data-okey="${oKey}" 
-                    title="Click to set WIN (others become LOSS & payout users)"
+                    title="Click to set WIN"
                     class="set-option-win-btn text-[8px] px-1.5 py-0.5 rounded-md transition-all flex items-center justify-center shrink-0 cursor-pointer ${buttonStyle}"
                   >
                     ${buttonText}
@@ -464,38 +458,30 @@
 
           customMarketsHTML += `
             <div class="mt-3 pt-2.5 border-t border-gray-100 ${isHidden ? 'bg-gray-50/80 p-2 rounded-xl border border-dashed border-gray-300' : ''}">
-              
-              <!-- Action Buttons Bar ABOVE Market Title (Refund, Hide, Lock, Delete) -->
               <div class="flex items-center justify-between mb-1">
                 <div class="flex items-center gap-1 flex-wrap">
-                  <!-- Small Refund Button -->
-                  <button data-id="${id}" data-mkey="${mKey}" class="return-market-btn text-[9px] px-1.5 py-0.5 rounded font-bold bg-amber-50 text-amber-600 hover:bg-amber-100 border border-amber-200 transition flex items-center gap-1 cursor-pointer" title="Refund market to NEW state & refund stakes">
+                  <button data-id="${id}" data-mkey="${mKey}" class="return-market-btn text-[9px] px-1.5 py-0.5 rounded font-bold bg-amber-50 text-amber-600 hover:bg-amber-100 border border-amber-200 transition flex items-center gap-1 cursor-pointer" title="Refund market">
                     <i class="fa-solid fa-rotate-left text-[8px]"></i> Refund
                   </button>
 
-                  <!-- Small Hide Button -->
-                  <button data-id="${id}" data-mkey="${mKey}" data-hidden="${isHidden}" class="hide-market-btn text-[9px] px-1.5 py-0.5 rounded font-bold ${isHidden ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border border-gray-200'} transition flex items-center gap-1 cursor-pointer" title="${isHidden ? 'Show Market' : 'Hide Market'}">
+                  <button data-id="${id}" data-mkey="${mKey}" data-hidden="${isHidden}" class="hide-market-btn text-[9px] px-1.5 py-0.5 rounded font-bold ${isHidden ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border border-gray-200'} transition flex items-center gap-1 cursor-pointer">
                     <i class="fa-solid ${isHidden ? 'fa-eye' : 'fa-eye-slash'} text-[8px]"></i> ${isHidden ? 'Show' : 'Hide'}
                   </button>
 
-                  <!-- Small Lock Button -->
-                  <button data-id="${id}" data-mkey="${mKey}" data-locked="${isLocked}" class="lock-market-btn text-[9px] px-1.5 py-0.5 rounded font-bold ${isLocked ? 'bg-red-500 text-white border border-red-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border border-gray-200'} transition flex items-center gap-1 cursor-pointer" title="${isLocked ? 'Unlock Market' : 'Lock Market'}">
+                  <button data-id="${id}" data-mkey="${mKey}" data-locked="${isLocked}" class="lock-market-btn text-[9px] px-1.5 py-0.5 rounded font-bold ${isLocked ? 'bg-red-500 text-white border border-red-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border border-gray-200'} transition flex items-center gap-1 cursor-pointer">
                     <i class="fa-solid ${isLocked ? 'fa-lock' : 'fa-lock-open'} text-[8px]"></i> ${isLocked ? 'Locked' : 'Lock'}
                   </button>
                 </div>
 
-                <!-- Small Delete Market Button -->
-                <button data-id="${id}" data-mkey="${mKey}" class="delete-market-btn text-[9px] px-1.5 py-0.5 rounded font-bold bg-red-50 text-red-500 hover:bg-red-100 border border-red-200 transition flex items-center gap-1 cursor-pointer" title="Delete Market">
+                <button data-id="${id}" data-mkey="${mKey}" class="delete-market-btn text-[9px] px-1.5 py-0.5 rounded font-bold bg-red-50 text-red-500 hover:bg-red-100 border border-red-200 transition flex items-center gap-1 cursor-pointer">
                   <i class="fa-solid fa-trash-can text-[8px]"></i> Delete
                 </button>
               </div>
 
-              <!-- Market Title Input -->
               <div class="flex items-center justify-between mb-1.5">
                 <input type="text" data-id="${id}" data-mkey="${mKey}" value="${market.title || 'Total Six'}" placeholder="Market Title" class="market-title-input text-xs font-bold ${isHidden ? 'text-gray-400 line-through' : 'text-gray-700'} bg-transparent border-b border-dashed border-gray-300 focus:border-purple-600 focus:outline-none w-full uppercase">
               </div>
 
-              <!-- Market Options Grid (Hidden when Hide status is true) -->
               <div class="${isHidden ? 'hidden' : 'grid'} ${gridColsClass} gap-1.5">
                 ${optionsHTML || '<p class="text-[10px] text-gray-400 italic col-span-full">No options added.</p>'}
               </div>
@@ -538,7 +524,6 @@
             </div>
           </div>
 
-          <!-- Dynamic Scoreboard Area -->
           <div id="scoreboard-${id}" class="bg-gray-900 text-white p-3.5 rounded-xl my-3 shadow-inner">
             ${getScoreboardHTML(data, aiScore, isLive)}
           </div>
@@ -547,7 +532,6 @@
             <i class="fa-regular fa-clock mr-1"></i> ${new Date(data.matchDate || Date.now()).toLocaleString('en-US')}
           </div>
 
-          <!-- Match Betting Markets Container -->
           <div class="bg-purple-50/30 border border-purple-100 rounded-2xl p-2 my-4">
             <div class="flex items-center justify-between mb-3">
               <span class="text-xs font-bold text-purple-900 flex items-center gap-1.5">
@@ -558,12 +542,10 @@
               </button>
             </div>
 
-            <!-- Add Bet Category Form -->
             <div id="add-market-form-${id}" class="hidden mb-4 p-3 bg-white border border-purple-200 rounded-2xl shadow-sm">
               <p class="text-[11px] font-bold text-purple-700 mb-2">Create New Title Market</p>
               <input type="text" id="new-market-title-${id}" placeholder="Market Title (e.g. Match Winner)" class="w-full px-3 py-1.5 text-xs bg-gray-50 border border-gray-200 rounded-xl mb-3 focus:outline-none focus:ring-2 focus:ring-purple-500 font-medium">
               
-              <!-- Container for dynamic option inputs -->
               <div id="market-options-inputs-${id}" class="space-y-2 mb-3">
                 <div class="grid grid-cols-2 gap-2 option-row">
                   <input type="text" placeholder="Option Name" class="opt-name-input px-2 py-1 text-xs bg-gray-50 border border-gray-200 rounded-lg focus:outline-none">
@@ -591,7 +573,6 @@
               </div>
             </div>
 
-            <!-- Custom Bets List Container -->
             <div id="custom-markets-list-${id}">
               ${customMarketsHTML}
             </div>
@@ -653,7 +634,6 @@
       `;
     }
 
-    // Function to payout winning bets to user balances
     async function processBetPayouts(matchId, targetMKey, winningOKey, winOptName) {
       if (!allPlacedBetsData) return;
 
@@ -663,6 +643,8 @@
 
       const marketObj = allMatchesData[matchId]?.customMarkets?.[targetMKey];
       const targetMarketTitle = marketObj?.title ? String(marketObj.title).trim().toLowerCase() : '';
+
+      const processedBetsMap = {};
 
       const processNode = async (node, nodePath) => {
         if (!node || typeof node !== 'object') return;
@@ -693,22 +675,23 @@
               const odds = Number(item.odds || item.rate || item.val || 1);
               const winAmount = betAmount * odds;
 
+              const betUniqueId = item.betId || `${userId}_${betAmount}_${item.createdAt || key}`;
+
               if (isMatch) {
-                // User WON
                 await update(ref(db, currentPath), { status: 'win', isWinner: true, payoutProcessed: true });
 
-                if (userId && winAmount > 0) {
+                if (userId && winAmount > 0 && !processedBetsMap[betUniqueId]) {
+                  processedBetsMap[betUniqueId] = true;
                   try {
-                    const userRef = ref(db, `users/${userId}/balance`);
-                    const userSnap = await get(userRef);
-                    let currentBal = userSnap.exists() ? Number(userSnap.val() || 0) : 0;
-                    await update(ref(db, `users/${userId}`), { balance: currentBal + winAmount });
+                    const userBalanceRef = ref(db, `users/${userId}/balance`);
+                    await runTransaction(userBalanceRef, (currentBal) => {
+                      return Number(currentBal || 0) + winAmount;
+                    });
                   } catch (e) {
                     console.error("Payout update failed for user:", userId, e);
                   }
                 }
               } else {
-                // User LOST
                 await update(ref(db, currentPath), { status: 'loss', isWinner: false, payoutProcessed: true });
               }
             }
@@ -730,7 +713,7 @@
       }
     }
 
-    // Refund / Return Market to NEW State Logic (FIXED: Single Payout to Users)
+    // STRICT REFUND LOGIC: EXACT MATCH BET AMOUNT & STRICT SINGLE-PAYOUT TRANSACTION
     async function processMarketReturn(matchId, mKey) {
       if (!allPlacedBetsData) return;
       const cleanMatchId = String(matchId).trim();
@@ -738,7 +721,6 @@
       const market = allMatchesData[matchId]?.customMarkets?.[mKey];
       const marketTitle = market?.title ? String(market.title).trim().toLowerCase() : '';
 
-      // Reset market options to NEW / pending status in DB
       if (market && market.options) {
         const optionResetUpdates = {};
         Object.keys(market.options).forEach(oKey => {
@@ -748,6 +730,8 @@
         optionResetUpdates[`bets/${matchId}/customMarkets/${mKey}/winningOptionKey`] = null;
         await update(ref(db), optionResetUpdates);
       }
+
+      const processedRefunds = {};
 
       const processReturnNode = async (node, nodePath) => {
         if (!node || typeof node !== 'object') return;
@@ -768,18 +752,21 @@
               const betAmount = Number(item.amount || item.betAmount || item.stake || 0);
               const currentBetStatus = String(item.status || '').toLowerCase();
 
-              // Update Bet status to refunded
               await update(ref(db, currentPath), { status: 'refunded', payoutProcessed: false, isWinner: false });
 
-              // Refund stake amount ONCE to User Balance
-              if (userId && betAmount > 0 && currentBetStatus !== 'returned' && currentBetStatus !== 'refunded') {
+              const betUniqueId = item.betId || key;
+
+              // Process Refund ONLY IF NOT REFUNDED YET & MATCHES UNIQUE BET ID
+              if (userId && betAmount > 0 && currentBetStatus !== 'returned' && currentBetStatus !== 'refunded' && !processedRefunds[betUniqueId]) {
+                processedRefunds[betUniqueId] = true;
+                
                 try {
-                  const userRef = ref(db, `users/${userId}/balance`);
-                  const userSnap = await get(userRef);
-                  let currentBal = userSnap.exists() ? Number(userSnap.val() || 0) : 0;
-                  await update(ref(db, `users/${userId}`), { balance: currentBal + betAmount });
+                  const userBalanceRef = ref(db, `users/${userId}/balance`);
+                  await runTransaction(userBalanceRef, (currentBal) => {
+                    return Number(currentBal || 0) + betAmount;
+                  });
                 } catch (err) {
-                  console.error("Refund processing failed:", err);
+                  console.error("Refund transaction failed:", err);
                 }
               }
             }
@@ -873,19 +860,17 @@
     });
 
     matchesContainer.addEventListener('click', async (e) => {
-      // Refund Button Action (Reset Win/Loss & Refund Market)
       const returnMarketBtn = e.target.closest('.return-market-btn');
       if (returnMarketBtn) {
-        if (confirm("Reset market to NEW state and refund all user stakes?")) {
+        if (confirm("Reset market to NEW state and refund exact user stake?")) {
           const matchId = returnMarketBtn.getAttribute('data-id');
           const mKey = returnMarketBtn.getAttribute('data-mkey');
           await processMarketReturn(matchId, mKey);
-          alert("Market has been reset to NEW & stakes refunded!");
+          alert("Market has been reset to NEW & exact stake refunded!");
         }
         return;
       }
 
-      // Hide Button Action (Toggle Hide Market)
       const hideMarketBtn = e.target.closest('.hide-market-btn');
       if (hideMarketBtn) {
         const matchId = hideMarketBtn.getAttribute('data-id');
@@ -896,7 +881,6 @@
         return;
       }
 
-      // Lock Button Action (Toggle Lock State)
       const lockMarketBtn = e.target.closest('.lock-market-btn');
       if (lockMarketBtn) {
         const matchId = lockMarketBtn.getAttribute('data-id');
@@ -907,7 +891,6 @@
         return;
       }
 
-      // Delete Market Button Action
       const deleteMarketBtn = e.target.closest('.delete-market-btn');
       if (deleteMarketBtn) {
         if (confirm("Are you sure you want to delete this market?")) {
@@ -1046,4 +1029,4 @@
     });
   </script>
 </body>
-  </html>
+</html>
