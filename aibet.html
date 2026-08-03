@@ -230,54 +230,6 @@
       }
     }
 
-    // স্কোর অনুযায়ী ডায়নামিক ওডস বা পয়েন্ট হিসেব করার ফাংশন
-    function calculateDynamicOdds(score, matchData) {
-      const team1 = matchData.team1?.name?.toLowerCase() || '';
-      const team2 = matchData.team2?.name?.toLowerCase() || '';
-      
-      let winProbTeam1 = 0.50; // ডিফোল্ট ৫০% ৫০% সুযোগ
-      
-      if (score.innings === 1) {
-        const totalBalls = score.maxOvers * 6;
-        const playedBalls = (score.over * 6) + score.ball;
-        const currentRunRate = playedBalls > 0 ? (score.runs / playedBalls) * 6 : 6;
-        
-        // ১ম ইনিংসে রান রেট এবং উইকেটের ওপর ভিত্তি করে সম্ভাবনা
-        winProbTeam1 = 0.50 + (currentRunRate - 6) * 0.03 - (score.wickets * 0.04);
-      } else if (score.innings === 2) {
-        const totalBalls = score.maxOvers * 6;
-        const playedBalls = (score.over * 6) + score.ball;
-        const remainingBalls = Math.max(1, totalBalls - playedBalls);
-        const runsNeeded = Math.max(0, score.target - score.runs);
-        
-        const reqRunRate = (runsNeeded / remainingBalls) * 6;
-        
-        // ২য় ইনিংসে রিকোয়ার্ড রান রেট এবং উইকেটের প্রভাব
-        if (runsNeeded <= 0) {
-          winProbTeam1 = 0.01; // টিম ২ জিতেছে
-        } else {
-          let winProbTeam2 = 0.50 - (reqRunRate - 8) * 0.05 - (score.wickets * 0.06);
-          winProbTeam2 = Math.min(0.95, Math.max(0.05, winProbTeam2));
-          winProbTeam1 = 1 - winProbTeam2;
-        }
-      }
-
-      // লিমিট সেট করা
-      winProbTeam1 = Math.min(0.92, Math.max(0.08, winProbTeam1));
-      const winProbTeam2 = 1 - winProbTeam1;
-
-      // ওডস (Odds) ফর্মুলা: (1 / Probability) * Margin
-      const margin = 0.90; // ১০% বুকমেকার মার্জিন
-      const oddsTeam1 = ( (1 / winProbTeam1) * margin ).toFixed(2);
-      const oddsTeam2 = ( (1 / winProbTeam2) * margin ).toFixed(2);
-
-      return {
-        team1: oddsTeam1 < 1.05 ? "1.05" : oddsTeam1,
-        team2: oddsTeam2 < 1.05 ? "1.05" : oddsTeam2,
-        winProbTeam1
-      };
-    }
-
     function calculateScoreFromTimestamp(match, currentTime = Date.now()) {
       const startTime = match.startTime || currentTime;
       const status = match.status;
@@ -358,6 +310,52 @@
       return s;
     }
 
+    // রান ও উইকেটের ওপর ভিত্তি করে স্বয়ংক্রিয় অডস (Odds) গণনার লজিক
+    function calculateDynamicOdds(market, oKey, currentScore) {
+      if (!currentScore) return null;
+      
+      const runs = currentScore.runs || 0;
+      const wickets = currentScore.wickets || 0;
+      const totalOvers = currentScore.maxOvers || 20;
+      const currentOvers = currentScore.over + (currentScore.ball / 6);
+      
+      const opt = market.options?.[oKey];
+      if (!opt) return null;
+
+      const optName = String(opt.name || '').toLowerCase();
+      
+      // বেইজ মাল্টিপ্লায়ার ক্যালকুলেশন
+      let baseFactor = 1.0;
+
+      // ১. ১মে অথবা ২য় ইনিংসের পরিস্থিতি অনুযায়ী রান ফ্লাকচুয়েশন
+      if (currentScore.innings === 1) {
+        const runRate = currentOvers > 0 ? (runs / currentOvers) : 6;
+        baseFactor += (runRate - 6) * 0.05 - (wickets * 0.08);
+      } else {
+        const requiredRuns = (currentScore.target || 100) - runs;
+        const remainingBalls = Math.max(1, (totalOvers * 6) - (currentScore.over * 6 + currentScore.ball));
+        const requiredRR = (requiredRuns / remainingBalls) * 6;
+        baseFactor += (6 - requiredRR) * 0.08 - (wickets * 0.1);
+      }
+
+      // ২. অপশন নেইমের ধরণ অনু্যায়ী অডস পরিবর্তন
+      let dynamicOdds = 1.85;
+
+      if (optName.includes('yes') || optName.includes('over') || optName.includes('1st') || optName.includes('team 1')) {
+        dynamicOdds = 1.85 + (baseFactor * 0.3);
+      } else if (optName.includes('no') || optName.includes('under') || optName.includes('2nd') || optName.includes('team 2')) {
+        dynamicOdds = 1.85 - (baseFactor * 0.3);
+      } else {
+        // সাধারণ অপশনের জন্য রান ও উইকেটের র্যান্ডম সামান্য প্রভাব
+        const shift = ((runs % 7) * 0.03) - ((wickets % 3) * 0.05);
+        dynamicOdds = 1.85 + shift;
+      }
+
+      // সীমানা নির্ধারণ (মিনিমাম ১.০৫ এবং ম্যাক্সিমাম ১০.০০)
+      dynamicOdds = Math.max(1.05, Math.min(10.00, dynamicOdds));
+      return dynamicOdds.toFixed(2);
+    }
+
     async function syncAndSaveAIScore(matchId, matchData) {
       if (!matchData || matchData.status !== 'live') return;
 
@@ -365,39 +363,33 @@
       const dbBallCount = ((matchData.aiScore?.over || 0) * 6) + (matchData.aiScore?.ball || 0);
       const currentBallCount = (currentScore.over * 6) + currentScore.ball;
 
-      if (currentBallCount > dbBallCount || !matchData.aiScore) {
-        try {
-          const updatePayload = { aiScore: currentScore };
-          
-          // লাইভ স্কোরের ওপর ভিত্তি করে ওডস বা পয়েন্ট আপডেট
-          const calculatedOdds = calculateDynamicOdds(currentScore, matchData);
-          
-          if (matchData.customMarkets) {
-            Object.keys(matchData.customMarkets).forEach(mKey => {
-              const market = matchData.customMarkets[mKey];
-              if (market && market.options) {
-                Object.keys(market.options).forEach(oKey => {
-                  const opt = market.options[oKey];
-                  const optName = (opt.name || '').toLowerCase();
-                  
-                  // টিম ১ ও টিম ২ এর ওডস ডায়নামিক আপডেট
-                  if (matchData.team1?.name && optName.includes(matchData.team1.name.toLowerCase())) {
-                    updatePayload[`customMarkets/${mKey}/options/${oKey}/val`] = calculatedOdds.team1;
-                  } else if (matchData.team2?.name && optName.includes(matchData.team2.name.toLowerCase())) {
-                    updatePayload[`customMarkets/${mKey}/options/${oKey}/val`] = calculatedOdds.team2;
-                  }
-                });
-              }
-            });
-          }
+      const updatePayload = {};
 
-          if (currentScore.isMatchOver) {
-            // ৮০% - ২০% লজিকের বিজয়ী সেট করা
-            const forcedWinner = determineAutoWinnerWithProbability(matchId, matchData);
-            
-            updatePayload.status = 'finished';
-            updatePayload.winner = forcedWinner;
-          }
+      if (currentBallCount > dbBallCount || !matchData.aiScore) {
+        updatePayload.aiScore = currentScore;
+        
+        if (currentScore.isMatchOver) {
+          const forcedWinner = determineAutoWinnerWithProbability(matchId, matchData);
+          updatePayload.status = 'finished';
+          updatePayload.winner = forcedWinner;
+        }
+
+        // রান এবং উইকেটের ওপর ভিত্তি করে মার্কেটের অডস অটোমেটিক আপডেট করা
+        if (matchData.customMarkets) {
+          Object.keys(matchData.customMarkets).forEach(mKey => {
+            const market = matchData.customMarkets[mKey];
+            if (market && market.options && !market.isLocked) {
+              Object.keys(market.options).forEach(oKey => {
+                const updatedOdds = calculateDynamicOdds(market, oKey, currentScore);
+                if (updatedOdds) {
+                  updatePayload[`customMarkets/${mKey}/options/${oKey}/val`] = updatedOdds;
+                }
+              });
+            }
+          });
+        }
+
+        try {
           await update(ref(db, `bets/${matchId}`), updatePayload);
         } catch (err) {
           console.error("Firebase Sync Error:", err);
@@ -679,11 +671,11 @@
               <div id="market-options-inputs-${id}" class="space-y-2 mb-3">
                 <div class="grid grid-cols-2 gap-2 option-row">
                   <input type="text" placeholder="Option Name" class="opt-name-input px-2 py-1 text-xs bg-gray-50 border border-gray-200 rounded-lg focus:outline-none">
-                  <input type="text" inputmode="decimal" value="1.00" placeholder="Odds" class="opt-val-input px-2 py-1 text-xs text-center font-bold bg-gray-50 border border-gray-200 rounded-lg focus:outline-none">
+                  <input type="text" inputmode="decimal" value="1.85" placeholder="Odds" class="opt-val-input px-2 py-1 text-xs text-center font-bold bg-gray-50 border border-gray-200 rounded-lg focus:outline-none">
                 </div>
                 <div class="grid grid-cols-2 gap-2 option-row">
                   <input type="text" placeholder="Option Name" class="opt-name-input px-2 py-1 text-xs bg-gray-50 border border-gray-200 rounded-lg focus:outline-none">
-                  <input type="text" inputmode="decimal" value="1.00" placeholder="Odds" class="opt-val-input px-2 py-1 text-xs text-center font-bold bg-gray-50 border border-gray-200 rounded-lg focus:outline-none">
+                  <input type="text" inputmode="decimal" value="1.85" placeholder="Odds" class="opt-val-input px-2 py-1 text-xs text-center font-bold bg-gray-50 border border-gray-200 rounded-lg focus:outline-none">
                 </div>
               </div>
 
@@ -1093,7 +1085,7 @@
           newRow.className = "grid grid-cols-2 gap-2 option-row";
           newRow.innerHTML = `
             <input type="text" placeholder="Option Name" class="opt-name-input px-2 py-1 text-xs bg-gray-50 border border-gray-200 rounded-lg focus:outline-none">
-            <input type="text" inputmode="decimal" value="1.00" placeholder="Odds" class="opt-val-input px-2 py-1 text-xs text-center font-bold bg-gray-50 border border-gray-200 rounded-lg focus:outline-none">
+            <input type="text" inputmode="decimal" value="1.85" placeholder="Odds" class="opt-val-input px-2 py-1 text-xs text-center font-bold bg-gray-50 border border-gray-200 rounded-lg focus:outline-none">
           `;
           optionsContainer.appendChild(newRow);
         }
