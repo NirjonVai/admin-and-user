@@ -317,6 +317,11 @@
       allBetsList.forEach(bet => {
         if (!bet) return;
 
+        // Skip refunded or returned bets so that total resets after refund
+        if (bet.status === 'refunded' || bet.status === 'returned' || bet.status === 'cancelled') {
+          return;
+        }
+
         const betMatchId = String(bet.matchId || bet.match_id || bet.betId || '').trim();
         if (betMatchId !== cleanMatchId) return;
 
@@ -394,7 +399,7 @@
         marketKeys.forEach((mKey) => {
           const market = customMarkets[mKey] || {};
           const isLocked = market.isLocked === true;
-          const isHidden = market.isHidden === true; // Hide Market Property
+          const isHidden = market.isHidden === true; 
           const options = market.options || {};
           const optionKeys = Object.keys(options);
           const gridColsClass = optionKeys.length >= 3 ? 'grid-cols-3' : 'grid-cols-2';
@@ -745,11 +750,13 @@
               const userId = item.userId || item.uid || item.user_id;
               const betAmount = Number(item.amount || item.betAmount || item.stake || 0);
 
-              // Update Bet status to refunded / returned
-              await update(ref(db, currentPath), { status: 'refunded', payoutProcessed: false });
+              const currentBetStatus = String(item.status || '').toLowerCase();
 
-              // Refund stake amount back to User Balance if it wasn't already returned
-              if (userId && betAmount > 0 && item.status !== 'returned' && item.status !== 'refunded') {
+              // Update Bet status to refunded
+              await update(ref(db, currentPath), { status: 'refunded', payoutProcessed: false, isWinner: false });
+
+              // Refund stake amount back to User Balance if it wasn't already returned/refunded
+              if (userId && betAmount > 0 && currentBetStatus !== 'returned' && currentBetStatus !== 'refunded') {
                 try {
                   const userRef = ref(db, `users/${userId}/balance`);
                   const userSnap = await get(userRef);
@@ -1030,4 +1037,4 @@
     });
   </script>
 </body>
-</html>
+  </html>
