@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
@@ -372,48 +372,98 @@
                     return acc + (parseInt(b) || 0);
                 }, 0);
 
-                // 🎯 Dynamically generate Admin added Custom Markets HTML
+                // 🎯 Dynamically generate Admin added Custom Markets HTML (with Lock & Hide Support)
                 const customMarkets = match.customMarkets || {};
                 const customMarketKeys = Object.keys(customMarkets);
                 let customMarketsHTML = '';
 
-                if (customMarketKeys.length === 0) {
-                    customMarketsHTML = `
-                        <div class="text-center py-3">
-                            <p class="text-[11px] font-semibold text-slate-500 italic">No active betting markets right now.</p>
-                        </div>
-                    `;
-                } else {
+                let visibleMarketsCount = 0;
+
+                if (customMarketKeys.length > 0) {
                     customMarketKeys.forEach((mKey) => {
                         const market = customMarkets[mKey] || {};
+                        
+                        // 🙈 Check Market Level Hide
+                        const isMarketHidden = market.isHidden === true || market.hidden === true;
+                        if (isMarketHidden) return;
+
+                        // 🔒 Check Market Level Lock
+                        const isMarketLocked = market.isLocked === true || market.locked === true;
+
                         const options = market.options || {};
                         const optionKeys = Object.keys(options);
-                        const gridColsClass = optionKeys.length >= 3 ? 'grid-cols-3' : 'grid-cols-2';
+                        
+                        // Filter active visible options
+                        const visibleOptionKeys = optionKeys.filter(oKey => {
+                            const opt = options[oKey] || {};
+                            return !(opt.isHidden === true || opt.hidden === true);
+                        });
+
+                        if (visibleOptionKeys.length === 0 && !isMarketLocked) return;
+
+                        visibleMarketsCount++;
+
+                        const gridColsClass = visibleOptionKeys.length >= 3 ? 'grid-cols-3' : 'grid-cols-2';
 
                         let optionsHTML = '';
-                        optionKeys.forEach((oKey) => {
-                            const opt = options[oKey] || {};
-                            const optName = opt.name || 'OPTION';
-                            const optVal = opt.val || '1.00';
-                            const matchTitle = `${team1Name} vs ${team2Name}`;
 
-                            optionsHTML += `
-                                <button onclick="openBetModal('${matchId}', '${matchTitle}', '${market.title || 'Market'}', '${optName}', '${optVal}')" class="bg-slate-800/60 hover:bg-amber-400 border border-slate-700/60 hover:border-amber-400 py-2 px-1 rounded-xl transition-all duration-300 text-center group cursor-pointer shadow-md flex flex-col items-center justify-center">
-                                    <span class="block text-[9px] font-extrabold text-slate-400 group-hover:text-slate-950 uppercase tracking-wider mb-0.5 truncate w-full px-1">${optName}</span>
-                                    <span class="font-extrabold text-xs sm:text-sm text-amber-400 group-hover:text-slate-950">${optVal}</span>
-                                </button>
+                        if (isMarketLocked) {
+                            // Market is Locked UI Display
+                            optionsHTML = `
+                                <div class="col-span-full bg-slate-950/80 border border-slate-800 rounded-xl p-2.5 text-center flex items-center justify-center space-x-2 text-slate-500">
+                                    <i class="fa-solid fa-lock text-amber-500/80 text-xs"></i>
+                                    <span class="text-[10px] font-bold uppercase tracking-wider">Market Locked</span>
+                                </div>
                             `;
-                        });
+                        } else {
+                            visibleOptionKeys.forEach((oKey) => {
+                                const opt = options[oKey] || {};
+                                const optName = opt.name || 'OPTION';
+                                const optVal = opt.val || '1.00';
+                                const isOptLocked = opt.isLocked === true || opt.locked === true;
+                                const matchTitle = `${team1Name} vs ${team2Name}`;
+
+                                if (isOptLocked) {
+                                    // Individual Locked Option
+                                    optionsHTML += `
+                                        <button disabled class="bg-slate-950/70 border border-slate-800/80 py-2 px-1 rounded-xl text-center cursor-not-allowed opacity-60 flex flex-col items-center justify-center relative overflow-hidden">
+                                            <i class="fa-solid fa-lock text-[10px] text-amber-500/70 absolute top-1 right-1.5"></i>
+                                            <span class="block text-[9px] font-extrabold text-slate-500 uppercase tracking-wider mb-0.5 truncate w-full px-1">${optName}</span>
+                                            <span class="font-extrabold text-xs sm:text-sm text-slate-500">${optVal}</span>
+                                        </button>
+                                    `;
+                                } else {
+                                    // Active Bet Option
+                                    optionsHTML += `
+                                        <button onclick="openBetModal('${matchId}', '${matchTitle}', '${market.title || 'Market'}', '${optName}', '${optVal}')" class="bg-slate-800/60 hover:bg-amber-400 border border-slate-700/60 hover:border-amber-400 py-2 px-1 rounded-xl transition-all duration-300 text-center group cursor-pointer shadow-md flex flex-col items-center justify-center">
+                                            <span class="block text-[9px] font-extrabold text-slate-400 group-hover:text-slate-950 uppercase tracking-wider mb-0.5 truncate w-full px-1">${optName}</span>
+                                            <span class="font-extrabold text-xs sm:text-sm text-amber-400 group-hover:text-slate-950">${optVal}</span>
+                                        </button>
+                                    `;
+                                }
+                            });
+                        }
 
                         customMarketsHTML += `
                             <div class="mb-3 last:mb-0">
-                                <h3 class="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-2">${market.title || 'Betting Market'}</h3>
+                                <h3 class="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-2 flex items-center justify-between">
+                                    <span>${market.title || 'Betting Market'}</span>
+                                    ${isMarketLocked ? '<i class="fa-solid fa-lock text-amber-500/80 text-[10px]"></i>' : ''}
+                                </h3>
                                 <div class="grid ${gridColsClass} gap-2">
                                     ${optionsHTML}
                                 </div>
                             </div>
                         `;
                     });
+                }
+
+                if (visibleMarketsCount === 0) {
+                    customMarketsHTML = `
+                        <div class="text-center py-3">
+                            <p class="text-[11px] font-semibold text-slate-500 italic">No active betting markets right now.</p>
+                        </div>
+                    `;
                 }
 
                 htmlContent += `
@@ -620,4 +670,4 @@
         }, 4000);
     </script>
 </body>
-    </html>
+</html>
