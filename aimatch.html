@@ -15,7 +15,7 @@
             font-family: 'Plus Jakarta Sans', sans-serif;
         }
 
-        /* 🎬 Slow Motion Bottom-Up Sheet Animation */
+        /* 🎬 Slow Motion Bottom-Up Full-Width Sheet Animation */
         .modal-enter {
             transform: translateY(100%);
             opacity: 0;
@@ -83,69 +83,80 @@
         </div>
     </main>
 
-    <!-- 🚀 Perfect Medium-Compact Bottom Sheet Modal -->
+    <!-- 🚀 Full-Width (Full Screen Width) Bottom-Up Sheet Modal -->
     <div id="bet-modal-wrapper" class="fixed inset-0 z-50 pointer-events-none hidden">
         <!-- Backdrop Fade -->
         <div id="bet-modal-backdrop" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md opacity-0 transition-opacity duration-400 pointer-events-auto"></div>
 
-        <!-- Medium-Compact Bottom Sheet Card -->
-        <div id="bet-modal-card" class="fixed bottom-0 left-0 right-0 w-full bg-slate-900 border-t border-slate-800 rounded-t-3xl p-5 md:p-6 shadow-2xl modal-enter pointer-events-auto z-10 overflow-y-auto max-h-[75vh]">
+        <!-- Bottom Sheet Card (Full Width, Auto Height) -->
+        <div id="bet-modal-card" class="fixed bottom-0 left-0 right-0 w-full max-h-[85vh] bg-slate-900 border-t border-slate-800 rounded-t-3xl flex flex-col justify-between p-5 md:p-6 shadow-2xl modal-enter pointer-events-auto z-10 overflow-y-auto">
             
-            <!-- Drag Bar & Close Header -->
-            <div class="flex justify-between items-center border-b border-slate-800 pb-3 mb-4">
-                <div class="flex items-center space-x-2.5">
-                    <div class="w-8 h-8 rounded-lg bg-amber-400/10 border border-amber-400/20 flex items-center justify-center">
-                        <i class="fa-solid fa-ticket text-amber-400 text-sm"></i>
-                    </div>
-                    <div>
-                        <h3 class="text-xs sm:text-sm font-black text-amber-400 uppercase tracking-wider">Place Bet</h3>
-                        <p class="text-[10px] text-slate-400 font-medium">Select amount & confirm bet</p>
-                    </div>
+            <div>
+                <!-- Top Drag Handle & Close Bar -->
+                <div class="flex flex-col items-center mb-3">
+                    <div class="w-12 h-1.5 bg-slate-700/80 rounded-full mb-3"></div>
                 </div>
-                <button id="close-modal" class="w-7 h-7 rounded-xl bg-slate-800/80 hover:bg-slate-800 text-slate-300 hover:text-white flex items-center justify-center transition-all cursor-pointer">
-                    <i class="fa-solid fa-xmark text-sm"></i>
-                </button>
-            </div>
 
-            <!-- Details Card Grid -->
-            <div class="bg-slate-950/60 border border-slate-800/80 rounded-xl p-3.5 space-y-2 mb-4 text-xs">
-                <div class="flex justify-between items-center text-slate-400">
-                    <span class="font-semibold">Match:</span>
-                    <span id="modal-match-name" class="font-extrabold text-slate-100 truncate max-w-[220px]"></span>
+                <div class="flex justify-between items-center border-b border-slate-800/80 pb-3 mb-4">
+                    <div class="flex items-center space-x-2.5">
+                        <div class="w-8 h-8 rounded-lg bg-amber-400/10 border border-amber-400/20 flex items-center justify-center">
+                            <i class="fa-solid fa-ticket text-amber-400 text-sm"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-black text-amber-400 uppercase tracking-wider">Place Your Bet</h3>
+                        </div>
+                    </div>
+                    <button id="close-modal" class="w-8 h-8 rounded-lg bg-slate-800/80 hover:bg-slate-800 text-slate-300 hover:text-white flex items-center justify-center transition-all cursor-pointer">
+                        <i class="fa-solid fa-xmark text-sm"></i>
+                    </button>
                 </div>
-                <div class="flex justify-between items-center text-slate-400">
-                    <span class="font-semibold">Selection:</span>
-                    <span class="font-black text-amber-400">
-                        <span id="modal-option-name"></span> 
-                        (<span id="modal-option-odds"></span>)
-                    </span>
-                </div>
-            </div>
 
-            <!-- Input & Quick Amount Section -->
-            <div class="space-y-3 mb-4">
-                <div class="relative">
-                    <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-black text-sm">৳</span>
-                    <input type="number" id="bet-amount-input" placeholder="Enter Bet Amount" min="10" class="w-full bg-slate-950 border border-slate-800 focus:border-amber-400 rounded-xl pl-8 pr-4 py-2.5 text-sm font-bold text-white focus:outline-none transition-all shadow-inner">
+                <!-- Match Details Box -->
+                <div class="bg-slate-950/60 border border-slate-800/80 rounded-xl p-3.5 space-y-2 mb-4">
+                    <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-800/60 pb-2">
+                        <span class="font-medium">Match</span>
+                        <span id="modal-match-name" class="font-bold text-slate-100 text-right"></span>
+                    </div>
+                    <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-800/60 pb-2">
+                        <span class="font-medium">Market</span>
+                        <span id="modal-market-title" class="font-bold text-slate-200"></span>
+                    </div>
+                    <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-800/60 pb-2">
+                        <span class="font-medium">Selected Option</span>
+                        <span id="modal-option-name" class="font-extrabold text-amber-400 text-sm"></span>
+                    </div>
+                    <div class="flex justify-between items-center text-xs text-slate-400">
+                        <span class="font-medium">Odds</span>
+                        <span id="modal-option-odds" class="font-black text-amber-400 text-sm sm:text-base"></span>
+                    </div>
+                </div>
+
+                <!-- Input Amount Box -->
+                <div class="space-y-1.5 mb-4">
+                    <label class="block text-xs font-bold text-slate-200 uppercase tracking-wider">Bet Amount (৳)</label>
+                    <div class="relative">
+                        <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-black text-base">৳</span>
+                        <input type="number" id="bet-amount-input" placeholder="0.00" min="10" class="w-full bg-slate-950 border border-slate-800 focus:border-amber-400 rounded-xl pl-9 pr-4 py-2.5 text-base font-bold text-white focus:outline-none transition-all shadow-inner">
+                    </div>
                 </div>
 
                 <!-- Quick Amount Buttons -->
-                <div class="grid grid-cols-4 gap-2">
-                    <button onclick="setBetAmount(100)" class="bg-slate-800/80 hover:bg-slate-800 border border-slate-700/60 py-1.5 rounded-lg text-xs font-bold text-slate-200 transition-all cursor-pointer active:scale-95">+100</button>
-                    <button onclick="setBetAmount(500)" class="bg-slate-800/80 hover:bg-slate-800 border border-slate-700/60 py-1.5 rounded-lg text-xs font-bold text-slate-200 transition-all cursor-pointer active:scale-95">+500</button>
-                    <button onclick="setBetAmount(1000)" class="bg-slate-800/80 hover:bg-slate-800 border border-slate-700/60 py-1.5 rounded-lg text-xs font-bold text-slate-200 transition-all cursor-pointer active:scale-95">+1000</button>
-                    <button onclick="setBetAmount(5000)" class="bg-slate-800/80 hover:bg-slate-800 border border-slate-700/60 py-1.5 rounded-lg text-xs font-bold text-slate-200 transition-all cursor-pointer active:scale-95">+5000</button>
+                <div class="grid grid-cols-4 gap-2 mb-5">
+                    <button onclick="setBetAmount(100)" class="bg-slate-800/60 hover:bg-slate-800 border border-slate-700/60 py-1.5 rounded-lg text-xs font-bold text-slate-200 transition-all cursor-pointer">+100</button>
+                    <button onclick="setBetAmount(500)" class="bg-slate-800/60 hover:bg-slate-800 border border-slate-700/60 py-1.5 rounded-lg text-xs font-bold text-slate-200 transition-all cursor-pointer">+500</button>
+                    <button onclick="setBetAmount(1000)" class="bg-slate-800/60 hover:bg-slate-800 border border-slate-700/60 py-1.5 rounded-lg text-xs font-bold text-slate-200 transition-all cursor-pointer">+1000</button>
+                    <button onclick="setBetAmount(5000)" class="bg-slate-800/60 hover:bg-slate-800 border border-slate-700/60 py-1.5 rounded-lg text-xs font-bold text-slate-200 transition-all cursor-pointer">+5000</button>
                 </div>
             </div>
 
             <!-- Footer Return & Confirm Action -->
-            <div class="flex items-center space-x-3 pt-3 border-t border-slate-800/80">
-                <div class="bg-slate-950 px-3.5 py-2 rounded-xl border border-slate-800 shrink-0">
-                    <span class="text-slate-400 block font-bold text-[10px] uppercase">Est. Return</span>
-                    <span id="modal-potential-return" class="font-black text-amber-400 text-sm">৳0.00</span>
+            <div class="space-y-3 pt-3 border-t border-slate-800/80">
+                <div class="flex justify-between items-center bg-slate-950/80 p-3 rounded-xl border border-slate-800 text-xs">
+                    <span class="text-slate-400 font-bold uppercase tracking-wider">Potential Return</span>
+                    <span id="modal-potential-return" class="font-black text-amber-400 text-base">৳0.00</span>
                 </div>
 
-                <button id="confirm-bet-btn" class="flex-1 bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-amber-500 hover:to-yellow-600 text-slate-950 font-black py-3 rounded-xl transition-all shadow-lg text-xs sm:text-sm uppercase tracking-wider cursor-pointer active:scale-95">
+                <button id="confirm-bet-btn" class="w-full bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-amber-500 hover:to-yellow-600 text-slate-950 font-black py-3 rounded-xl transition-all shadow-xl text-xs sm:text-sm uppercase tracking-widest cursor-pointer active:scale-95">
                     Confirm Bet
                 </button>
             </div>
@@ -213,6 +224,7 @@
         const modalCard = document.getElementById('bet-modal-card');
         const closeModalBtn = document.getElementById('close-modal');
         const modalMatchName = document.getElementById('modal-match-name');
+        const modalMarketTitle = document.getElementById('modal-market-title');
         const modalOptionName = document.getElementById('modal-option-name');
         const modalOptionOdds = document.getElementById('modal-option-odds');
         const betAmountInput = document.getElementById('bet-amount-input');
@@ -604,7 +616,7 @@
             matchesListContainer.innerHTML = htmlContent;
         }
 
-        // 🎲 Open Bet Modal Function
+        // 🎲 Open Bet Modal Function (Slow Motion Bottom-Up Full Width)
         window.openBetModal = function(matchId, matchTitle, marketTitle, optionName, oddsVal) {
             activeBetData = {
                 matchId,
@@ -615,6 +627,7 @@
             };
 
             modalMatchName.innerText = matchTitle;
+            modalMarketTitle.innerText = marketTitle;
             modalOptionName.innerText = optionName;
             modalOptionOdds.innerText = oddsVal;
             betAmountInput.value = '';
@@ -631,7 +644,7 @@
             }, 10);
         };
 
-        // ✖️ Close Modal Function
+        // ✖️ Close Modal Function (Smooth Slow Motion Slide Down)
         window.closeModal = function() {
             modalBackdrop.classList.remove('opacity-100');
             modalBackdrop.classList.add('opacity-0');
@@ -719,8 +732,7 @@
             } catch (error) {
                 console.error("Error placing bet:", error);
                 alert("Failed to place bet. Please try again.");
-            } font-medium
-            finally {
+            } finally {
                 confirmBetBtn.disabled = false;
                 confirmBetBtn.innerText = "Confirm Bet";
             }
