@@ -703,13 +703,6 @@
                     const userSnap = await get(userRef);
                     let currentBal = userSnap.exists() ? Number(userSnap.val() || 0) : 0;
                     await update(ref(db, `users/${userId}`), { balance: currentBal + winAmount });
-
-                    const walletRef = ref(db, `wallets/${userId}/balance`);
-                    const walletSnap = await get(walletRef);
-                    if (walletSnap.exists()) {
-                      let walletBal = Number(walletSnap.val() || 0);
-                      await update(ref(db, `wallets/${userId}`), { balance: walletBal + winAmount });
-                    }
                   } catch (e) {
                     console.error("Payout update failed for user:", userId, e);
                   }
@@ -737,7 +730,7 @@
       }
     }
 
-    // Refund / Return Market to NEW State Logic
+    // Refund / Return Market to NEW State Logic (FIXED: Single Payout to Users)
     async function processMarketReturn(matchId, mKey) {
       if (!allPlacedBetsData) return;
       const cleanMatchId = String(matchId).trim();
@@ -778,20 +771,13 @@
               // Update Bet status to refunded
               await update(ref(db, currentPath), { status: 'refunded', payoutProcessed: false, isWinner: false });
 
-              // Refund stake amount back to User Balance if it wasn't already returned/refunded
+              // Refund stake amount ONCE to User Balance
               if (userId && betAmount > 0 && currentBetStatus !== 'returned' && currentBetStatus !== 'refunded') {
                 try {
                   const userRef = ref(db, `users/${userId}/balance`);
                   const userSnap = await get(userRef);
                   let currentBal = userSnap.exists() ? Number(userSnap.val() || 0) : 0;
                   await update(ref(db, `users/${userId}`), { balance: currentBal + betAmount });
-
-                  const walletRef = ref(db, `wallets/${userId}/balance`);
-                  const walletSnap = await get(walletRef);
-                  if (walletSnap.exists()) {
-                    let walletBal = Number(walletSnap.val() || 0);
-                    await update(ref(db, `wallets/${userId}`), { balance: walletBal + betAmount });
-                  }
                 } catch (err) {
                   console.error("Refund processing failed:", err);
                 }
@@ -1060,4 +1046,4 @@
     });
   </script>
 </body>
-</html>
+  </html>
