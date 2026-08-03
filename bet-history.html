@@ -148,6 +148,9 @@
             <button onclick="filterBets('lost')" id="btn-filter-lost" class="px-5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:border-slate-700">
                 Lost
             </button>
+            <button onclick="filterBets('refund')" id="btn-filter-refund" class="px-5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:border-slate-700">
+                Refund
+            </button>
         </div>
 
         <!-- History List Container -->
@@ -240,23 +243,42 @@
             currentFilter = type;
             
             // Update filter buttons appearance
-            ['all', 'pending', 'won', 'lost'].forEach(f => {
+            ['all', 'pending', 'won', 'lost', 'refund'].forEach(f => {
                 const btn = document.getElementById(`btn-filter-${f}`);
-                if (f === type) {
-                    btn.className = "px-5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap bg-amber-400 text-slate-950 shadow-lg shadow-amber-400/10";
-                } else {
-                    btn.className = "px-5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:border-slate-700";
+                if (btn) {
+                    if (f === type) {
+                        btn.className = "px-5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap bg-amber-400 text-slate-950 shadow-lg shadow-amber-400/10";
+                    } else {
+                        btn.className = "px-5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:border-slate-700";
+                    }
                 }
             });
 
             renderBetList();
         };
 
-        // Helper function to evaluate status across multiple schema structures
+        // Helper function to evaluate status across multiple schema structures including Refund
         function getBetStatusType(item) {
             const statusVal = String(item.status || '').toLowerCase().trim();
             const resultVal = String(item.result || '').toLowerCase().trim();
 
+            // Refund Check
+            if (
+                statusVal === 'refund' || 
+                statusVal === 'refunded' || 
+                statusVal === 'returned' || 
+                statusVal === 'void' || 
+                resultVal === 'refund' || 
+                resultVal === 'refunded' || 
+                resultVal === 'returned' || 
+                resultVal === 'void' || 
+                item.isRefund === true || 
+                item.isRefunded === true
+            ) {
+                return 'refund';
+            }
+
+            // Win Check
             if (
                 statusVal === 'win' || 
                 statusVal === 'won' || 
@@ -268,6 +290,7 @@
                 return 'won';
             }
 
+            // Loss Check
             if (
                 statusVal === 'loss' || 
                 statusVal === 'lost' || 
@@ -303,6 +326,7 @@
                 if (currentFilter === 'won') return statusType === 'won';
                 if (currentFilter === 'lost') return statusType === 'lost';
                 if (currentFilter === 'pending') return statusType === 'pending';
+                if (currentFilter === 'refund') return statusType === 'refund';
                 return true; // 'all'
             });
 
@@ -336,7 +360,7 @@
                 const betAmount = parseFloat(item.amount || item.betAmount || item.stake || 0);
                 const odds = parseFloat(item.odds || item.rate || 1.00);
                 
-                // Return Amount & Color Logic based on Lost / Won status
+                // Return Amount & Color Logic based on Lost / Won / Refund status
                 let returnText = '';
                 let returnColorClass = '';
 
@@ -355,6 +379,13 @@
                         </span>`;
                     returnText = '৳0.00';
                     returnColorClass = 'text-rose-400';
+                } else if (statusType === 'refund') {
+                    statusBadge = `
+                        <span class="inline-flex items-center gap-1 bg-sky-500/10 text-sky-400 border border-sky-500/20 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider">
+                            <i class="fa-solid fa-rotate-left text-xs"></i> Refunded
+                        </span>`;
+                    returnText = `৳${betAmount.toFixed(2)}`;
+                    returnColorClass = 'text-sky-400';
                 } else {
                     statusBadge = `
                         <span class="inline-flex items-center gap-1 bg-amber-400/10 text-amber-400 border border-amber-400/20 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider">
@@ -400,7 +431,7 @@
                             </div>
                             <div class="h-6 w-[1px] bg-slate-800"></div>
                             <div>
-                                <span class="text-slate-400 block text-[10px] font-semibold uppercase tracking-wider">Return</span>
+                                <span class="text-slate-400 block text-[10px] font-semibold uppercase tracking-wider">${statusType === 'refund' ? 'Refunded' : 'Return'}</span>
                                 <span class="font-black ${returnColorClass} text-sm">${returnText}</span>
                             </div>
                         </div>
