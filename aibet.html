@@ -317,7 +317,7 @@
       return s;
     }
 
-    // আপগ্রেডেড রিয়েল ডাইনামিক অডস মেকানিক্স (মার্কেট টাইপ স্পেসিফিক ক্যালকুলেশন সহ)
+    // 1XBET STYLE REALISTIC ODDS CALCULATION (CAP LIMIT 1.20 - 2.20 FOR SIXES/FOURS)
     function calculateDynamicOdds(market, oKey, currentScore, matchData) {
       if (!currentScore || !market || !market.options) return null;
 
@@ -330,60 +330,55 @@
       const currentOvers = currentScore.over + (currentScore.ball / 6);
       const remainingOvers = Math.max(0.1, totalOvers - currentOvers);
 
-      // ১. TOTAL SIXES মার্কেট ক্যালকুলেশন
+      // ১. TOTAL SIXES (1xbet Realistic Limit: 1.20 to 2.20)
       if (title.includes('six') || title.includes('6s')) {
         const currentSixes = currentScore.sixes || 0;
         const projectedSixes = currentOvers > 0 
           ? currentSixes + ((currentSixes / currentOvers) * remainingOvers)
-          : (totalOvers * 0.4); // প্রাথমিক অনুমিত ছয় প্রজেকশন
+          : (totalOvers * 0.4);
 
-        let line = 6.5; // ডিফোল্ট লাইন
+        let line = 6.5; 
         const matchLine = optName.match(/(\d+(\.\d+)?)/);
         if (matchLine) line = parseFloat(matchLine[0]);
 
-        let probOver = 0.50;
         const diff = projectedSixes - line;
         
-        // প্রজেকশন এবং ডিফেন্সের উপর ভিত্তি করে ওভার/আন্ডারের প্রবাবিলিটি পরিবর্তন
-        probOver = 1 / (1 + Math.exp(-diff * 0.8)); 
-        probOver = Math.max(0.05, Math.min(0.95, probOver));
-
-        let finalOdds = 1.85;
+        let odds = 1.85;
         if (optName.includes('over')) {
-          finalOdds = (1 / probOver) * 0.90;
+          odds = 1.85 - (diff * 0.15);
         } else {
-          finalOdds = (1 / (1 - probOver)) * 0.90;
+          odds = 1.85 + (diff * 0.15);
         }
-        return Math.max(1.05, Math.min(15.00, finalOdds)).toFixed(2);
+
+        // 1xbet capped range constraint
+        return Math.max(1.20, Math.min(2.20, odds)).toFixed(2);
       }
 
-      // ২. TOTAL FOURS মার্কেট ক্যালকুলেশন
+      // ২. TOTAL FOURS (1xbet Realistic Limit: 1.20 to 2.20)
       if (title.includes('four') || title.includes('4s')) {
         const currentFours = currentScore.fours || 0;
         const projectedFours = currentOvers > 0 
           ? currentFours + ((currentFours / currentOvers) * remainingOvers)
-          : (totalOvers * 0.8); // প্রাথমিক অনুমিত চার প্রজেকশন
+          : (totalOvers * 0.8);
 
-        let line = 7.5; // ডিফোল্ট লাইন
+        let line = 7.5; 
         const matchLine = optName.match(/(\d+(\.\d+)?)/);
         if (matchLine) line = parseFloat(matchLine[0]);
 
-        let probOver = 0.50;
         const diff = projectedFours - line;
         
-        probOver = 1 / (1 + Math.exp(-diff * 0.6));
-        probOver = Math.max(0.05, Math.min(0.95, probOver));
-
-        let finalOdds = 1.85;
+        let odds = 1.85;
         if (optName.includes('over')) {
-          finalOdds = (1 / probOver) * 0.90;
+          odds = 1.85 - (diff * 0.12);
         } else {
-          finalOdds = (1 / (1 - probOver)) * 0.90;
+          odds = 1.85 + (diff * 0.12);
         }
-        return Math.max(1.05, Math.min(15.00, finalOdds)).toFixed(2);
+
+        // 1xbet capped range constraint
+        return Math.max(1.20, Math.min(2.20, odds)).toFixed(2);
       }
 
-      // ৩. standard TEAM WINS 1X2 / Match Winner ক্যালকুলেশন
+      // ৩. MATCH WINNER / 1X2 & OTHER MARKETS
       const runs = currentScore.runs || 0;
       const wickets = currentScore.wickets || 0;
       const team1Name = String(matchData?.team1?.name || '').toLowerCase().trim();
@@ -1259,4 +1254,4 @@
     });
   </script>
 </body>
-  </html>
+</html>
