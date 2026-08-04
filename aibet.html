@@ -235,12 +235,13 @@
       const status = match.status;
       const maxOvers = Number(match.overs) || 20;
 
-      let team1Name = match.team1?.name?.substring(0, 3).toUpperCase() || 'TM1';
-      let team2Name = match.team2?.name?.substring(0, 3).toUpperCase() || 'TM2';
+      let team1Name = match.team1?.name || 'Team 1';
+      let team2Name = match.team2?.name || 'Team 2';
 
       if (status !== 'live') {
         return {
-          innings: 1, battingTeam: team1Name, bowlingTeam: team2Name,
+          innings: 1, battingTeam: team1Name.substring(0, 3).toUpperCase(), bowlingTeam: team2Name.substring(0, 3).toUpperCase(),
+          team1FullName: team1Name, team2FullName: team2Name,
           runs: 0, wickets: 0, over: 0, ball: 0,
           recentBalls: [], target: 0, isMatchOver: false, maxOvers: maxOvers
         };
@@ -255,7 +256,11 @@
       };
 
       let s = {
-        innings: 1, battingTeam: team1Name, bowlingTeam: team2Name,
+        innings: 1, 
+        battingTeam: team1Name.substring(0, 3).toUpperCase(), 
+        bowlingTeam: team2Name.substring(0, 3).toUpperCase(),
+        team1FullName: team1Name, 
+        team2FullName: team2Name,
         runs: 0, wickets: 0, over: 0, ball: 0,
         recentBalls: [], target: 0, isMatchOver: false, maxOvers: maxOvers
       };
@@ -297,8 +302,8 @@
           if (s.target < minTarget) s.target = minTarget;
 
           s.innings = 2;
-          s.battingTeam = team2Name;
-          s.bowlingTeam = team1Name;
+          s.battingTeam = team2Name.substring(0, 3).toUpperCase();
+          s.bowlingTeam = team1Name.substring(0, 3).toUpperCase();
           s.runs = 0; s.wickets = 0; s.over = 0; s.ball = 0;
           s.recentBalls = [];
         } 
@@ -310,8 +315,8 @@
       return s;
     }
 
-    // রান ও উইকেটের ওপর ভিত্তি করে স্বয়ংক্রিয় অডস (Odds) গণনার লজিক
-    function calculateDynamicOdds(market, oKey, currentScore) {
+    // রান ও উইকেটের ওপর ভিত্তি করে স্বয়ংক্রিয় অডস (Odds) গণনার উন্নত লজিক (১ম ও ২য় ইনিংস সাপোর্ট সহ)
+    function calculateDynamicOdds(market, oKey, currentScore, matchData) {
       if (!currentScore) return null;
       
       const runs = currentScore.runs || 0;
@@ -322,33 +327,51 @@
       const opt = market.options?.[oKey];
       if (!opt) return null;
 
-      const optName = String(opt.name || '').toLowerCase();
-      
-      // বেইজ মাল্টিপ্লায়ার ক্যালকুলেশন
-      let baseFactor = 1.0;
+      const optName = String(opt.name || '').toLowerCase().trim();
+      const team1Name = String(matchData?.team1?.name || '').toLowerCase().trim();
+      const team2Name = String(matchData?.team2?.name || '').toLowerCase().trim();
 
-      // ১. ১মে অথবা ২য় ইনিংসের পরিস্থিতি অনুযায়ী রান ফ্লাকচুয়েশন
+      let shift = 0;
+
+      // ১. ইনিংস ১ ও ২ অনুযায়ী পারফর্ম্যান্স ইমপ্যাক্ট হিসাব
       if (currentScore.innings === 1) {
-        const runRate = currentOvers > 0 ? (runs / currentOvers) : 6;
-        baseFactor += (runRate - 6) * 0.05 - (wickets * 0.08);
+        const expectedRR = 7.5;
+        const currentRR = currentOvers > 0 ? (runs / currentOvers) : expectedRR;
+        // রানরেট বেশি হলে টিম ১ (ব্যাটিং টিম) এগিয়ে থাকবে, উইকেট বেশি পড়লে পিছিয়ে যাবে
+        shift = ((currentRR - expectedRR) * 0.08) - (wickets * 0.12);
       } else {
-        const requiredRuns = (currentScore.target || 100) - runs;
+        // ২য় ইনিংস - টার্গেট তাড়া করার হিসাব
+        const target = currentScore.target || 120;
+        const remainingRuns = Math.max(0, target - runs);
         const remainingBalls = Math.max(1, (totalOvers * 6) - (currentScore.over * 6 + currentScore.ball));
-        const requiredRR = (requiredRuns / remainingBalls) * 6;
-        baseFactor += (6 - requiredRR) * 0.08 - (wickets * 0.1);
+        const reqRR = (remainingRuns / remainingBalls) * 6;
+        
+        // টার্গেটের তুলনায় বর্তমান পরিস্থিতি কেমন (টিম ২ - ব্যাটিং টিম)
+        shift = ((8.0 - reqRR) * 0.10) - (wickets * 0.15);
       }
 
-      // ২. অপশন নেইমের ধরণ অনু্যায়ী অডস পরিবর্তন
       let dynamicOdds = 1.85;
 
-      if (optName.includes('yes') || optName.includes('over') || optName.includes('1st') || optName.includes('team 1')) {
-        dynamicOdds = 1.85 + (baseFactor * 0.3);
-      } else if (optName.includes('no') || optName.includes('under') || optName.includes('2nd') || optName.includes('team 2')) {
-        dynamicOdds = 1.85 - (baseFactor * 0.3);
+      // দল অনুযায়ী অডস বিপরীতমুখী করার লজিক (একটি বাড়লে অপরটি কমবে)
+      const isBattingTeamOpt = optName.includes(currentScore.battingTeam.toLowerCase()) || 
+                               (currentScore.innings === 1 && team1Name && optName.includes(team1Name)) ||
+                               (currentScore.innings === 2 && team2Name && optName.includes(team2Name)) ||
+                               optName.includes('yes') || optName.includes('over') || optName.includes('1st');
+
+      const isBowlingTeamOpt = optName.includes(currentScore.bowlingTeam.toLowerCase()) || 
+                               (currentScore.innings === 1 && team2Name && optName.includes(team2Name)) ||
+                               (currentScore.innings === 2 && team1Name && optName.includes(team1Name)) ||
+                               optName.includes('no') || optName.includes('under') || optName.includes('2nd');
+
+      if (isBattingTeamOpt) {
+        dynamicOdds = 1.85 - shift; // ভালো করলে জয়ী দলের অডস কমে
+      } else if (isBowlingTeamOpt) {
+        dynamicOdds = 1.85 + shift; // ভালো করলে বিরোধী দলের অডস বাড়ে
       } else {
-        // সাধারণ অপশনের জন্য রান ও উইকেটের র্যান্ডম সামান্য প্রভাব
-        const shift = ((runs % 7) * 0.03) - ((wickets % 3) * 0.05);
-        dynamicOdds = 1.85 + shift;
+        // অন্যান্য অপশন
+        const optionIndex = Object.keys(market.options || {}).indexOf(oKey);
+        const direction = optionIndex % 2 === 0 ? -1 : 1;
+        dynamicOdds = 1.85 + (shift * direction);
       }
 
       // সীমানা নির্ধারণ (মিনিমাম ১.০৫ এবং ম্যাক্সিমাম ১০.০০)
@@ -380,7 +403,7 @@
             const market = matchData.customMarkets[mKey];
             if (market && market.options && !market.isLocked) {
               Object.keys(market.options).forEach(oKey => {
-                const updatedOdds = calculateDynamicOdds(market, oKey, currentScore);
+                const updatedOdds = calculateDynamicOdds(market, oKey, currentScore, matchData);
                 if (updatedOdds) {
                   updatePayload[`customMarkets/${mKey}/options/${oKey}/val`] = updatedOdds;
                 }
