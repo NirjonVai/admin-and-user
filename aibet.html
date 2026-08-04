@@ -310,7 +310,7 @@
       return s;
     }
 
-    // বাস্তবানুগ ডাইনামিক অডস গণনার আপগ্রেডেড ফাংশন
+    // W1, X (Draw), W2 এবং অন্যান্য মার্কেটের জন্য আপগ্রেডেড রিয়েল ডাইনামিক অডস মেকানিক্স
     function calculateDynamicOdds(market, oKey, currentScore, matchData) {
       if (!currentScore || !market || !market.options) return null;
 
@@ -324,30 +324,49 @@
       const team1Code = team1Name.substring(0, 3);
       const team2Code = team2Name.substring(0, 3);
 
-      // ১. দলের উইনিং চান্স ক্যালকুলেশন (0.05 থেকে 0.95 এর মধ্যে)
-      let winProbTeam1 = 0.50; // ডিফোল্ট ৫০% ৫০%
+      // ১. উইনিং ও ড্র প্রোবাবিলিটি বের করা
+      let winProbTeam1 = 0.45;
+      let winProbTeam2 = 0.45;
+      let drawProb = 0.10; // ডিফোল্ট ড্র চ্যাঞ্চ ১০%
 
       if (currentScore.innings === 1) {
-        // ১ম ইনিংস: টিম ১ ব্যাটিং করছে
         const expectedRR = 7.5;
         const currentRR = currentOvers > 0 ? (runs / currentOvers) : expectedRR;
-        // রানরেট বেশি হলে Team 1 ফেভারিট, উইকেট বেশি পড়লে Team 2 ফেভারিট
-        let scoreImpact = ((currentRR - expectedRR) * 0.04) - (wickets * 0.06);
-        winProbTeam1 = Math.max(0.10, Math.min(0.90, 0.50 + scoreImpact));
+        let scoreImpact = ((currentRR - expectedRR) * 0.04) - (wickets * 0.05);
+        
+        winProbTeam1 = Math.max(0.10, Math.min(0.80, 0.45 + scoreImpact));
+        winProbTeam2 = Math.max(0.10, Math.min(0.80, 0.45 - scoreImpact));
+        // ১ম ইনিংসে ম্যাচ টাই হওয়ার সম্ভাবনা কিছুটা স্বাভাবিক থাকে
+        drawProb = Math.max(0.05, 1.0 - (winProbTeam1 + winProbTeam2));
       } else {
-        // ২য় ইনিংস: টিম ২ ব্যাটিং করছে
+        // ২য় ইনিংস (রান চেইজিং)
         const target = currentScore.target || (totalOvers * 7);
         const remainingRuns = Math.max(0, target - runs);
         const remainingBalls = Math.max(1, (totalOvers * 6) - (currentScore.over * 6 + currentScore.ball));
         const reqRR = (remainingRuns / remainingBalls) * 6;
         const initReqRR = (target / totalOvers);
+
+        // চেইজিং মোমেন্টাম অনুযায়ী
+        let chaseImpact = ((reqRR - initReqRR) * 0.06) + (wickets * 0.06);
         
-        // RRR বাড়লে Team 2 পিছাবে (Team 1 জেতার সম্ভাবনা বাড়বে)
-        let chaseImpact = ((reqRR - initReqRR) * 0.05) + (wickets * 0.07);
-        winProbTeam1 = Math.max(0.05, Math.min(0.95, 0.50 + chaseImpact));
+        winProbTeam1 = Math.max(0.05, Math.min(0.90, 0.45 + chaseImpact));
+        winProbTeam2 = Math.max(0.05, Math.min(0.90, 0.45 - chaseImpact));
+
+        // যদি ২য় ইনিংসে রান খুব কাছাকাছি থাকে এবং ওভার শেষের দিকে থাকে, ড্র এর সম্ভাবনা রিয়েলিস্টিকভাবে বৃদ্ধি পাবে
+        if (Math.abs(remainingRuns) <= 10 && remainingBalls <= 12) {
+          drawProb = 0.35; // ড্র-এর চান্স ৩০%+ পর্যন্ত উঠবে (অডস কমে যাবে)
+        } else if (Math.abs(remainingRuns) <= 5) {
+          drawProb = 0.45; // ম্যাচ থ্রিলার অবস্থায়
+        } else {
+          drawProb = Math.max(0.02, Math.min(0.15, 0.12 - (Math.abs(winProbTeam1 - winProbTeam2) * 0.1)));
+        }
       }
 
-      let winProbTeam2 = 1.0 - winProbTeam1;
+      // নরম্যালাইজ করা যাতে সব প্রোবাবিলিটি মিলে ১.০০ হয়
+      const totalProb = winProbTeam1 + winProbTeam2 + drawProb;
+      winProbTeam1 = winProbTeam1 / totalProb;
+      winProbTeam2 = winProbTeam2 / totalProb;
+      drawProb = drawProb / totalProb;
 
       const opt = market.options[oKey];
       if (!opt) return null;
@@ -355,34 +374,33 @@
       const optName = String(opt.name || '').toLowerCase().trim();
       const optionKeys = Object.keys(market.options);
 
-      // ২. অডস ডেরিভেশন (Probability to Decimal Odds)
+      // ২. অডস ডেরিভেশন (Decimal Odds = Margin / Probability)
       let finalOdds = 1.85;
 
-      // Match Winner Market Check (W1, W2, Team Names)
       const isTeam1Opt = optName === 'w1' || optName.includes(team1Name) || (team1Code && optName.includes(team1Code));
       const isTeam2Opt = optName === 'w2' || optName.includes(team2Name) || (team2Code && optName.includes(team2Code));
-      const isDrawOpt = optName === 'x' || optName.includes('draw') || optName.includes('tie');
+      const isDrawOpt = optName === 'x' || optName.includes('draw') || optName.includes('tie') || optName === 'x (draw)';
 
       if (isTeam1Opt) {
-        // 확률 -> অডস: Odds = 1 / Probability
-        finalOdds = (1 / winProbTeam1) * 0.92; // 0.92 margin factor
+        finalOdds = (1 / winProbTeam1) * 0.92;
       } else if (isTeam2Opt) {
         finalOdds = (1 / winProbTeam2) * 0.92;
       } else if (isDrawOpt) {
-        finalOdds = 12.50; // টাই বা ড্র এর অডস উচুঁ থাকে
+        // X / Draw dynamic calculation
+        finalOdds = (1 / drawProb) * 0.90;
       } else {
         // Over/Under বা Yes/No বা অন্যান্য সাধারণ অপশন
-        let shift = (winProbTeam1 - 0.50);
+        let shift = (winProbTeam1 - winProbTeam2);
         const isFirstOrPositive = (oKey === optionKeys[0]) || optName.includes('over') || optName.includes('yes');
         
         if (isFirstOrPositive) {
-          finalOdds = 1.85 - (shift * 1.5);
+          finalOdds = 1.85 - (shift * 1.2);
         } else {
-          finalOdds = 1.85 + (shift * 1.5);
+          finalOdds = 1.85 + (shift * 1.2);
         }
       }
 
-      // সীমানা নির্ধারণ (সর্বনিম্ন ১.০৫ এবং সর্বোচ্চ ১৫.০০)
+      // সীমানা নির্ধারণ (১.০৫ থেকে ১৫.০০ এর মধ্যে)
       finalOdds = Math.max(1.05, Math.min(15.00, finalOdds));
       return finalOdds.toFixed(2);
     }
