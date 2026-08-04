@@ -315,7 +315,7 @@
       return s;
     }
 
-    // রান ও উইকেটের ওপর ভিত্তি করে স্বয়ংক্রিয় অডস (Odds) গণনার উন্নত লজিক (১ম ও ২য় ইনিংস সাপোর্ট সহ)
+    // রান ও উইকেটের ওপর ভিত্তি করে স্বয়ংক্রিয় অডস (Odds) গণনার উন্নত লজিক (১ম ও ২য় উভয় ইনিংস নিখুঁতভাবে সাপোর্টেড)
     function calculateDynamicOdds(market, oKey, currentScore, matchData) {
       if (!currentScore) return null;
       
@@ -330,6 +330,9 @@
       const optName = String(opt.name || '').toLowerCase().trim();
       const team1Name = String(matchData?.team1?.name || '').toLowerCase().trim();
       const team2Name = String(matchData?.team2?.name || '').toLowerCase().trim();
+      
+      const battingTeamCode = String(currentScore.battingTeam || '').toLowerCase().trim();
+      const bowlingTeamCode = String(currentScore.bowlingTeam || '').toLowerCase().trim();
 
       let shift = 0;
 
@@ -337,38 +340,39 @@
       if (currentScore.innings === 1) {
         const expectedRR = 7.5;
         const currentRR = currentOvers > 0 ? (runs / currentOvers) : expectedRR;
-        // রানরেট বেশি হলে টিম ১ (ব্যাটিং টিম) এগিয়ে থাকবে, উইকেট বেশি পড়লে পিছিয়ে যাবে
+        // রানরেট বেশি হলে ব্যাটিং টিম এগিয়ে থাকবে, উইকেট বেশি পড়লে পিছিয়ে যাবে
         shift = ((currentRR - expectedRR) * 0.08) - (wickets * 0.12);
       } else {
-        // ২য় ইনিংস - টার্গেট তাড়া করার হিসাব
-        const target = currentScore.target || 120;
+        // ২য় ইনিংস - টার্গেট তাড়া করার হিসাব (2nd Batting Corrected Logic)
+        const target = currentScore.target || (totalOvers * 7);
         const remainingRuns = Math.max(0, target - runs);
         const remainingBalls = Math.max(1, (totalOvers * 6) - (currentScore.over * 6 + currentScore.ball));
         const reqRR = (remainingRuns / remainingBalls) * 6;
+        const initReqRR = (target / totalOvers); // প্রারম্ভিক প্রয়োজনীয় রানরেট
         
-        // টার্গেটের তুলনায় বর্তমান পরিস্থিতি কেমন (টিম ২ - ব্যাটিং টিম)
-        shift = ((8.0 - reqRR) * 0.10) - (wickets * 0.15);
+        // টার্গেটের তুলনায় বর্তমান পরিস্থিতি ও উইকেটের হিসাব (ব্যাটিং টিম এর সম্ভাবনা)
+        shift = ((initReqRR - reqRR) * 0.12) - (wickets * 0.15);
       }
 
       let dynamicOdds = 1.85;
 
-      // দল অনুযায়ী অডস বিপরীতমুখী করার লজিক (একটি বাড়লে অপরটি কমবে)
-      const isBattingTeamOpt = optName.includes(currentScore.battingTeam.toLowerCase()) || 
+      // দল ও অপশন অনুযায়ী অডস নির্ধারণের ফ্লেক্সিবল লজিক
+      const isBattingTeamOpt = optName.includes(battingTeamCode) || 
                                (currentScore.innings === 1 && team1Name && optName.includes(team1Name)) ||
                                (currentScore.innings === 2 && team2Name && optName.includes(team2Name)) ||
                                optName.includes('yes') || optName.includes('over') || optName.includes('1st');
 
-      const isBowlingTeamOpt = optName.includes(currentScore.bowlingTeam.toLowerCase()) || 
+      const isBowlingTeamOpt = optName.includes(bowlingTeamCode) || 
                                (currentScore.innings === 1 && team2Name && optName.includes(team2Name)) ||
                                (currentScore.innings === 2 && team1Name && optName.includes(team1Name)) ||
                                optName.includes('no') || optName.includes('under') || optName.includes('2nd');
 
       if (isBattingTeamOpt) {
-        dynamicOdds = 1.85 - shift; // ভালো করলে জয়ী দলের অডস কমে
+        dynamicOdds = 1.85 - shift; // বর্তমান ব্যাটিং টিম ভাল করলে তাদের জেতার অডস কমবে
       } else if (isBowlingTeamOpt) {
-        dynamicOdds = 1.85 + shift; // ভালো করলে বিরোধী দলের অডস বাড়ে
+        dynamicOdds = 1.85 + shift; // বর্তমান বোলিং টিম পিছিয়ে পড়লে তাদের অডস বাড়বে
       } else {
-        // অন্যান্য অপশন
+        // সাধারণ অপশনগুলোর ক্ষেত্রে
         const optionIndex = Object.keys(market.options || {}).indexOf(oKey);
         const direction = optionIndex % 2 === 0 ? -1 : 1;
         dynamicOdds = 1.85 + (shift * direction);
@@ -385,10 +389,12 @@
       const currentScore = calculateScoreFromTimestamp(matchData);
       const dbBallCount = ((matchData.aiScore?.over || 0) * 6) + (matchData.aiScore?.ball || 0);
       const currentBallCount = (currentScore.over * 6) + currentScore.ball;
+      const dbInnings = matchData.aiScore?.innings || 1;
 
       const updatePayload = {};
 
-      if (currentBallCount > dbBallCount || !matchData.aiScore) {
+      // রান, বল পরিবর্তন হলে কিংবা ইনিংস পরিবর্তন হলে ডাটা আপডেট হবে
+      if (currentBallCount > dbBallCount || currentScore.innings !== dbInnings || !matchData.aiScore) {
         updatePayload.aiScore = currentScore;
         
         if (currentScore.isMatchOver) {
@@ -397,7 +403,7 @@
           updatePayload.winner = forcedWinner;
         }
 
-        // রান এবং উইকেটের ওপর ভিত্তি করে মার্কেটের অডস অটোমেটিক আপডেট করা
+        // রান, উইকেটের পাশাপাশি ১ম ও ২য় উভয় ইনিংসে অডস অটোমেটিক আপডেট করা
         if (matchData.customMarkets) {
           Object.keys(matchData.customMarkets).forEach(mKey => {
             const market = matchData.customMarkets[mKey];
@@ -1186,4 +1192,4 @@
     });
   </script>
 </body>
-</html>
+  </html>
