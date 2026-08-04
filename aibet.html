@@ -748,6 +748,19 @@
     function getScoreboardHTML(data, aiScore, isLive) {
       const maxOvers = aiScore.maxOvers || data.overs || 10;
 
+      // CRR (Current Run Rate) গণনা
+      const totalOversPlayed = aiScore.over + (aiScore.ball / 6);
+      const crr = totalOversPlayed > 0 ? (aiScore.runs / totalOversPlayed).toFixed(2) : "0.00";
+
+      // RRR (Required Run Rate) গণনা (২য় ইনিংসে)
+      let rrrDisplay = '';
+      if (aiScore.innings === 2 && aiScore.target > 0) {
+        const remainingRuns = Math.max(0, aiScore.target - aiScore.runs);
+        const remainingBalls = Math.max(0, (maxOvers * 6) - (aiScore.over * 6 + aiScore.ball));
+        const rrrVal = remainingBalls > 0 ? ((remainingRuns / remainingBalls) * 6).toFixed(2) : "0.00";
+        rrrDisplay = `<span class="text-[10px] text-red-400 font-mono font-semibold ml-2">RRR: ${rrrVal}</span>`;
+      }
+
       return `
         <div class="flex justify-between items-center border-b border-gray-800 pb-2 mb-2">
           <div class="flex items-center gap-2">
@@ -755,9 +768,13 @@
             <span class="text-xs font-bold tracking-wider text-gray-200">${aiScore.battingTeam} ${aiScore.runs}/${aiScore.wickets}</span>
             <span class="text-[9px] bg-gray-800 text-gray-400 px-1.5 py-0.5 rounded font-mono">${aiScore.innings === 1 ? '1st Inn' : '2nd Inn'}</span>
           </div>
-          <span class="text-[11px] font-semibold text-purple-400 bg-purple-950/80 px-2 py-0.5 rounded-md border border-purple-800/40 font-mono">
-            ${aiScore.over}.${aiScore.ball} / ${maxOvers} Ov
-          </span>
+          <div class="flex items-center">
+            <span class="text-[10px] text-emerald-400 font-mono font-semibold mr-1">CRR: ${crr}</span>
+            ${rrrDisplay}
+            <span class="text-[11px] font-semibold text-purple-400 bg-purple-950/80 px-2 py-0.5 rounded-md border border-purple-800/40 font-mono ml-2">
+              ${aiScore.over}.${aiScore.ball} / ${maxOvers} Ov
+            </span>
+          </div>
         </div>
         <div class="flex flex-wrap items-center justify-between text-[11px] text-gray-300 gap-1.5">
           <div class="flex items-center gap-1 flex-wrap">
@@ -1169,4 +1186,4 @@
     });
   </script>
 </body>
-  </html>
+</html>
