@@ -225,6 +225,7 @@
       }
     }
 
+    // Four এবং Six ট্র্যাকিং সহ আপগ্রেড স্কোর মেকানিক্স
     function calculateScoreFromTimestamp(match, currentTime = Date.now()) {
       const startTime = match.startTime || currentTime;
       const status = match.status;
@@ -237,7 +238,7 @@
         return {
           innings: 1, battingTeam: team1Name.substring(0, 3).toUpperCase(), bowlingTeam: team2Name.substring(0, 3).toUpperCase(),
           team1FullName: team1Name, team2FullName: team2Name,
-          runs: 0, wickets: 0, over: 0, ball: 0,
+          runs: 0, wickets: 0, over: 0, ball: 0, fours: 0, sixes: 0,
           recentBalls: [], target: 0, isMatchOver: false, maxOvers: maxOvers
         };
       }
@@ -256,7 +257,7 @@
         bowlingTeam: team2Name.substring(0, 3).toUpperCase(),
         team1FullName: team1Name, 
         team2FullName: team2Name,
-        runs: 0, wickets: 0, over: 0, ball: 0,
+        runs: 0, wickets: 0, over: 0, ball: 0, fours: 0, sixes: 0,
         recentBalls: [], target: 0, isMatchOver: false, maxOvers: maxOvers
       };
 
@@ -268,8 +269,8 @@
         if (rand < 0.35) event = '0';
         else if (rand < 0.65) event = '1';
         else if (rand < 0.78) event = '2';
-        else if (rand < 0.88) event = '4';
-        else if (rand < 0.94) event = '6';
+        else if (rand < 0.88) { event = '4'; s.fours += 1; }
+        else if (rand < 0.94) { event = '6'; s.sixes += 1; }
         else if (rand < 0.97) event = 'wd';
         else event = 'W';
 
@@ -310,7 +311,7 @@
       return s;
     }
 
-    // W1, X (Draw), W2 এবং অন্যান্য মার্কেটের জন্য আপগ্রেডেড রিয়েল ডাইনামিক অডস মেকানিক্স
+    // W1, X, W2, TOTAL SIX, TOTAL FOUR ইত্যাদির জন্য স্বতন্ত্র অ্যালগরিদম
     function calculateDynamicOdds(market, oKey, currentScore, matchData) {
       if (!currentScore || !market || !market.options) return null;
 
@@ -318,89 +319,126 @@
       const wickets = currentScore.wickets || 0;
       const totalOvers = currentScore.maxOvers || 20;
       const currentOvers = currentScore.over + (currentScore.ball / 6);
+      const remainingOvers = Math.max(0.1, totalOvers - currentOvers);
 
-      const team1Name = String(matchData?.team1?.name || '').toLowerCase().trim();
-      const team2Name = String(matchData?.team2?.name || '').toLowerCase().trim();
-      const team1Code = team1Name.substring(0, 3);
-      const team2Code = team2Name.substring(0, 3);
-
-      // ১. উইনিং ও ড্র প্রোবাবিলিটি বের করা
-      let winProbTeam1 = 0.45;
-      let winProbTeam2 = 0.45;
-      let drawProb = 0.10; // ডিফোল্ট ড্র চ্যাঞ্চ ১০%
-
-      if (currentScore.innings === 1) {
-        const expectedRR = 7.5;
-        const currentRR = currentOvers > 0 ? (runs / currentOvers) : expectedRR;
-        let scoreImpact = ((currentRR - expectedRR) * 0.04) - (wickets * 0.05);
-        
-        winProbTeam1 = Math.max(0.10, Math.min(0.80, 0.45 + scoreImpact));
-        winProbTeam2 = Math.max(0.10, Math.min(0.80, 0.45 - scoreImpact));
-        // ১ম ইনিংসে ম্যাচ টাই হওয়ার সম্ভাবনা কিছুটা স্বাভাবিক থাকে
-        drawProb = Math.max(0.05, 1.0 - (winProbTeam1 + winProbTeam2));
-      } else {
-        // ২য় ইনিংস (রান চেইজিং)
-        const target = currentScore.target || (totalOvers * 7);
-        const remainingRuns = Math.max(0, target - runs);
-        const remainingBalls = Math.max(1, (totalOvers * 6) - (currentScore.over * 6 + currentScore.ball));
-        const reqRR = (remainingRuns / remainingBalls) * 6;
-        const initReqRR = (target / totalOvers);
-
-        // চেইজিং মোমেন্টাম অনুযায়ী
-        let chaseImpact = ((reqRR - initReqRR) * 0.06) + (wickets * 0.06);
-        
-        winProbTeam1 = Math.max(0.05, Math.min(0.90, 0.45 + chaseImpact));
-        winProbTeam2 = Math.max(0.05, Math.min(0.90, 0.45 - chaseImpact));
-
-        // যদি ২য় ইনিংসে রান খুব কাছাকাছি থাকে এবং ওভার শেষের দিকে থাকে, ড্র এর সম্ভাবনা রিয়েলিস্টিকভাবে বৃদ্ধি পাবে
-        if (Math.abs(remainingRuns) <= 10 && remainingBalls <= 12) {
-          drawProb = 0.35; // ড্র-এর চান্স ৩০%+ পর্যন্ত উঠবে (অডস কমে যাবে)
-        } else if (Math.abs(remainingRuns) <= 5) {
-          drawProb = 0.45; // ম্যাচ থ্রিলার অবস্থায়
-        } else {
-          drawProb = Math.max(0.02, Math.min(0.15, 0.12 - (Math.abs(winProbTeam1 - winProbTeam2) * 0.1)));
-        }
-      }
-
-      // নরম্যালাইজ করা যাতে সব প্রোবাবিলিটি মিলে ১.০০ হয়
-      const totalProb = winProbTeam1 + winProbTeam2 + drawProb;
-      winProbTeam1 = winProbTeam1 / totalProb;
-      winProbTeam2 = winProbTeam2 / totalProb;
-      drawProb = drawProb / totalProb;
-
+      const marketTitle = String(market.title || '').toLowerCase().trim();
       const opt = market.options[oKey];
       if (!opt) return null;
 
       const optName = String(opt.name || '').toLowerCase().trim();
       const optionKeys = Object.keys(market.options);
 
-      // ২. অডস ডেরিভেশন (Decimal Odds = Margin / Probability)
       let finalOdds = 1.85;
 
-      const isTeam1Opt = optName === 'w1' || optName.includes(team1Name) || (team1Code && optName.includes(team1Code));
-      const isTeam2Opt = optName === 'w2' || optName.includes(team2Name) || (team2Code && optName.includes(team2Code));
-      const isDrawOpt = optName === 'x' || optName.includes('draw') || optName.includes('tie') || optName === 'x (draw)';
-
-      if (isTeam1Opt) {
-        finalOdds = (1 / winProbTeam1) * 0.92;
-      } else if (isTeam2Opt) {
-        finalOdds = (1 / winProbTeam2) * 0.92;
-      } else if (isDrawOpt) {
-        // X / Draw dynamic calculation
-        finalOdds = (1 / drawProb) * 0.90;
-      } else {
-        // Over/Under বা Yes/No বা অন্যান্য সাধারণ অপশন
-        let shift = (winProbTeam1 - winProbTeam2);
-        const isFirstOrPositive = (oKey === optionKeys[0]) || optName.includes('over') || optName.includes('yes');
+      // --- ১. TOTAL SIX (৬) এর জন্য আলাদা ক্যাটাগরি ---
+      if (marketTitle.includes('six') || marketTitle.includes('6s')) {
+        const currentSixes = currentScore.sixes || 0;
+        let line = 6.5; // ডিফল্ট বাউন্ডারি লাইন
         
-        if (isFirstOrPositive) {
-          finalOdds = 1.85 - (shift * 1.2);
+        const lineMatch = optName.match(/(\d+\.?\d*)/);
+        if (lineMatch) line = parseFloat(lineMatch[1]);
+
+        // প্রতি ওভারে ছক্কার আনুমানিক হার (Avg ~0.5 sixes per over in T20)
+        const expectedSixes = currentSixes + (remainingOvers * 0.45);
+        
+        // Over/Under Probability Calculation
+        let overProb = 0.5;
+        const diff = expectedSixes - line;
+        overProb = 1 / (1 + Math.exp(-diff * 0.8)); // Sigmoid Probability Formula
+
+        if (optName.includes('over')) {
+          finalOdds = (1 / Math.max(0.05, Math.min(0.95, overProb))) * 0.92;
         } else {
-          finalOdds = 1.85 + (shift * 1.2);
+          finalOdds = (1 / Math.max(0.05, Math.min(0.95, 1 - overProb))) * 0.92;
+        }
+      }
+      // --- ২. TOTAL FOUR (৪) এর জন্য আলাদা ক্যাটাগরি ---
+      else if (marketTitle.includes('four') || marketTitle.includes('4s')) {
+        const currentFours = currentScore.fours || 0;
+        let line = 7.5; // ডিফল্ট ৪ এর লাইন
+        
+        const lineMatch = optName.match(/(\d+\.?\d*)/);
+        if (lineMatch) line = parseFloat(lineMatch[1]);
+
+        // প্রতি ওভারে চারের আনুমানিক হার (Avg ~1.2 fours per over in T20)
+        const expectedFours = currentFours + (remainingOvers * 1.15);
+
+        let overProb = 0.5;
+        const diff = expectedFours - line;
+        overProb = 1 / (1 + Math.exp(-diff * 0.7));
+
+        if (optName.includes('over')) {
+          finalOdds = (1 / Math.max(0.05, Math.min(0.95, overProb))) * 0.92;
+        } else {
+          finalOdds = (1 / Math.max(0.05, Math.min(0.95, 1 - overProb))) * 0.92;
+        }
+      }
+      // --- ৩. TEAM WINS 1X2 / DRAW / MATCH WINNER ---
+      else {
+        const team1Name = String(matchData?.team1?.name || '').toLowerCase().trim();
+        const team2Name = String(matchData?.team2?.name || '').toLowerCase().trim();
+        const team1Code = team1Name.substring(0, 3);
+        const team2Code = team2Name.substring(0, 3);
+
+        let winProbTeam1 = 0.45;
+        let winProbTeam2 = 0.45;
+        let drawProb = 0.10;
+
+        if (currentScore.innings === 1) {
+          const expectedRR = 7.5;
+          const currentRR = currentOvers > 0 ? (runs / currentOvers) : expectedRR;
+          let scoreImpact = ((currentRR - expectedRR) * 0.04) - (wickets * 0.05);
+          
+          winProbTeam1 = Math.max(0.10, Math.min(0.80, 0.45 + scoreImpact));
+          winProbTeam2 = Math.max(0.10, Math.min(0.80, 0.45 - scoreImpact));
+          drawProb = Math.max(0.05, 1.0 - (winProbTeam1 + winProbTeam2));
+        } else {
+          const target = currentScore.target || (totalOvers * 7);
+          const remainingRuns = Math.max(0, target - runs);
+          const remainingBalls = Math.max(1, (totalOvers * 6) - (currentScore.over * 6 + currentScore.ball));
+          const reqRR = (remainingRuns / remainingBalls) * 6;
+          const initReqRR = (target / totalOvers);
+
+          let chaseImpact = ((reqRR - initReqRR) * 0.06) + (wickets * 0.06);
+          
+          winProbTeam1 = Math.max(0.05, Math.min(0.90, 0.45 + chaseImpact));
+          winProbTeam2 = Math.max(0.05, Math.min(0.90, 0.45 - chaseImpact));
+
+          if (Math.abs(remainingRuns) <= 10 && remainingBalls <= 12) {
+            drawProb = 0.35;
+          } else if (Math.abs(remainingRuns) <= 5) {
+            drawProb = 0.45;
+          } else {
+            drawProb = Math.max(0.02, Math.min(0.15, 0.12 - (Math.abs(winProbTeam1 - winProbTeam2) * 0.1)));
+          }
+        }
+
+        const totalProb = winProbTeam1 + winProbTeam2 + drawProb;
+        winProbTeam1 = winProbTeam1 / totalProb;
+        winProbTeam2 = winProbTeam2 / totalProb;
+        drawProb = drawProb / totalProb;
+
+        const isTeam1Opt = optName === 'w1' || optName.includes(team1Name) || (team1Code && optName.includes(team1Code));
+        const isTeam2Opt = optName === 'w2' || optName.includes(team2Name) || (team2Code && optName.includes(team2Code));
+        const isDrawOpt = optName === 'x' || optName.includes('draw') || optName.includes('tie') || optName === 'x (draw)';
+
+        if (isTeam1Opt) {
+          finalOdds = (1 / winProbTeam1) * 0.92;
+        } else if (isTeam2Opt) {
+          finalOdds = (1 / winProbTeam2) * 0.92;
+        } else if (isDrawOpt) {
+          finalOdds = (1 / drawProb) * 0.90;
+        } else {
+          let shift = (winProbTeam1 - winProbTeam2);
+          const isFirstOrPositive = (oKey === optionKeys[0]) || optName.includes('over') || optName.includes('yes');
+          if (isFirstOrPositive) {
+            finalOdds = 1.85 - (shift * 1.2);
+          } else {
+            finalOdds = 1.85 + (shift * 1.2);
+          }
         }
       }
 
-      // সীমানা নির্ধারণ (১.০৫ থেকে ১৫.০০ এর মধ্যে)
       finalOdds = Math.max(1.05, Math.min(15.00, finalOdds));
       return finalOdds.toFixed(2);
     }
@@ -715,15 +753,15 @@
 
             <div id="add-market-form-${id}" class="hidden mb-4 p-3 bg-white border border-purple-200 rounded-2xl shadow-sm">
               <p class="text-[11px] font-bold text-purple-700 mb-2">Create New Title Market</p>
-              <input type="text" id="new-market-title-${id}" placeholder="Market Title (e.g. TEAM WINS 1X2)" class="w-full px-3 py-1.5 text-xs bg-gray-50 border border-gray-200 rounded-xl mb-3 focus:outline-none focus:ring-2 focus:ring-purple-500 font-medium">
+              <input type="text" id="new-market-title-${id}" placeholder="Market Title (e.g. TOTAL SIX)" class="w-full px-3 py-1.5 text-xs bg-gray-50 border border-gray-200 rounded-xl mb-3 focus:outline-none focus:ring-2 focus:ring-purple-500 font-medium">
               
               <div id="market-options-inputs-${id}" class="space-y-2 mb-3">
                 <div class="grid grid-cols-2 gap-2 option-row">
-                  <input type="text" placeholder="W1" class="opt-name-input px-2 py-1 text-xs bg-gray-50 border border-gray-200 rounded-lg focus:outline-none">
+                  <input type="text" placeholder="6.5 OVER" class="opt-name-input px-2 py-1 text-xs bg-gray-50 border border-gray-200 rounded-lg focus:outline-none">
                   <input type="text" inputmode="decimal" value="1.85" placeholder="Odds" class="opt-val-input px-2 py-1 text-xs text-center font-bold bg-gray-50 border border-gray-200 rounded-lg focus:outline-none">
                 </div>
                 <div class="grid grid-cols-2 gap-2 option-row">
-                  <input type="text" placeholder="W2" class="opt-name-input px-2 py-1 text-xs bg-gray-50 border border-gray-200 rounded-lg focus:outline-none">
+                  <input type="text" placeholder="6.5 UNDER" class="opt-name-input px-2 py-1 text-xs bg-gray-50 border border-gray-200 rounded-lg focus:outline-none">
                   <input type="text" inputmode="decimal" value="1.85" placeholder="Odds" class="opt-val-input px-2 py-1 text-xs text-center font-bold bg-gray-50 border border-gray-200 rounded-lg focus:outline-none">
                 </div>
               </div>
@@ -1158,7 +1196,7 @@
         const matchId = saveMarketBtn.getAttribute('data-id');
         
         const titleInput = document.getElementById(`new-market-title-${matchId}`);
-        const title = titleInput.value.trim() || "TEAM WINS 1X2";
+        const title = titleInput.value.trim() || "TOTAL SIX";
 
         const optionsContainer = document.getElementById(`market-options-inputs-${matchId}`);
         const optionRows = optionsContainer.querySelectorAll('.option-row');
