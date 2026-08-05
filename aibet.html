@@ -161,7 +161,6 @@
       return match ? match[0] : '';
     };
 
-    // টিমের টোটাল বেট হিসাব করার ফাংশন
     function getTeamTotalBets(matchId, teamName) {
       let totalAmount = 0;
       if (!allPlacedBetsData || !teamName) return 0;
@@ -204,7 +203,6 @@
       return totalAmount;
     }
 
-    // ৮০% হাউস উইন এবং ২০% ফেয়ার র্যান্ডম বিজয়ী নির্ধারণ লজিক
     function determineAutoWinnerWithProbability(matchId, matchData) {
       const team1 = matchData.team1?.name || 'Team 1';
       const team2 = matchData.team2?.name || 'Team 2';
@@ -214,7 +212,6 @@
 
       const randomPercent = Math.floor(Math.random() * 100);
 
-      // ৮০% চান্স: বেশি টাকা বেট পাওয়া টিম হারবে
       if (randomPercent < 80) {
         if (team1Bet > team2Bet) {
           return team2; 
@@ -223,9 +220,7 @@
         } else {
           return Math.random() > 0.5 ? team1 : team2;
         }
-      } 
-      // ২০% চান্স: ফেয়ার/র্যান্ডম খেলা (প্লেয়ারদের জেতার সুযোগ)
-      else {
+      } else {
         return Math.random() > 0.5 ? team1 : team2;
       }
     }
@@ -315,72 +310,81 @@
       return s;
     }
 
-    // রান ও উইকেটের ওপর ভিত্তি করে স্বয়ংক্রিয় অডস (Odds) গণনার উন্নত লজিক (১ম ও ২য় উভয় ইনিংস নিখুঁতভাবে সাপোর্টেড)
+    // বাস্তবানুগ ডাইনামিক অডস গণনার আপগ্রেডেড ফাংশন
     function calculateDynamicOdds(market, oKey, currentScore, matchData) {
-      if (!currentScore) return null;
-      
+      if (!currentScore || !market || !market.options) return null;
+
       const runs = currentScore.runs || 0;
       const wickets = currentScore.wickets || 0;
       const totalOvers = currentScore.maxOvers || 20;
       const currentOvers = currentScore.over + (currentScore.ball / 6);
-      
-      const opt = market.options?.[oKey];
-      if (!opt) return null;
 
-      const optName = String(opt.name || '').toLowerCase().trim();
       const team1Name = String(matchData?.team1?.name || '').toLowerCase().trim();
       const team2Name = String(matchData?.team2?.name || '').toLowerCase().trim();
-      
-      const battingTeamCode = String(currentScore.battingTeam || '').toLowerCase().trim();
-      const bowlingTeamCode = String(currentScore.bowlingTeam || '').toLowerCase().trim();
+      const team1Code = team1Name.substring(0, 3);
+      const team2Code = team2Name.substring(0, 3);
 
-      let shift = 0;
+      // ১. দলের উইনিং চান্স ক্যালকুলেশন (0.05 থেকে 0.95 এর মধ্যে)
+      let winProbTeam1 = 0.50; // ডিফোল্ট ৫০% ৫০%
 
-      // ১. ইনিংস ১ ও ২ অনুযায়ী পারফর্ম্যান্স ইমপ্যাক্ট হিসাব
       if (currentScore.innings === 1) {
+        // ১ম ইনিংস: টিম ১ ব্যাটিং করছে
         const expectedRR = 7.5;
         const currentRR = currentOvers > 0 ? (runs / currentOvers) : expectedRR;
-        // রানরেট বেশি হলে ব্যাটিং টিম এগিয়ে থাকবে, উইকেট বেশি পড়লে পিছিয়ে যাবে
-        shift = ((currentRR - expectedRR) * 0.08) - (wickets * 0.12);
+        // রানরেট বেশি হলে Team 1 ফেভারিট, উইকেট বেশি পড়লে Team 2 ফেভারিট
+        let scoreImpact = ((currentRR - expectedRR) * 0.04) - (wickets * 0.06);
+        winProbTeam1 = Math.max(0.10, Math.min(0.90, 0.50 + scoreImpact));
       } else {
-        // ২য় ইনিংস - টার্গেট তাড়া করার হিসাব (2nd Batting Corrected Logic)
+        // ২য় ইনিংস: টিম ২ ব্যাটিং করছে
         const target = currentScore.target || (totalOvers * 7);
         const remainingRuns = Math.max(0, target - runs);
         const remainingBalls = Math.max(1, (totalOvers * 6) - (currentScore.over * 6 + currentScore.ball));
         const reqRR = (remainingRuns / remainingBalls) * 6;
-        const initReqRR = (target / totalOvers); // প্রারম্ভিক প্রয়োজনীয় রানরেট
+        const initReqRR = (target / totalOvers);
         
-        // টার্গেটের তুলনায় বর্তমান পরিস্থিতি ও উইকেটের হিসাব (ব্যাটিং টিম এর সম্ভাবনা)
-        shift = ((initReqRR - reqRR) * 0.12) - (wickets * 0.15);
+        // RRR বাড়লে Team 2 পিছাবে (Team 1 জেতার সম্ভাবনা বাড়বে)
+        let chaseImpact = ((reqRR - initReqRR) * 0.05) + (wickets * 0.07);
+        winProbTeam1 = Math.max(0.05, Math.min(0.95, 0.50 + chaseImpact));
       }
 
-      let dynamicOdds = 1.85;
+      let winProbTeam2 = 1.0 - winProbTeam1;
 
-      // দল ও অপশন অনুযায়ী অডস নির্ধারণের ফ্লেক্সিবল লজিক
-      const isBattingTeamOpt = optName.includes(battingTeamCode) || 
-                               (currentScore.innings === 1 && team1Name && optName.includes(team1Name)) ||
-                               (currentScore.innings === 2 && team2Name && optName.includes(team2Name)) ||
-                               optName.includes('yes') || optName.includes('over') || optName.includes('1st');
+      const opt = market.options[oKey];
+      if (!opt) return null;
 
-      const isBowlingTeamOpt = optName.includes(bowlingTeamCode) || 
-                               (currentScore.innings === 1 && team2Name && optName.includes(team2Name)) ||
-                               (currentScore.innings === 2 && team1Name && optName.includes(team1Name)) ||
-                               optName.includes('no') || optName.includes('under') || optName.includes('2nd');
+      const optName = String(opt.name || '').toLowerCase().trim();
+      const optionKeys = Object.keys(market.options);
 
-      if (isBattingTeamOpt) {
-        dynamicOdds = 1.85 - shift; // বর্তমান ব্যাটিং টিম ভাল করলে তাদের জেতার অডস কমবে
-      } else if (isBowlingTeamOpt) {
-        dynamicOdds = 1.85 + shift; // বর্তমান বোলিং টিম পিছিয়ে পড়লে তাদের অডস বাড়বে
+      // ২. অডস ডেরিভেশন (Probability to Decimal Odds)
+      let finalOdds = 1.85;
+
+      // Match Winner Market Check (W1, W2, Team Names)
+      const isTeam1Opt = optName === 'w1' || optName.includes(team1Name) || (team1Code && optName.includes(team1Code));
+      const isTeam2Opt = optName === 'w2' || optName.includes(team2Name) || (team2Code && optName.includes(team2Code));
+      const isDrawOpt = optName === 'x' || optName.includes('draw') || optName.includes('tie');
+
+      if (isTeam1Opt) {
+        // 확률 -> অডস: Odds = 1 / Probability
+        finalOdds = (1 / winProbTeam1) * 0.92; // 0.92 margin factor
+      } else if (isTeam2Opt) {
+        finalOdds = (1 / winProbTeam2) * 0.92;
+      } else if (isDrawOpt) {
+        finalOdds = 12.50; // টাই বা ড্র এর অডস উচুঁ থাকে
       } else {
-        // সাধারণ অপশনগুলোর ক্ষেত্রে
-        const optionIndex = Object.keys(market.options || {}).indexOf(oKey);
-        const direction = optionIndex % 2 === 0 ? -1 : 1;
-        dynamicOdds = 1.85 + (shift * direction);
+        // Over/Under বা Yes/No বা অন্যান্য সাধারণ অপশন
+        let shift = (winProbTeam1 - 0.50);
+        const isFirstOrPositive = (oKey === optionKeys[0]) || optName.includes('over') || optName.includes('yes');
+        
+        if (isFirstOrPositive) {
+          finalOdds = 1.85 - (shift * 1.5);
+        } else {
+          finalOdds = 1.85 + (shift * 1.5);
+        }
       }
 
-      // সীমানা নির্ধারণ (মিনিমাম ১.০৫ এবং ম্যাক্সিমাম ১০.০০)
-      dynamicOdds = Math.max(1.05, Math.min(10.00, dynamicOdds));
-      return dynamicOdds.toFixed(2);
+      // সীমানা নির্ধারণ (সর্বনিম্ন ১.০৫ এবং সর্বোচ্চ ১৫.০০)
+      finalOdds = Math.max(1.05, Math.min(15.00, finalOdds));
+      return finalOdds.toFixed(2);
     }
 
     async function syncAndSaveAIScore(matchId, matchData) {
@@ -393,7 +397,6 @@
 
       const updatePayload = {};
 
-      // রান, বল পরিবর্তন হলে কিংবা ইনিংস পরিবর্তন হলে ডাটা আপডেট হবে
       if (currentBallCount > dbBallCount || currentScore.innings !== dbInnings || !matchData.aiScore) {
         updatePayload.aiScore = currentScore;
         
@@ -403,7 +406,6 @@
           updatePayload.winner = forcedWinner;
         }
 
-        // রান, উইকেটের পাশাপাশি ১ম ও ২য় উভয় ইনিংসে অডস অটোমেটিক আপডেট করা
         if (matchData.customMarkets) {
           Object.keys(matchData.customMarkets).forEach(mKey => {
             const market = matchData.customMarkets[mKey];
@@ -601,7 +603,7 @@
                 </div>
                 
                 <div class="flex items-center gap-1">
-                  <input type="text" inputmode="decimal" data-id="${id}" data-mkey="${mKey}" data-okey="${oKey}" value="${toEngNum(opt.val || '1.00')}" placeholder="Odds" class="custom-option-val w-full px-1.5 py-1 text-xs font-bold text-gray-800 bg-white border border-gray-200 rounded-lg text-center focus:outline-none focus:ring-1 focus:ring-purple-500 shadow-xs">
+                  <input type="text" inputmode="decimal" data-id="${id}" data-mkey="${mKey}" data-okey="${oKey}" value="${toEngNum(opt.val || '1.85')}" placeholder="Odds" class="custom-option-val w-full px-1.5 py-1 text-xs font-bold text-gray-800 bg-white border border-gray-200 rounded-lg text-center focus:outline-none focus:ring-1 focus:ring-purple-500 shadow-xs">
                 </div>
               </div>
             `;
@@ -630,7 +632,7 @@
               </div>
 
               <div class="flex items-center justify-between mb-1.5">
-                <input type="text" data-id="${id}" data-mkey="${mKey}" value="${market.title || 'Total Six'}" placeholder="Market Title" class="market-title-input text-xs font-bold ${isHidden ? 'text-gray-400 line-through' : 'text-gray-700'} bg-transparent border-b border-dashed border-gray-300 focus:border-purple-600 focus:outline-none w-full uppercase">
+                <input type="text" data-id="${id}" data-mkey="${mKey}" value="${market.title || 'TEAM WINS 1X2'}" placeholder="Market Title" class="market-title-input text-xs font-bold ${isHidden ? 'text-gray-400 line-through' : 'text-gray-700'} bg-transparent border-b border-dashed border-gray-300 focus:border-purple-600 focus:outline-none w-full uppercase">
               </div>
 
               <div class="${isHidden ? 'hidden' : 'grid'} ${gridColsClass} gap-1.5">
@@ -662,7 +664,7 @@
           <div class="flex items-center justify-between my-4 gap-2">
             <div class="flex flex-col items-center text-center w-1/3">
               <img src="${data.team1?.logo || ''}" alt="${data.team1?.name || ''}" class="w-12 h-12 object-contain mb-2 rounded-full bg-gray-50 p-1 border border-gray-100" onerror="this.src='https://via.placeholder.com/50?text=T1'">
-              <span class="text-xs font-bold text-gray-800 line-clamp-1">${data.team1?.name || 'Pakistan'}</span>
+              <span class="text-xs font-bold text-gray-800 line-clamp-1">${data.team1?.name || 'New York'}</span>
             </div>
 
             <div class="text-center">
@@ -671,7 +673,7 @@
 
             <div class="flex flex-col items-center text-center w-1/3">
               <img src="${data.team2?.logo || ''}" alt="${data.team2?.name || ''}" class="w-12 h-12 object-contain mb-2 rounded-full bg-gray-50 p-1 border border-gray-100" onerror="this.src='https://via.placeholder.com/50?text=T2'">
-              <span class="text-xs font-bold text-gray-800 line-clamp-1">${data.team2?.name || 'Afghanistan'}</span>
+              <span class="text-xs font-bold text-gray-800 line-clamp-1">${data.team2?.name || 'London Knights'}</span>
             </div>
           </div>
 
@@ -695,15 +697,15 @@
 
             <div id="add-market-form-${id}" class="hidden mb-4 p-3 bg-white border border-purple-200 rounded-2xl shadow-sm">
               <p class="text-[11px] font-bold text-purple-700 mb-2">Create New Title Market</p>
-              <input type="text" id="new-market-title-${id}" placeholder="Market Title (e.g. Match Winner)" class="w-full px-3 py-1.5 text-xs bg-gray-50 border border-gray-200 rounded-xl mb-3 focus:outline-none focus:ring-2 focus:ring-purple-500 font-medium">
+              <input type="text" id="new-market-title-${id}" placeholder="Market Title (e.g. TEAM WINS 1X2)" class="w-full px-3 py-1.5 text-xs bg-gray-50 border border-gray-200 rounded-xl mb-3 focus:outline-none focus:ring-2 focus:ring-purple-500 font-medium">
               
               <div id="market-options-inputs-${id}" class="space-y-2 mb-3">
                 <div class="grid grid-cols-2 gap-2 option-row">
-                  <input type="text" placeholder="Option Name" class="opt-name-input px-2 py-1 text-xs bg-gray-50 border border-gray-200 rounded-lg focus:outline-none">
+                  <input type="text" placeholder="W1" class="opt-name-input px-2 py-1 text-xs bg-gray-50 border border-gray-200 rounded-lg focus:outline-none">
                   <input type="text" inputmode="decimal" value="1.85" placeholder="Odds" class="opt-val-input px-2 py-1 text-xs text-center font-bold bg-gray-50 border border-gray-200 rounded-lg focus:outline-none">
                 </div>
                 <div class="grid grid-cols-2 gap-2 option-row">
-                  <input type="text" placeholder="Option Name" class="opt-name-input px-2 py-1 text-xs bg-gray-50 border border-gray-200 rounded-lg focus:outline-none">
+                  <input type="text" placeholder="W2" class="opt-name-input px-2 py-1 text-xs bg-gray-50 border border-gray-200 rounded-lg focus:outline-none">
                   <input type="text" inputmode="decimal" value="1.85" placeholder="Odds" class="opt-val-input px-2 py-1 text-xs text-center font-bold bg-gray-50 border border-gray-200 rounded-lg focus:outline-none">
                 </div>
               </div>
@@ -753,12 +755,9 @@
 
     function getScoreboardHTML(data, aiScore, isLive) {
       const maxOvers = aiScore.maxOvers || data.overs || 10;
-
-      // CRR (Current Run Rate) গণনা
       const totalOversPlayed = aiScore.over + (aiScore.ball / 6);
       const crr = totalOversPlayed > 0 ? (aiScore.runs / totalOversPlayed).toFixed(2) : "0.00";
 
-      // RRR (Required Run Rate) গণনা (২য় ইনিংসে)
       let rrrDisplay = '';
       if (aiScore.innings === 2 && aiScore.target > 0) {
         const remainingRuns = Math.max(0, aiScore.target - aiScore.runs);
@@ -989,8 +988,6 @@
           updateData.startTime = Date.now();
         } else if (newStatus === 'finished' && matchData) {
           const finalScore = calculateScoreFromTimestamp(matchData, Date.now());
-          
-          // ম্যানুয়াল স্ট্যাটাস পরিবর্তনের ক্ষেত্রেও ৮০% - ২০% লজিক কাজ করবে
           const winner = determineAutoWinnerWithProbability(matchId, matchData);
 
           updateData.aiScore = finalScore;
@@ -1143,7 +1140,7 @@
         const matchId = saveMarketBtn.getAttribute('data-id');
         
         const titleInput = document.getElementById(`new-market-title-${matchId}`);
-        const title = titleInput.value.trim() || "Total Six";
+        const title = titleInput.value.trim() || "TEAM WINS 1X2";
 
         const optionsContainer = document.getElementById(`market-options-inputs-${matchId}`);
         const optionRows = optionsContainer.querySelectorAll('.option-row');
