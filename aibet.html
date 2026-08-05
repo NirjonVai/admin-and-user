@@ -306,7 +306,7 @@
         if (s.ball >= 6) {
           s.over += 1;
           s.ball = 0;
-          s.currentOverEvents = []; 
+          s.currentOverEvents = [];
         }
 
         if (s.innings === 1) {
@@ -586,7 +586,7 @@
 
       const customMarkets = data.customMarkets || {};
       const card = document.createElement('div');
-      card.className = "bg-white rounded-2xl shadow-sm border border-gray-200 p-6 flex flex-col justify-between h-full w-full";
+      card.className = "bg-white rounded-2xl shadow-sm border border-gray-200 p-6 flex flex-col justify-between h-full overflow-hidden";
       card.setAttribute('data-card-id', id);
 
       let customMarketsHTML = '';
@@ -682,7 +682,7 @@
       }
 
       card.innerHTML = `
-        <div class="w-full">
+        <div>
           <div class="flex justify-between items-center mb-4 pb-3 border-b border-gray-100 gap-2">
             <div class="flex items-center gap-1.5 flex-wrap">
               <span class="text-xs font-bold uppercase tracking-wider text-purple-600 bg-purple-50 px-2.5 py-1 rounded-lg">
@@ -715,8 +715,8 @@
             </div>
           </div>
 
-          <!-- Live Dynamic Scoreboard (Full Width Container) -->
-          <div id="scoreboard-${id}" class="w-full bg-[#111827] text-white p-3.5 rounded-2xl my-3 shadow-2xl border border-gray-800/80 select-none overflow-hidden box-border">
+          <!-- Live Dynamic Scoreboard (Full Width Edge-To-Edge like Header) -->
+          <div id="scoreboard-${id}" class="bg-[#111827] text-white p-4 -mx-6 my-3 shadow-2xl border-y border-gray-800/80 select-none overflow-hidden w-[calc(100%+3rem)]">
             ${getScoreboardHTML(data, aiScore, isLive)}
           </div>
 
@@ -771,7 +771,7 @@
           </div>
         </div>
 
-        <div class="pt-3 border-t border-gray-100 flex items-center justify-between gap-2 mt-2 w-full">
+        <div class="pt-3 border-t border-gray-100 flex items-center justify-between gap-2 mt-2">
           <div class="flex-1">
             <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">STATUS</label>
             <select data-id="${id}" class="status-select w-full px-3 py-2 text-xs font-semibold bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500">
@@ -792,7 +792,7 @@
       matchesContainer.appendChild(card);
     }
 
-    // Scoreboard Function - Corrected for full width layout without overflow or truncation
+    // আপডেট করা স্কোরবোর্ড ফাংশন
     function getScoreboardHTML(data, aiScore, isLive) {
       const maxOvers = aiScore.maxOvers || data.overs || 20;
       const totalOversPlayed = aiScore.over + (aiScore.ball / 6);
@@ -815,11 +815,14 @@
         statusText = `1st Innings: ${aiScore.battingTeam} is batting`;
       }
 
+      // টিমের বিজয়ী টেক্সট
       const isTeam1Winner = isFinished && (aiScore.winnerCode === aiScore.team1Code || data.winner?.includes(aiScore.team1Code));
       const isTeam2Winner = isFinished && (aiScore.winnerCode === aiScore.team2Code || data.winner?.includes(aiScore.team2Code));
 
+      // ওভার অনুযায়ী ৬টি সার্কেল প্রস্তুতকরণ
       const events = aiScore.currentOverEvents || [];
       
+      // ওয়াইড / নো বলের সংখ্যা
       let extraBallsCount = 0;
       let overTotalRuns = 0;
 
@@ -834,14 +837,15 @@
         }
       });
 
+      // শুরুতেই ৬টি ফাঁকা ঘর থাকবে, wd থাকলে সার্কেল বাড়বে
       const totalSlots = Math.max(6, 6 + extraBallsCount);
       const displayBalls = [];
 
       for (let i = 0; i < totalSlots; i++) {
         if (i < events.length) {
-          displayBalls.push(events[i]);
+          displayBalls.push(events[i]); // যদি বল সম্পন্ন হয় তাহলে মান বসবে
         } else {
-          displayBalls.push('•');
+          displayBalls.push('•'); // বল না হয়ে থাকলে চোট ডট থাকবে
         }
       }
 
@@ -854,54 +858,54 @@
 
       return `
         <!-- Top Score Area -->
-        <div class="flex items-center justify-between border-b border-gray-800/80 pb-3 mb-3 w-full min-w-0">
+        <div class="flex items-center justify-between border-b border-gray-800/80 pb-3 mb-3 px-4">
           
           <!-- Team Batting / Score -->
-          <div class="flex items-center gap-2.5 min-w-0">
-            <img src="${aiScore.battingLogo || ''}" class="w-8 h-8 object-contain rounded-full bg-gray-800 p-0.5 border border-gray-700 shrink-0" onerror="this.src='https://via.placeholder.com/40?text=T'">
-            <div class="min-w-0">
-              <div class="flex items-center gap-1 min-w-0">
-                ${(aiScore.battingTeam === aiScore.team1Code ? isTeam1Winner : isTeam2Winner) ? '<span class="text-amber-400 text-xs shrink-0">🏆</span>' : ''}
-                <span class="text-xs sm:text-sm font-bold tracking-wide text-gray-200 truncate block leading-tight">${aiScore.battingTeam}</span>
+          <div class="flex items-center gap-3">
+            <img src="${aiScore.battingLogo || ''}" class="w-9 h-9 object-contain rounded-full bg-gray-800 p-1 border border-gray-700 shrink-0" onerror="this.src='https://via.placeholder.com/40?text=T'">
+            <div>
+              <div class="flex items-center gap-1.5">
+                ${(aiScore.battingTeam === aiScore.team1Code ? isTeam1Winner : isTeam2Winner) ? '<span class="text-amber-400 text-sm">🏆</span>' : ''}
+                <span class="text-sm font-bold tracking-wide text-gray-200 block leading-tight">${aiScore.battingTeam}</span>
               </div>
-              <div class="flex items-baseline gap-1.5 mt-0.5">
-                <span class="text-xl sm:text-2xl font-black text-[#818cf8] tracking-tight font-mono">${aiScore.runs}-${aiScore.wickets}</span>
-                <span class="text-[10px] sm:text-xs text-gray-400 font-medium font-mono">(${aiScore.over}.${aiScore.ball})</span>
+              <div class="flex items-baseline gap-2 mt-0.5">
+                <span class="text-2xl font-black text-[#818cf8] tracking-tight font-mono">${aiScore.runs}-${aiScore.wickets}</span>
+                <span class="text-xs text-gray-400 font-medium font-mono">(${aiScore.over}.${aiScore.ball})</span>
               </div>
             </div>
           </div>
 
           <!-- Right Trophy Indicator / Last Ball -->
-          <div class="flex items-center gap-2 shrink-0">
+          <div class="flex items-center gap-3">
             ${isFinished ? `
               <div class="flex items-center gap-1 bg-amber-500/10 border border-amber-500/30 px-2 py-1 rounded-lg">
-                <span class="text-amber-400 text-xs sm:text-sm">🏆</span>
-                <span class="text-[10px] sm:text-xs font-bold text-amber-300 font-mono uppercase">${aiScore.winnerCode || 'WIN'}</span>
+                <span class="text-amber-400 text-base">🏆</span>
+                <span class="text-xs font-bold text-amber-300 font-mono uppercase">${aiScore.winnerCode || 'WIN'}</span>
               </div>
             ` : `
-              <span class="text-2xl sm:text-3xl font-extrabold ${lastBallColor} font-mono tracking-tight">${lastBall}</span>
+              <span class="text-3xl font-extrabold ${lastBallColor} font-mono tracking-tight">${lastBall}</span>
             `}
-            <i class="fa-solid ${isLive ? 'fa-volume-xmark text-gray-400' : 'fa-volume-high text-gray-600'} text-xs sm:text-sm"></i>
+            <i class="fa-solid ${isLive ? 'fa-volume-xmark text-gray-400' : 'fa-volume-high text-gray-600'} text-sm"></i>
           </div>
 
         </div>
 
         <!-- Middle CRR / RRR / Target Line -->
-        <div class="flex items-center justify-between text-[11px] sm:text-xs text-gray-300 font-medium mb-2.5 px-0.5 w-full">
+        <div class="flex items-center justify-between text-xs text-gray-300 font-medium mb-3 px-4">
           <div>CRR: <span class="font-bold font-mono text-white">${crr}</span></div>
           <div>RRR: <span class="font-bold font-mono text-white">${aiScore.innings === 2 && !isFinished ? rrr : '-'}</span></div>
           <div>Target : <span class="font-bold font-mono text-white">${targetDisplay > 0 ? targetDisplay : '-'}</span></div>
         </div>
 
-        <!-- Highlight Box -->
-        <div class="w-full bg-[#451a03]/40 border border-[#78350f]/50 text-[#fde047] text-center text-[11px] sm:text-xs font-bold py-1 px-2 rounded-lg mb-2.5 tracking-wide capitalize truncate">
+        <!-- Highlight Box (Status / Won by text) -->
+        <div class="mx-4 bg-[#451a03]/40 border border-[#78350f]/50 text-[#fde047] text-center text-xs font-bold py-1.5 px-2 rounded-lg mb-3 tracking-wide capitalize">
           ${statusText}
         </div>
 
-        <!-- Over & Balls Display Bar -->
-        <div class="flex items-center justify-between text-xs text-gray-300 pt-1 w-full gap-1">
-          <div class="flex items-center gap-1 overflow-x-auto py-1 min-w-0 flex-1 scrollbar-none">
-            <span class="text-gray-400 font-medium whitespace-nowrap text-[10px] sm:text-xs mr-0.5 shrink-0">Ov ${aiScore.over + 1}</span>
+        <!-- Over & Balls Display Bar (Always Shows 6 or More Circles) -->
+        <div class="flex items-center justify-between text-xs text-gray-300 pt-1 px-4">
+          <div class="flex items-center gap-1.5 overflow-x-auto py-1">
+            <span class="text-gray-400 font-medium whitespace-nowrap mr-1">Over ${aiScore.over + 1}</span>
             
             ${displayBalls.map(ball => {
               let bgClass = "bg-[#1f2937]/80 text-gray-400 border border-gray-700/80"; 
@@ -909,13 +913,13 @@
               else if (ball === '4') bgClass = "bg-[#0284c7] text-white font-bold border border-sky-400"; 
               else if (ball === 'W') bgClass = "bg-[#dc2626] text-white font-bold border border-red-500"; 
               else if (ball === 'wd') bgClass = "bg-[#d97706] text-white font-bold border border-amber-500"; 
-              else if (ball !== '•') bgClass = "bg-[#374151] text-white font-bold border border-gray-600";
+              else if (ball !== '•') bgClass = "bg-[#374151] text-white font-bold border border-gray-600"; 
 
-              return `<span class="w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-[9px] sm:text-[10px] font-mono shrink-0 ${bgClass}">${ball}</span>`;
+              return `<span class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-mono shrink-0 ${bgClass}">${ball}</span>`;
             }).join('')}
           </div>
 
-          <div class="text-[11px] sm:text-xs font-bold text-gray-300 font-mono whitespace-nowrap shrink-0 pl-1">
+          <div class="text-xs font-bold text-gray-300 font-mono whitespace-nowrap ml-2">
             = ${overTotalRuns}
           </div>
         </div>
