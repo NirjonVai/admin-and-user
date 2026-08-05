@@ -235,15 +235,22 @@
       let team1Logo = match.team1?.logo || '';
       let team2Logo = match.team2?.logo || '';
 
-      if (status !== 'live') {
+      let team1Code = team1Name.substring(0, 3).toUpperCase();
+      let team2Code = team2Name.substring(0, 3).toUpperCase();
+
+      if (status !== 'live' && status !== 'finished') {
         return {
           innings: 1, 
-          battingTeam: team1Name.substring(0, 3).toUpperCase(), 
-          bowlingTeam: team2Name.substring(0, 3).toUpperCase(),
+          team1Code, team2Code,
+          battingTeam: team1Code, 
+          bowlingTeam: team2Code,
           battingLogo: team1Logo,
           team1FullName: team1Name, team2FullName: team2Name,
           runs: 0, wickets: 0, over: 0, ball: 0,
-          recentBalls: [], target: 0, isMatchOver: false, maxOvers: maxOvers
+          team1Runs: 0, team1Wickets: 0, team1Over: 0, team1Ball: 0,
+          team2Runs: 0, team2Wickets: 0, team2Over: 0, team2Ball: 0,
+          recentBalls: [], target: 0, isMatchOver: false, maxOvers: maxOvers,
+          winnerCode: null, winText: ''
         };
       }
 
@@ -257,13 +264,18 @@
 
       let s = {
         innings: 1, 
-        battingTeam: team1Name.substring(0, 3).toUpperCase(), 
-        bowlingTeam: team2Name.substring(0, 3).toUpperCase(),
+        team1Code, team2Code,
+        battingTeam: team1Code, 
+        bowlingTeam: team2Code,
         battingLogo: team1Logo,
         team1FullName: team1Name, 
         team2FullName: team2Name,
         runs: 0, wickets: 0, over: 0, ball: 0,
-        recentBalls: [], target: 0, isMatchOver: false, maxOvers: maxOvers
+        team1Runs: 0, team1Wickets: 0, team1Over: 0, team1Ball: 0,
+        team2Runs: 0, team2Wickets: 0, team2Over: 0, team2Ball: 0,
+        recentBalls: [], target: 0, isMatchOver: (status === 'finished'), maxOvers: maxOvers,
+        winnerCode: match.winner ? match.winner.substring(0, 3).toUpperCase() : null,
+        winText: ''
       };
 
       for (let currentBall = 1; currentBall <= totalBallsPlayed; currentBall++) {
@@ -297,20 +309,51 @@
           s.ball = 0;
         }
 
-        if (s.innings === 1 && (s.over >= maxOvers || s.wickets >= 10)) {
-          s.target = s.runs + 1;
-          const minTarget = Math.max(20, maxOvers * 6);
-          if (s.target < minTarget) s.target = minTarget;
+        if (s.innings === 1) {
+          s.team1Runs = s.runs;
+          s.team1Wickets = s.wickets;
+          s.team1Over = s.over;
+          s.team1Ball = s.ball;
 
-          s.innings = 2;
-          s.battingTeam = team2Name.substring(0, 3).toUpperCase();
-          s.bowlingTeam = team1Name.substring(0, 3).toUpperCase();
-          s.battingLogo = team2Logo;
-          s.runs = 0; s.wickets = 0; s.over = 0; s.ball = 0;
-          s.recentBalls = [];
+          if (s.over >= maxOvers || s.wickets >= 10) {
+            s.target = s.runs + 1;
+            const minTarget = Math.max(20, maxOvers * 6);
+            if (s.target < minTarget) s.target = minTarget;
+
+            s.innings = 2;
+            s.battingTeam = team2Code;
+            s.bowlingTeam = team1Code;
+            s.battingLogo = team2Logo;
+            s.runs = 0; s.wickets = 0; s.over = 0; s.ball = 0;
+            s.recentBalls = [];
+          }
         } 
-        else if (s.innings === 2 && (s.runs >= s.target || s.over >= maxOvers || s.wickets >= 10)) {
-          s.isMatchOver = true;
+        else if (s.innings === 2) {
+          s.team2Runs = s.runs;
+          s.team2Wickets = s.wickets;
+          s.team2Over = s.over;
+          s.team2Ball = s.ball;
+
+          if (s.runs >= s.target || s.over >= maxOvers || s.wickets >= 10) {
+            s.isMatchOver = true;
+          }
+        }
+      }
+
+      // জয়ের হিসাব ও বিজয়ী টিম টেক্সট নির্ধারণ
+      if (s.isMatchOver || status === 'finished') {
+        if (s.team2Runs >= s.target && s.target > 0) {
+          s.winnerCode = team2Code;
+          const remainingWickets = 10 - s.team2Wickets;
+          s.winText = `${team2Code} won by ${remainingWickets} wickets`;
+        } else if (s.team1Runs > s.team2Runs) {
+          s.winnerCode = team1Code;
+          const diffRuns = s.team1Runs - s.team2Runs;
+          s.winText = `${team1Code} won by ${diffRuns} runs`;
+        } else if (s.winnerCode) {
+          s.winText = `${s.winnerCode} WON`;
+        } else {
+          s.winText = `Match Finished`;
         }
       }
 
@@ -397,7 +440,7 @@
         updatePayload.aiScore = currentScore;
         
         if (currentScore.isMatchOver) {
-          const forcedWinner = determineAutoWinnerWithProbability(matchId, matchData);
+          const forcedWinner = currentScore.winnerCode || determineAutoWinnerWithProbability(matchId, matchData);
           updatePayload.status = 'finished';
           updatePayload.winner = forcedWinner;
         }
@@ -750,7 +793,7 @@
       matchesContainer.appendChild(card);
     }
 
-    // স্কোরবোর্ড ফাংশন - চিহ্নিত স্থানে প্রতি বলের লাইভ আউটপুট শো হবে
+    // আপডেট করা স্কোরবোর্ড ফাংশন - বিজয়ী দলের পাশে ট্রফি (🏆) এবং জয়লাভের বিবরণ শো হবে
     function getScoreboardHTML(data, aiScore, isLive) {
       const maxOvers = aiScore.maxOvers || data.overs || 20;
       const totalOversPlayed = aiScore.over + (aiScore.ball / 6);
@@ -760,7 +803,11 @@
       let targetDisplay = aiScore.target || (aiScore.innings === 2 ? 100 : 0);
       let statusText = '';
 
-      if (aiScore.innings === 2 && aiScore.target > 0) {
+      const isFinished = data.status === 'finished' || aiScore.isMatchOver;
+
+      if (isFinished) {
+        statusText = aiScore.winText || (data.winner ? `${data.winner} WON` : 'Match Finished');
+      } else if (aiScore.innings === 2 && aiScore.target > 0) {
         const remainingRuns = Math.max(0, aiScore.target - aiScore.runs);
         const remainingBalls = Math.max(0, (maxOvers * 6) - (aiScore.over * 6 + aiScore.ball));
         rrr = remainingBalls > 0 ? ((remainingRuns / remainingBalls) * 6).toFixed(2) : "0.00";
@@ -769,18 +816,20 @@
         statusText = `1st Innings: ${aiScore.battingTeam} is batting`;
       }
 
-      // ওভারে মোট রান হিসেব
+      // টিমের নাম এবং রান প্রদর্শনী
+      const isTeam1Winner = isFinished && (aiScore.winnerCode === aiScore.team1Code || data.winner?.includes(aiScore.team1Code));
+      const isTeam2Winner = isFinished && (aiScore.winnerCode === aiScore.team2Code || data.winner?.includes(aiScore.team2Code));
+
+      // বলের হিসেব
       let overTotalRuns = 0;
       (aiScore.recentBalls || []).forEach(b => {
         if (b === 'wd') overTotalRuns += 1;
         else if (b !== 'W') overTotalRuns += parseInt(b) || 0;
       });
 
-      // প্রতি বলের ইভেন্ট ফিল্টার
       const recentBalls = aiScore.recentBalls || [];
       const lastBall = recentBalls.length > 0 ? recentBalls[recentBalls.length - 1] : '0';
 
-      // বলের টাইপ অনুযায়ী বিশেষ কালার
       let lastBallColor = "text-[#fef08a]";
       if (lastBall === '6') lastBallColor = "text-lime-400";
       else if (lastBall === '4') lastBallColor = "text-sky-400";
@@ -788,35 +837,48 @@
       else if (lastBall === 'wd') lastBallColor = "text-amber-400";
 
       return `
-        <!-- Top Main Score Area -->
+        <!-- Top Score Area (Team 1 vs Team 2 Score Representation) -->
         <div class="flex items-center justify-between border-b border-gray-800/80 pb-3 mb-3">
+          
+          <!-- Team Batting / Score -->
           <div class="flex items-center gap-3">
             <img src="${aiScore.battingLogo || ''}" class="w-9 h-9 object-contain rounded-full bg-gray-800 p-1 border border-gray-700 shrink-0" onerror="this.src='https://via.placeholder.com/40?text=T'">
             <div>
-              <span class="text-sm font-bold tracking-wide text-gray-200 block leading-tight">${aiScore.battingTeam}</span>
+              <div class="flex items-center gap-1.5">
+                ${(aiScore.battingTeam === aiScore.team1Code ? isTeam1Winner : isTeam2Winner) ? '<span class="text-amber-400 text-sm">🏆</span>' : ''}
+                <span class="text-sm font-bold tracking-wide text-gray-200 block leading-tight">${aiScore.battingTeam}</span>
+              </div>
               <div class="flex items-baseline gap-2 mt-0.5">
                 <span class="text-2xl font-black text-[#818cf8] tracking-tight font-mono">${aiScore.runs}-${aiScore.wickets}</span>
-                <span class="text-xs text-gray-400 font-medium font-mono">${aiScore.over}.${aiScore.ball}</span>
+                <span class="text-xs text-gray-400 font-medium font-mono">(${aiScore.over}.${aiScore.ball})</span>
               </div>
             </div>
           </div>
 
-          <!-- মার্ক করা অপশন: প্রতি বলের লাস্ট রান/আউট/ওয়াইড ইত্যাদি শো করবে -->
+          <!-- Right Trophy Indicator / Last Ball -->
           <div class="flex items-center gap-3">
-            <span class="text-3xl font-extrabold ${lastBallColor} font-mono tracking-tight">${lastBall}</span>
+            ${isFinished ? `
+              <div class="flex items-center gap-1 bg-amber-500/10 border border-amber-500/30 px-2 py-1 rounded-lg">
+                <span class="text-amber-400 text-base">🏆</span>
+                <span class="text-xs font-bold text-amber-300 font-mono uppercase">${aiScore.winnerCode || 'WIN'}</span>
+              </div>
+            ` : `
+              <span class="text-3xl font-extrabold ${lastBallColor} font-mono tracking-tight">${lastBall}</span>
+            `}
             <i class="fa-solid ${isLive ? 'fa-volume-xmark text-gray-400' : 'fa-volume-high text-gray-600'} text-sm"></i>
           </div>
+
         </div>
 
         <!-- Middle CRR / RRR / Target Line -->
         <div class="flex items-center justify-between text-xs text-gray-300 font-medium mb-3 px-1">
           <div>CRR: <span class="font-bold font-mono text-white">${crr}</span></div>
-          <div>RRR: <span class="font-bold font-mono text-white">${aiScore.innings === 2 ? rrr : '-'}</span></div>
+          <div>RRR: <span class="font-bold font-mono text-white">${aiScore.innings === 2 && !isFinished ? rrr : '-'}</span></div>
           <div>Target : <span class="font-bold font-mono text-white">${targetDisplay > 0 ? targetDisplay : '-'}</span></div>
         </div>
 
-        <!-- Orange Highlight Need Text -->
-        <div class="bg-[#451a03]/40 border border-[#78350f]/50 text-[#fde047] text-center text-xs font-bold py-1.5 px-2 rounded-lg mb-3 tracking-wide">
+        <!-- Highlight Box (Status / Won by text) -->
+        <div class="bg-[#451a03]/40 border border-[#78350f]/50 text-[#fde047] text-center text-xs font-bold py-1.5 px-2 rounded-lg mb-3 tracking-wide capitalize">
           ${statusText}
         </div>
 
@@ -1032,7 +1094,7 @@
           updateData.startTime = Date.now();
         } else if (newStatus === 'finished' && matchData) {
           const finalScore = calculateScoreFromTimestamp(matchData, Date.now());
-          const winner = determineAutoWinnerWithProbability(matchId, matchData);
+          const winner = finalScore.winnerCode || determineAutoWinnerWithProbability(matchId, matchData);
 
           updateData.aiScore = finalScore;
           updateData.winner = winner;
@@ -1233,4 +1295,4 @@
     });
   </script>
 </body>
-</html>
+  </html>
