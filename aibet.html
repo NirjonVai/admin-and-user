@@ -673,7 +673,7 @@
             </div>
           </div>
 
-          <!-- Updated Design Scoreboard -->
+          <!-- Live Dynamic Scoreboard -->
           <div id="scoreboard-${id}" class="bg-[#111827] text-white p-4 rounded-2xl my-3 shadow-2xl border border-gray-800/80 select-none overflow-hidden">
             ${getScoreboardHTML(data, aiScore, isLive)}
           </div>
@@ -750,7 +750,7 @@
       matchesContainer.appendChild(card);
     }
 
-    // ছবি অনুযায়ী সম্পূর্ণ আপগ্রেডেড স্কোরবোর্ড ফাংশন
+    // স্কোরবোর্ড ফাংশন - চিহ্নিত স্থানে প্রতি বলের লাইভ আউটপুট শো হবে
     function getScoreboardHTML(data, aiScore, isLive) {
       const maxOvers = aiScore.maxOvers || data.overs || 20;
       const totalOversPlayed = aiScore.over + (aiScore.ball / 6);
@@ -776,6 +776,17 @@
         else if (b !== 'W') overTotalRuns += parseInt(b) || 0;
       });
 
+      // প্রতি বলের ইভেন্ট ফিল্টার
+      const recentBalls = aiScore.recentBalls || [];
+      const lastBall = recentBalls.length > 0 ? recentBalls[recentBalls.length - 1] : '0';
+
+      // বলের টাইপ অনুযায়ী বিশেষ কালার
+      let lastBallColor = "text-[#fef08a]";
+      if (lastBall === '6') lastBallColor = "text-lime-400";
+      else if (lastBall === '4') lastBallColor = "text-sky-400";
+      else if (lastBall === 'W') lastBallColor = "text-red-500 animate-bounce";
+      else if (lastBall === 'wd') lastBallColor = "text-amber-400";
+
       return `
         <!-- Top Main Score Area -->
         <div class="flex items-center justify-between border-b border-gray-800/80 pb-3 mb-3">
@@ -790,8 +801,9 @@
             </div>
           </div>
 
+          <!-- মার্ক করা অপশন: প্রতি বলের লাস্ট রান/আউট/ওয়াইড ইত্যাদি শো করবে -->
           <div class="flex items-center gap-3">
-            <span class="text-3xl font-extrabold text-[#fef08a] font-mono">${aiScore.innings}</span>
+            <span class="text-3xl font-extrabold ${lastBallColor} font-mono tracking-tight">${lastBall}</span>
             <i class="fa-solid ${isLive ? 'fa-volume-xmark text-gray-400' : 'fa-volume-high text-gray-600'} text-sm"></i>
           </div>
         </div>
@@ -813,9 +825,9 @@
           <div class="flex items-center gap-1.5 overflow-x-auto py-1">
             <span class="text-gray-400 font-medium whitespace-nowrap mr-1">Over ${aiScore.over + 1}</span>
             
-            ${(aiScore.recentBalls || []).length === 0 ? '<span class="text-[10px] text-gray-500 italic">Waiting...</span>' : ''}
+            ${recentBalls.length === 0 ? '<span class="text-[10px] text-gray-500 italic">Waiting...</span>' : ''}
             
-            ${(aiScore.recentBalls || []).map(ball => {
+            ${recentBalls.map(ball => {
               let bgClass = "bg-[#1f2937] text-gray-200 border border-gray-700";
               if (ball === '6') bgClass = "bg-[#65a30d] text-white font-bold border border-lime-500"; 
               else if (ball === '4') bgClass = "bg-[#0284c7] text-white font-bold border border-sky-400"; 
@@ -1221,4 +1233,4 @@
     });
   </script>
 </body>
-  </html>
+</html>
