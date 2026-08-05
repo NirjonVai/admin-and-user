@@ -306,7 +306,7 @@
         if (s.ball >= 6) {
           s.over += 1;
           s.ball = 0;
-          s.currentOverEvents = []; // নতুন ওভার শুরু হলে আগের ঘটনা মুছে নতুন করে ৬টি ফালি গোল হবে
+          s.currentOverEvents = []; 
         }
 
         if (s.innings === 1) {
@@ -340,7 +340,6 @@
         }
       }
 
-      // জয়ের হিসাব
       if (s.isMatchOver || status === 'finished') {
         if (s.team2Runs >= s.target && s.target > 0) {
           s.winnerCode = team2Code;
@@ -716,8 +715,8 @@
             </div>
           </div>
 
-          <!-- Live Dynamic Scoreboard -->
-          <div id="scoreboard-${id}" class="bg-[#111827] text-white p-4 rounded-2xl my-3 shadow-2xl border border-gray-800/80 select-none overflow-hidden">
+          <!-- Live Dynamic Scoreboard (Full Width Container) -->
+          <div id="scoreboard-${id}" class="w-full bg-[#111827] text-white p-4 rounded-2xl my-3 shadow-2xl border border-gray-800/80 select-none overflow-hidden">
             ${getScoreboardHTML(data, aiScore, isLive)}
           </div>
 
@@ -793,7 +792,7 @@
       matchesContainer.appendChild(card);
     }
 
-    // আপডেট করা স্কোরবোর্ড ফাংশন
+    // Scoreboard Function
     function getScoreboardHTML(data, aiScore, isLive) {
       const maxOvers = aiScore.maxOvers || data.overs || 20;
       const totalOversPlayed = aiScore.over + (aiScore.ball / 6);
@@ -816,14 +815,11 @@
         statusText = `1st Innings: ${aiScore.battingTeam} is batting`;
       }
 
-      // টিমের বিজয়ী টেক্সট
       const isTeam1Winner = isFinished && (aiScore.winnerCode === aiScore.team1Code || data.winner?.includes(aiScore.team1Code));
       const isTeam2Winner = isFinished && (aiScore.winnerCode === aiScore.team2Code || data.winner?.includes(aiScore.team2Code));
 
-      // ওভার অনুযায়ী ৬টি সার্কেল প্রস্তুতকরণ
       const events = aiScore.currentOverEvents || [];
       
-      // ওয়াইড / নো বলের সংখ্যা
       let extraBallsCount = 0;
       let overTotalRuns = 0;
 
@@ -838,15 +834,14 @@
         }
       });
 
-      // শুরুতেই ৬টি ফাঁকা ঘর থাকবে, wd থাকলে সার্কেল বাড়বে
       const totalSlots = Math.max(6, 6 + extraBallsCount);
       const displayBalls = [];
 
       for (let i = 0; i < totalSlots; i++) {
         if (i < events.length) {
-          displayBalls.push(events[i]); // যদি বল সম্পন্ন হয় তাহলে মান বসবে
+          displayBalls.push(events[i]);
         } else {
-          displayBalls.push('•'); // বল না হয়ে থাকলে চোট ডট থাকবে
+          displayBalls.push('•');
         }
       }
 
@@ -859,7 +854,7 @@
 
       return `
         <!-- Top Score Area -->
-        <div class="flex items-center justify-between border-b border-gray-800/80 pb-3 mb-3">
+        <div class="flex items-center justify-between border-b border-gray-800/80 pb-3 mb-3 w-full">
           
           <!-- Team Batting / Score -->
           <div class="flex items-center gap-3">
@@ -892,20 +887,20 @@
         </div>
 
         <!-- Middle CRR / RRR / Target Line -->
-        <div class="flex items-center justify-between text-xs text-gray-300 font-medium mb-3 px-1">
+        <div class="flex items-center justify-between text-xs text-gray-300 font-medium mb-3 px-1 w-full">
           <div>CRR: <span class="font-bold font-mono text-white">${crr}</span></div>
           <div>RRR: <span class="font-bold font-mono text-white">${aiScore.innings === 2 && !isFinished ? rrr : '-'}</span></div>
           <div>Target : <span class="font-bold font-mono text-white">${targetDisplay > 0 ? targetDisplay : '-'}</span></div>
         </div>
 
-        <!-- Highlight Box (Status / Won by text) -->
-        <div class="bg-[#451a03]/40 border border-[#78350f]/50 text-[#fde047] text-center text-xs font-bold py-1.5 px-2 rounded-lg mb-3 tracking-wide capitalize">
+        <!-- Highlight Box -->
+        <div class="w-full bg-[#451a03]/40 border border-[#78350f]/50 text-[#fde047] text-center text-xs font-bold py-1.5 px-2 rounded-lg mb-3 tracking-wide capitalize">
           ${statusText}
         </div>
 
-        <!-- Over & Balls Display Bar (Always Shows 6 or More Circles) -->
-        <div class="flex items-center justify-between text-xs text-gray-300 pt-1">
-          <div class="flex items-center gap-1.5 overflow-x-auto py-1">
+        <!-- Over & Balls Display Bar -->
+        <div class="flex items-center justify-between text-xs text-gray-300 pt-1 w-full">
+          <div class="flex items-center gap-1.5 overflow-x-auto py-1 w-full">
             <span class="text-gray-400 font-medium whitespace-nowrap mr-1">Over ${aiScore.over + 1}</span>
             
             ${displayBalls.map(ball => {
@@ -914,7 +909,7 @@
               else if (ball === '4') bgClass = "bg-[#0284c7] text-white font-bold border border-sky-400"; 
               else if (ball === 'W') bgClass = "bg-[#dc2626] text-white font-bold border border-red-500"; 
               else if (ball === 'wd') bgClass = "bg-[#d97706] text-white font-bold border border-amber-500"; 
-              else if (ball !== '•') bgClass = "bg-[#374151] text-white font-bold border border-gray-600"; // Ordinary runs (0, 1, 2, 3)
+              else if (ball !== '•') bgClass = "bg-[#374151] text-white font-bold border border-gray-600";
 
               return `<span class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-mono shrink-0 ${bgClass}">${ball}</span>`;
             }).join('')}
