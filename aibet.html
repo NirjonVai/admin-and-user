@@ -903,10 +903,10 @@
           ${statusText}
         </div>
 
-        <!-- Over & Balls Display Bar (Always Shows 6 or More Circles) -->
+        <!-- Over & Balls Display Bar (Scrollable Container) -->
         <div class="flex items-center justify-between text-xs text-gray-300 pt-1">
-          <div class="flex items-center gap-1.5 overflow-x-auto py-1">
-            <span class="text-gray-400 font-medium whitespace-nowrap mr-1">Over ${aiScore.over + 1}</span>
+          <div class="flex items-center gap-1.5 overflow-x-auto min-w-0 flex-1 py-1 pr-2 no-scrollbar scroll-smooth">
+            <span class="text-gray-400 font-medium whitespace-nowrap mr-1 shrink-0">Over ${aiScore.over + 1}</span>
             
             ${displayBalls.map(ball => {
               let bgClass = "bg-[#1f2937]/80 text-gray-400 border border-gray-700/80"; 
@@ -920,7 +920,7 @@
             }).join('')}
           </div>
 
-          <div class="text-xs font-bold text-gray-300 font-mono whitespace-nowrap ml-2">
+          <div class="text-xs font-bold text-gray-300 font-mono whitespace-nowrap ml-2 shrink-0">
             = ${overTotalRuns}
           </div>
         </div>
