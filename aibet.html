@@ -359,6 +359,7 @@
       return s;
     }
 
+    // Dynamic Odds Calculation Function (Updated with Dynamic Draw 'X' Logic & Real Betting Math)
     function calculateDynamicOdds(market, oKey, currentScore, matchData) {
       if (!currentScore || !market || !market.options) return null;
 
@@ -378,7 +379,7 @@
         const expectedRR = 7.5;
         const currentRR = currentOvers > 0 ? (runs / currentOvers) : expectedRR;
         let scoreImpact = ((currentRR - expectedRR) * 0.04) - (wickets * 0.06);
-        winProbTeam1 = Math.max(0.10, Math.min(0.90, 0.50 + scoreImpact));
+        winProbTeam1 = Math.max(0.05, Math.min(0.95, 0.50 + scoreImpact));
       } else {
         const target = currentScore.target || (totalOvers * 7);
         const remainingRuns = Math.max(0, target - runs);
@@ -392,6 +393,16 @@
 
       let winProbTeam2 = 1.0 - winProbTeam1;
 
+      // Draw (X) Probability Calculation:
+      // When both teams have near 50% chance, Draw chance is highest.
+      // As winProbTeam1 diverges from 0.50, draw probability drops.
+      let diff = Math.abs(winProbTeam1 - 0.50);
+      let drawProb = Math.max(0.02, 0.18 - (diff * 0.32)); 
+
+      // Adjust team probabilities taking draw into account
+      let adjTeam1Prob = winProbTeam1 * (1.0 - drawProb);
+      let adjTeam2Prob = winProbTeam2 * (1.0 - drawProb);
+
       const opt = market.options[oKey];
       if (!opt) return null;
 
@@ -404,12 +415,13 @@
       const isTeam2Opt = optName === 'w2' || optName.includes(team2Name) || (team2Code && optName.includes(team2Code));
       const isDrawOpt = optName === 'x' || optName.includes('draw') || optName.includes('tie');
 
+      // Real Betting Mathematics: Odds = (1 / Probability) * Bookmaker Margin
       if (isTeam1Opt) {
-        finalOdds = (1 / winProbTeam1) * 0.92; 
+        finalOdds = (1 / adjTeam1Prob) * 0.92; 
       } else if (isTeam2Opt) {
-        finalOdds = (1 / winProbTeam2) * 0.92;
+        finalOdds = (1 / adjTeam2Prob) * 0.92;
       } else if (isDrawOpt) {
-        finalOdds = 12.50; 
+        finalOdds = (1 / drawProb) * 0.92; 
       } else {
         let shift = (winProbTeam1 - 0.50);
         const isFirstOrPositive = (oKey === optionKeys[0]) || optName.includes('over') || optName.includes('yes');
@@ -421,7 +433,8 @@
         }
       }
 
-      finalOdds = Math.max(1.05, Math.min(15.00, finalOdds));
+      // Safe Odds Threshold Bounds (1.05 to 30.00)
+      finalOdds = Math.max(1.05, Math.min(30.00, finalOdds));
       return finalOdds.toFixed(2);
     }
 
@@ -793,7 +806,7 @@
       matchesContainer.appendChild(card);
     }
 
-    // স্কোরেবোর্ড ফাংশন (Volume Icon রিমুভড)
+    // Scoreboard Function
     function getScoreboardHTML(data, aiScore, isLive) {
       const maxOvers = aiScore.maxOvers || data.overs || 20;
       const totalOversPlayed = aiScore.over + (aiScore.ball / 6);
@@ -872,7 +885,7 @@
             </div>
           </div>
 
-          <!-- Right Trophy Indicator / Last Ball (Volume Icon removed) -->
+          <!-- Right Trophy Indicator / Last Ball -->
           <div class="flex items-center gap-2">
             ${isFinished ? `
               <div class="flex items-center gap-1 bg-amber-500/10 border border-amber-500/30 px-1.5 py-0.5 rounded-md">
