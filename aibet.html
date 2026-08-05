@@ -249,7 +249,7 @@
           runs: 0, wickets: 0, over: 0, ball: 0,
           team1Runs: 0, team1Wickets: 0, team1Over: 0, team1Ball: 0,
           team2Runs: 0, team2Wickets: 0, team2Over: 0, team2Ball: 0,
-          recentBalls: [], target: 0, isMatchOver: false, maxOvers: maxOvers,
+          currentOverEvents: [], target: 0, isMatchOver: false, maxOvers: maxOvers,
           winnerCode: null, winText: ''
         };
       }
@@ -273,7 +273,7 @@
         runs: 0, wickets: 0, over: 0, ball: 0,
         team1Runs: 0, team1Wickets: 0, team1Over: 0, team1Ball: 0,
         team2Runs: 0, team2Wickets: 0, team2Over: 0, team2Ball: 0,
-        recentBalls: [], target: 0, isMatchOver: (status === 'finished'), maxOvers: maxOvers,
+        currentOverEvents: [], target: 0, isMatchOver: (status === 'finished'), maxOvers: maxOvers,
         winnerCode: match.winner ? match.winner.substring(0, 3).toUpperCase() : null,
         winText: ''
       };
@@ -301,12 +301,12 @@
           s.ball += 1;
         }
 
-        s.recentBalls.push(event);
-        if (s.recentBalls.length > 6) s.recentBalls.shift();
+        s.currentOverEvents.push(event);
 
         if (s.ball >= 6) {
           s.over += 1;
           s.ball = 0;
+          s.currentOverEvents = []; // নতুন ওভার শুরু হলে আগের ঘটনা মুছে নতুন করে ৬টি ফালি গোল হবে
         }
 
         if (s.innings === 1) {
@@ -325,7 +325,7 @@
             s.bowlingTeam = team1Code;
             s.battingLogo = team2Logo;
             s.runs = 0; s.wickets = 0; s.over = 0; s.ball = 0;
-            s.recentBalls = [];
+            s.currentOverEvents = [];
           }
         } 
         else if (s.innings === 2) {
@@ -340,7 +340,7 @@
         }
       }
 
-      // জয়ের হিসাব ও বিজয়ী টিম টেক্সট নির্ধারণ
+      // জয়ের হিসাব
       if (s.isMatchOver || status === 'finished') {
         if (s.team2Runs >= s.target && s.target > 0) {
           s.winnerCode = team2Code;
@@ -793,7 +793,7 @@
       matchesContainer.appendChild(card);
     }
 
-    // আপডেট করা স্কোরবোর্ড ফাংশন - বিজয়ী দলের পাশে ট্রফি (🏆) এবং জয়লাভের বিবরণ শো হবে
+    // আপডেট করা স্কোরবোর্ড ফাংশন
     function getScoreboardHTML(data, aiScore, isLive) {
       const maxOvers = aiScore.maxOvers || data.overs || 20;
       const totalOversPlayed = aiScore.over + (aiScore.ball / 6);
@@ -811,25 +811,46 @@
         const remainingRuns = Math.max(0, aiScore.target - aiScore.runs);
         const remainingBalls = Math.max(0, (maxOvers * 6) - (aiScore.over * 6 + aiScore.ball));
         rrr = remainingBalls > 0 ? ((remainingRuns / remainingBalls) * 6).toFixed(2) : "0.00";
-        statusText = `${aiScore.battingTeam} need ${remainingRuns} runs in ${remainingBalls} balls`;
+        statusText = `${aiScore.battingTeam} Need ${remainingRuns} Runs In ${remainingBalls} Balls`;
       } else {
         statusText = `1st Innings: ${aiScore.battingTeam} is batting`;
       }
 
-      // টিমের নাম এবং রান প্রদর্শনী
+      // টিমের বিজয়ী টেক্সট
       const isTeam1Winner = isFinished && (aiScore.winnerCode === aiScore.team1Code || data.winner?.includes(aiScore.team1Code));
       const isTeam2Winner = isFinished && (aiScore.winnerCode === aiScore.team2Code || data.winner?.includes(aiScore.team2Code));
 
-      // বলের হিসেব
+      // ওভার অনুযায়ী ৬টি সার্কেল প্রস্তুতকরণ
+      const events = aiScore.currentOverEvents || [];
+      
+      // ওয়াইড / নো বলের সংখ্যা
+      let extraBallsCount = 0;
       let overTotalRuns = 0;
-      (aiScore.recentBalls || []).forEach(b => {
-        if (b === 'wd') overTotalRuns += 1;
-        else if (b !== 'W') overTotalRuns += parseInt(b) || 0;
+
+      events.forEach(b => {
+        if (b === 'wd') {
+          extraBallsCount++;
+          overTotalRuns += 1;
+        } else if (b === 'W') {
+          overTotalRuns += 0;
+        } else {
+          overTotalRuns += parseInt(b) || 0;
+        }
       });
 
-      const recentBalls = aiScore.recentBalls || [];
-      const lastBall = recentBalls.length > 0 ? recentBalls[recentBalls.length - 1] : '0';
+      // শুরুতেই ৬টি ফাঁকা ঘর থাকবে, wd থাকলে সার্কেল বাড়বে
+      const totalSlots = Math.max(6, 6 + extraBallsCount);
+      const displayBalls = [];
 
+      for (let i = 0; i < totalSlots; i++) {
+        if (i < events.length) {
+          displayBalls.push(events[i]); // যদি বল সম্পন্ন হয় তাহলে মান বসবে
+        } else {
+          displayBalls.push('•'); // বল না হয়ে থাকলে চোট ডট থাকবে
+        }
+      }
+
+      const lastBall = events.length > 0 ? events[events.length - 1] : '';
       let lastBallColor = "text-[#fef08a]";
       if (lastBall === '6') lastBallColor = "text-lime-400";
       else if (lastBall === '4') lastBallColor = "text-sky-400";
@@ -837,7 +858,7 @@
       else if (lastBall === 'wd') lastBallColor = "text-amber-400";
 
       return `
-        <!-- Top Score Area (Team 1 vs Team 2 Score Representation) -->
+        <!-- Top Score Area -->
         <div class="flex items-center justify-between border-b border-gray-800/80 pb-3 mb-3">
           
           <!-- Team Batting / Score -->
@@ -882,19 +903,18 @@
           ${statusText}
         </div>
 
-        <!-- Over & Balls Display Bar -->
+        <!-- Over & Balls Display Bar (Always Shows 6 or More Circles) -->
         <div class="flex items-center justify-between text-xs text-gray-300 pt-1">
           <div class="flex items-center gap-1.5 overflow-x-auto py-1">
             <span class="text-gray-400 font-medium whitespace-nowrap mr-1">Over ${aiScore.over + 1}</span>
             
-            ${recentBalls.length === 0 ? '<span class="text-[10px] text-gray-500 italic">Waiting...</span>' : ''}
-            
-            ${recentBalls.map(ball => {
-              let bgClass = "bg-[#1f2937] text-gray-200 border border-gray-700";
+            ${displayBalls.map(ball => {
+              let bgClass = "bg-[#1f2937]/80 text-gray-400 border border-gray-700/80"; 
               if (ball === '6') bgClass = "bg-[#65a30d] text-white font-bold border border-lime-500"; 
               else if (ball === '4') bgClass = "bg-[#0284c7] text-white font-bold border border-sky-400"; 
               else if (ball === 'W') bgClass = "bg-[#dc2626] text-white font-bold border border-red-500"; 
               else if (ball === 'wd') bgClass = "bg-[#d97706] text-white font-bold border border-amber-500"; 
+              else if (ball !== '•') bgClass = "bg-[#374151] text-white font-bold border border-gray-600"; // Ordinary runs (0, 1, 2, 3)
 
               return `<span class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-mono shrink-0 ${bgClass}">${ball}</span>`;
             }).join('')}
