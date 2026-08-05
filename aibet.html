@@ -10,23 +10,6 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <style>
-    /* Custom Scrollbar for Ball Bar */
-    .over-scroll-container::-webkit-scrollbar {
-      height: 4px;
-    }
-    .over-scroll-container::-webkit-scrollbar-track {
-      background: rgba(31, 41, 55, 0.5);
-      border-radius: 10px;
-    }
-    .over-scroll-container::-webkit-scrollbar-thumb {
-      background: rgba(129, 140, 248, 0.4);
-      border-radius: 10px;
-    }
-    .over-scroll-container::-webkit-scrollbar-thumb:hover {
-      background: rgba(129, 140, 248, 0.8);
-    }
-  </style>
 </head>
 <body class="bg-gray-100 min-h-screen flex flex-col md:flex-row font-['Plus_Jakarta_Sans']">
 
@@ -323,7 +306,7 @@
         if (s.ball >= 6) {
           s.over += 1;
           s.ball = 0;
-          s.currentOverEvents = [];
+          s.currentOverEvents = []; // নতুন ওভার শুরু হলে আগের ঘটনা মুছে নতুন করে ৬টি ফালি গোল হবে
         }
 
         if (s.innings === 1) {
@@ -357,6 +340,7 @@
         }
       }
 
+      // জয়ের হিসাব
       if (s.isMatchOver || status === 'finished') {
         if (s.team2Runs >= s.target && s.target > 0) {
           s.winnerCode = team2Code;
@@ -809,7 +793,7 @@
       matchesContainer.appendChild(card);
     }
 
-    // আপডেট করা স্কোরবোর্ড ফাংশন (ডিসপ্লে বারে স্ক্রোলিং সুবিধা সহ)
+    // আপডেট করা স্কোরবোর্ড ফাংশন
     function getScoreboardHTML(data, aiScore, isLive) {
       const maxOvers = aiScore.maxOvers || data.overs || 20;
       const totalOversPlayed = aiScore.over + (aiScore.ball / 6);
@@ -860,9 +844,9 @@
 
       for (let i = 0; i < totalSlots; i++) {
         if (i < events.length) {
-          displayBalls.push(events[i]); 
+          displayBalls.push(events[i]); // যদি বল সম্পন্ন হয় তাহলে মান বসবে
         } else {
-          displayBalls.push('•'); 
+          displayBalls.push('•'); // বল না হয়ে থাকলে চোট ডট থাকবে
         }
       }
 
@@ -919,13 +903,10 @@
           ${statusText}
         </div>
 
-        <!-- Over & Balls Horizontal Scrollable Display Bar -->
-        <div class="flex items-center justify-between text-xs text-gray-300 pt-1 border-t border-gray-800/60">
-          <!-- Full Horizontal Scroll Container -->
-          <div class="over-scroll-container flex items-center gap-2 overflow-x-auto w-full py-2 px-1 scroll-smooth">
-            <span class="text-gray-400 font-bold whitespace-nowrap mr-1 shrink-0 bg-gray-800/80 px-2 py-0.5 rounded text-[11px]">
-              Over ${aiScore.over + 1}
-            </span>
+        <!-- Over & Balls Display Bar (Always Shows 6 or More Circles) -->
+        <div class="flex items-center justify-between text-xs text-gray-300 pt-1">
+          <div class="flex items-center gap-1.5 overflow-x-auto py-1">
+            <span class="text-gray-400 font-medium whitespace-nowrap mr-1">Over ${aiScore.over + 1}</span>
             
             ${displayBalls.map(ball => {
               let bgClass = "bg-[#1f2937]/80 text-gray-400 border border-gray-700/80"; 
@@ -933,14 +914,14 @@
               else if (ball === '4') bgClass = "bg-[#0284c7] text-white font-bold border border-sky-400"; 
               else if (ball === 'W') bgClass = "bg-[#dc2626] text-white font-bold border border-red-500"; 
               else if (ball === 'wd') bgClass = "bg-[#d97706] text-white font-bold border border-amber-500"; 
-              else if (ball !== '•') bgClass = "bg-[#374151] text-white font-bold border border-gray-600";
+              else if (ball !== '•') bgClass = "bg-[#374151] text-white font-bold border border-gray-600"; // Ordinary runs (0, 1, 2, 3)
 
-              return `<span class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-mono shrink-0 shadow-sm ${bgClass}">${ball}</span>`;
+              return `<span class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-mono shrink-0 ${bgClass}">${ball}</span>`;
             }).join('')}
+          </div>
 
-            <span class="text-xs font-bold text-indigo-300 font-mono whitespace-nowrap ml-auto shrink-0 bg-indigo-950/60 px-2.5 py-1 rounded-md border border-indigo-800/60">
-              = ${overTotalRuns} Runs
-            </span>
+          <div class="text-xs font-bold text-gray-300 font-mono whitespace-nowrap ml-2">
+            = ${overTotalRuns}
           </div>
         </div>
       `;
