@@ -232,10 +232,15 @@
 
       let team1Name = match.team1?.name || 'Team 1';
       let team2Name = match.team2?.name || 'Team 2';
+      let team1Logo = match.team1?.logo || '';
+      let team2Logo = match.team2?.logo || '';
 
       if (status !== 'live') {
         return {
-          innings: 1, battingTeam: team1Name.substring(0, 3).toUpperCase(), bowlingTeam: team2Name.substring(0, 3).toUpperCase(),
+          innings: 1, 
+          battingTeam: team1Name.substring(0, 3).toUpperCase(), 
+          bowlingTeam: team2Name.substring(0, 3).toUpperCase(),
+          battingLogo: team1Logo,
           team1FullName: team1Name, team2FullName: team2Name,
           runs: 0, wickets: 0, over: 0, ball: 0,
           recentBalls: [], target: 0, isMatchOver: false, maxOvers: maxOvers
@@ -254,6 +259,7 @@
         innings: 1, 
         battingTeam: team1Name.substring(0, 3).toUpperCase(), 
         bowlingTeam: team2Name.substring(0, 3).toUpperCase(),
+        battingLogo: team1Logo,
         team1FullName: team1Name, 
         team2FullName: team2Name,
         runs: 0, wickets: 0, over: 0, ball: 0,
@@ -299,6 +305,7 @@
           s.innings = 2;
           s.battingTeam = team2Name.substring(0, 3).toUpperCase();
           s.bowlingTeam = team1Name.substring(0, 3).toUpperCase();
+          s.battingLogo = team2Logo;
           s.runs = 0; s.wickets = 0; s.over = 0; s.ball = 0;
           s.recentBalls = [];
         } 
@@ -310,7 +317,6 @@
       return s;
     }
 
-    // বাস্তবানুগ ডাইনামিক অডস গণনার আপগ্রেডেড ফাংশন
     function calculateDynamicOdds(market, oKey, currentScore, matchData) {
       if (!currentScore || !market || !market.options) return null;
 
@@ -324,25 +330,20 @@
       const team1Code = team1Name.substring(0, 3);
       const team2Code = team2Name.substring(0, 3);
 
-      // ১. দলের উইনিং চান্স ক্যালকুলেশন (0.05 থেকে 0.95 এর মধ্যে)
-      let winProbTeam1 = 0.50; // ডিফোল্ট ৫০% ৫০%
+      let winProbTeam1 = 0.50; 
 
       if (currentScore.innings === 1) {
-        // ১ম ইনিংস: টিম ১ ব্যাটিং করছে
         const expectedRR = 7.5;
         const currentRR = currentOvers > 0 ? (runs / currentOvers) : expectedRR;
-        // রানরেট বেশি হলে Team 1 ফেভারিট, উইকেট বেশি পড়লে Team 2 ফেভারিট
         let scoreImpact = ((currentRR - expectedRR) * 0.04) - (wickets * 0.06);
         winProbTeam1 = Math.max(0.10, Math.min(0.90, 0.50 + scoreImpact));
       } else {
-        // ২য় ইনিংস: টিম ২ ব্যাটিং করছে
         const target = currentScore.target || (totalOvers * 7);
         const remainingRuns = Math.max(0, target - runs);
         const remainingBalls = Math.max(1, (totalOvers * 6) - (currentScore.over * 6 + currentScore.ball));
         const reqRR = (remainingRuns / remainingBalls) * 6;
         const initReqRR = (target / totalOvers);
         
-        // RRR বাড়লে Team 2 পিছাবে (Team 1 জেতার সম্ভাবনা বাড়বে)
         let chaseImpact = ((reqRR - initReqRR) * 0.05) + (wickets * 0.07);
         winProbTeam1 = Math.max(0.05, Math.min(0.95, 0.50 + chaseImpact));
       }
@@ -355,23 +356,19 @@
       const optName = String(opt.name || '').toLowerCase().trim();
       const optionKeys = Object.keys(market.options);
 
-      // ২. অডস ডেরিভেশন (Probability to Decimal Odds)
       let finalOdds = 1.85;
 
-      // Match Winner Market Check (W1, W2, Team Names)
       const isTeam1Opt = optName === 'w1' || optName.includes(team1Name) || (team1Code && optName.includes(team1Code));
       const isTeam2Opt = optName === 'w2' || optName.includes(team2Name) || (team2Code && optName.includes(team2Code));
       const isDrawOpt = optName === 'x' || optName.includes('draw') || optName.includes('tie');
 
       if (isTeam1Opt) {
-        // 확률 -> অডস: Odds = 1 / Probability
-        finalOdds = (1 / winProbTeam1) * 0.92; // 0.92 margin factor
+        finalOdds = (1 / winProbTeam1) * 0.92; 
       } else if (isTeam2Opt) {
         finalOdds = (1 / winProbTeam2) * 0.92;
       } else if (isDrawOpt) {
-        finalOdds = 12.50; // টাই বা ড্র এর অডস উচুঁ থাকে
+        finalOdds = 12.50; 
       } else {
-        // Over/Under বা Yes/No বা অন্যান্য সাধারণ অপশন
         let shift = (winProbTeam1 - 0.50);
         const isFirstOrPositive = (oKey === optionKeys[0]) || optName.includes('over') || optName.includes('yes');
         
@@ -382,7 +379,6 @@
         }
       }
 
-      // সীমানা নির্ধারণ (সর্বনিম্ন ১.০৫ এবং সর্বোচ্চ ১৫.০০)
       finalOdds = Math.max(1.05, Math.min(15.00, finalOdds));
       return finalOdds.toFixed(2);
     }
@@ -677,7 +673,8 @@
             </div>
           </div>
 
-          <div id="scoreboard-${id}" class="bg-gray-900 text-white p-3.5 rounded-xl my-3 shadow-inner">
+          <!-- Updated Design Scoreboard -->
+          <div id="scoreboard-${id}" class="bg-[#111827] text-white p-4 rounded-2xl my-3 shadow-2xl border border-gray-800/80 select-none overflow-hidden">
             ${getScoreboardHTML(data, aiScore, isLive)}
           </div>
 
@@ -753,49 +750,84 @@
       matchesContainer.appendChild(card);
     }
 
+    // ছবি অনুযায়ী সম্পূর্ণ আপগ্রেডেড স্কোরবোর্ড ফাংশন
     function getScoreboardHTML(data, aiScore, isLive) {
-      const maxOvers = aiScore.maxOvers || data.overs || 10;
+      const maxOvers = aiScore.maxOvers || data.overs || 20;
       const totalOversPlayed = aiScore.over + (aiScore.ball / 6);
       const crr = totalOversPlayed > 0 ? (aiScore.runs / totalOversPlayed).toFixed(2) : "0.00";
 
-      let rrrDisplay = '';
+      let rrr = "0.00";
+      let targetDisplay = aiScore.target || (aiScore.innings === 2 ? 100 : 0);
+      let statusText = '';
+
       if (aiScore.innings === 2 && aiScore.target > 0) {
         const remainingRuns = Math.max(0, aiScore.target - aiScore.runs);
         const remainingBalls = Math.max(0, (maxOvers * 6) - (aiScore.over * 6 + aiScore.ball));
-        const rrrVal = remainingBalls > 0 ? ((remainingRuns / remainingBalls) * 6).toFixed(2) : "0.00";
-        rrrDisplay = `<span class="text-[10px] text-red-400 font-mono font-semibold ml-2">RRR: ${rrrVal}</span>`;
+        rrr = remainingBalls > 0 ? ((remainingRuns / remainingBalls) * 6).toFixed(2) : "0.00";
+        statusText = `${aiScore.battingTeam} need ${remainingRuns} runs in ${remainingBalls} balls`;
+      } else {
+        statusText = `1st Innings: ${aiScore.battingTeam} is batting`;
       }
 
+      // ওভারে মোট রান হিসেব
+      let overTotalRuns = 0;
+      (aiScore.recentBalls || []).forEach(b => {
+        if (b === 'wd') overTotalRuns += 1;
+        else if (b !== 'W') overTotalRuns += parseInt(b) || 0;
+      });
+
       return `
-        <div class="flex justify-between items-center border-b border-gray-800 pb-2 mb-2">
-          <div class="flex items-center gap-2">
-            <span class="inline-block w-2 h-2 rounded-full ${isLive ? 'bg-red-500 animate-pulse' : 'bg-gray-500'}"></span>
-            <span class="text-xs font-bold tracking-wider text-gray-200">${aiScore.battingTeam} ${aiScore.runs}/${aiScore.wickets}</span>
-            <span class="text-[9px] bg-gray-800 text-gray-400 px-1.5 py-0.5 rounded font-mono">${aiScore.innings === 1 ? '1st Inn' : '2nd Inn'}</span>
+        <!-- Top Main Score Area -->
+        <div class="flex items-center justify-between border-b border-gray-800/80 pb-3 mb-3">
+          <div class="flex items-center gap-3">
+            <img src="${aiScore.battingLogo || ''}" class="w-9 h-9 object-contain rounded-full bg-gray-800 p-1 border border-gray-700 shrink-0" onerror="this.src='https://via.placeholder.com/40?text=T'">
+            <div>
+              <span class="text-sm font-bold tracking-wide text-gray-200 block leading-tight">${aiScore.battingTeam}</span>
+              <div class="flex items-baseline gap-2 mt-0.5">
+                <span class="text-2xl font-black text-[#818cf8] tracking-tight font-mono">${aiScore.runs}-${aiScore.wickets}</span>
+                <span class="text-xs text-gray-400 font-medium font-mono">${aiScore.over}.${aiScore.ball}</span>
+              </div>
+            </div>
           </div>
-          <div class="flex items-center">
-            <span class="text-[10px] text-emerald-400 font-mono font-semibold mr-1">CRR: ${crr}</span>
-            ${rrrDisplay}
-            <span class="text-[11px] font-semibold text-purple-400 bg-purple-950/80 px-2 py-0.5 rounded-md border border-purple-800/40 font-mono ml-2">
-              ${aiScore.over}.${aiScore.ball} / ${maxOvers} Ov
-            </span>
+
+          <div class="flex items-center gap-3">
+            <span class="text-3xl font-extrabold text-[#fef08a] font-mono">${aiScore.innings}</span>
+            <i class="fa-solid ${isLive ? 'fa-volume-xmark text-gray-400' : 'fa-volume-high text-gray-600'} text-sm"></i>
           </div>
         </div>
-        <div class="flex flex-wrap items-center justify-between text-[11px] text-gray-300 gap-1.5">
-          <div class="flex items-center gap-1 flex-wrap">
-            <span class="font-medium text-gray-400">Over ${aiScore.over + 1}:</span>
-            ${(aiScore.recentBalls || []).length === 0 ? '<span class="text-[10px] text-gray-500">Waiting...</span>' : ''}
+
+        <!-- Middle CRR / RRR / Target Line -->
+        <div class="flex items-center justify-between text-xs text-gray-300 font-medium mb-3 px-1">
+          <div>CRR: <span class="font-bold font-mono text-white">${crr}</span></div>
+          <div>RRR: <span class="font-bold font-mono text-white">${aiScore.innings === 2 ? rrr : '-'}</span></div>
+          <div>Target : <span class="font-bold font-mono text-white">${targetDisplay > 0 ? targetDisplay : '-'}</span></div>
+        </div>
+
+        <!-- Orange Highlight Need Text -->
+        <div class="bg-[#451a03]/40 border border-[#78350f]/50 text-[#fde047] text-center text-xs font-bold py-1.5 px-2 rounded-lg mb-3 tracking-wide">
+          ${statusText}
+        </div>
+
+        <!-- Over & Balls Display Bar -->
+        <div class="flex items-center justify-between text-xs text-gray-300 pt-1">
+          <div class="flex items-center gap-1.5 overflow-x-auto py-1">
+            <span class="text-gray-400 font-medium whitespace-nowrap mr-1">Over ${aiScore.over + 1}</span>
+            
+            ${(aiScore.recentBalls || []).length === 0 ? '<span class="text-[10px] text-gray-500 italic">Waiting...</span>' : ''}
+            
             ${(aiScore.recentBalls || []).map(ball => {
-              let badgeStyle = "bg-gray-800 text-gray-200";
-              if (ball === '4') badgeStyle = "bg-blue-500/20 text-blue-300 font-bold";
-              if (ball === '6') badgeStyle = "bg-emerald-500/20 text-emerald-300 font-bold";
-              if (ball === 'wd') badgeStyle = "bg-amber-500/20 text-amber-300 font-bold";
-              if (ball === 'W') badgeStyle = "bg-red-500/20 text-red-400 font-bold";
-              return `<span class="${badgeStyle} px-1.5 py-0.5 rounded font-mono text-[10px]">${ball}</span>`;
+              let bgClass = "bg-[#1f2937] text-gray-200 border border-gray-700";
+              if (ball === '6') bgClass = "bg-[#65a30d] text-white font-bold border border-lime-500"; 
+              else if (ball === '4') bgClass = "bg-[#0284c7] text-white font-bold border border-sky-400"; 
+              else if (ball === 'W') bgClass = "bg-[#dc2626] text-white font-bold border border-red-500"; 
+              else if (ball === 'wd') bgClass = "bg-[#d97706] text-white font-bold border border-amber-500"; 
+
+              return `<span class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-mono shrink-0 ${bgClass}">${ball}</span>`;
             }).join('')}
           </div>
-          <div class="text-xs font-bold text-amber-400 ml-auto font-mono">
-            ${aiScore.innings === 2 ? `Target: ${aiScore.target}` : `1st Innings`}
+
+          <div class="text-xs font-bold text-gray-300 font-mono whitespace-nowrap ml-2">
+            = ${overTotalRuns}
           </div>
         </div>
       `;
