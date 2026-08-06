@@ -359,7 +359,7 @@
       return s;
     }
 
-    // Dynamic Odds Calculation Function (Updated with Dynamic Draw 'X' Logic & Real Betting Math)
+    // Dynamic Odds Calculation Function (Updated with Specific Distinct Math for Total Six and Total Four)
     function calculateDynamicOdds(market, oKey, currentScore, matchData) {
       if (!currentScore || !market || !market.options) return null;
 
@@ -368,6 +368,47 @@
       const totalOvers = currentScore.maxOvers || 20;
       const currentOvers = currentScore.over + (currentScore.ball / 6);
 
+      const marketTitle = String(market.title || '').toLowerCase().trim();
+      const opt = market.options[oKey];
+      if (!opt) return null;
+
+      const optName = String(opt.name || '').toLowerCase().trim();
+      const optionKeys = Object.keys(market.options);
+
+      const isOverOpt = optName.includes('over') || optName.includes('yes') || optName === 'o';
+      const isUnderOpt = optName.includes('under') || optName.includes('no') || optName === 'u';
+
+      // --- 1. TOTAL SIX MARKET CALCULATIONS ---
+      if (marketTitle.includes('total six') || marketTitle.includes('match sixes') || marketTitle.includes('total 6')) {
+        let lineMatch = optName.match(/(\d+(\.\d+)?)/);
+        let line = lineMatch ? parseFloat(lineMatch[0]) : (totalOvers * 0.4); 
+        let expectedSixesPerOver = 0.45; 
+        let projectedSixes = (currentOvers * expectedSixesPerOver) + ((totalOvers - currentOvers) * expectedSixesPerOver);
+
+        let sixProbOver = 0.50 + ((projectedSixes - line) * 0.18);
+        sixProbOver = Math.max(0.08, Math.min(0.92, sixProbOver));
+        let sixProbUnder = 1.0 - sixProbOver;
+
+        let finalOdds = isOverOpt ? ((1 / sixProbOver) * 0.90) : (isUnderOpt ? ((1 / sixProbUnder) * 0.90) : 1.85);
+        return Math.max(1.05, Math.min(30.00, finalOdds)).toFixed(2);
+      }
+
+      // --- 2. TOTAL FOUR MARKET CALCULATIONS ---
+      if (marketTitle.includes('total four') || marketTitle.includes('match fours') || marketTitle.includes('total 4')) {
+        let lineMatch = optName.match(/(\d+(\.\d+)?)/);
+        let line = lineMatch ? parseFloat(lineMatch[0]) : (totalOvers * 0.85); 
+        let expectedFoursPerOver = 0.95; 
+        let projectedFours = (currentOvers * expectedFoursPerOver) + ((totalOvers - currentOvers) * expectedFoursPerOver);
+
+        let fourProbOver = 0.50 + ((projectedFours - line) * 0.14);
+        fourProbOver = Math.max(0.08, Math.min(0.92, fourProbOver));
+        let fourProbUnder = 1.0 - fourProbOver;
+
+        let finalOdds = isOverOpt ? ((1 / fourProbOver) * 0.90) : (isUnderOpt ? ((1 / fourProbUnder) * 0.90) : 1.85);
+        return Math.max(1.05, Math.min(30.00, finalOdds)).toFixed(2);
+      }
+
+      // --- 3. STANDARD / MAIN MATCH MARKETS (1X2, WINNER) ---
       const team1Name = String(matchData?.team1?.name || '').toLowerCase().trim();
       const team2Name = String(matchData?.team2?.name || '').toLowerCase().trim();
       const team1Code = team1Name.substring(0, 3);
@@ -393,21 +434,11 @@
 
       let winProbTeam2 = 1.0 - winProbTeam1;
 
-      // Draw (X) Probability Calculation:
-      // When both teams have near 50% chance, Draw chance is highest.
-      // As winProbTeam1 diverges from 0.50, draw probability drops.
       let diff = Math.abs(winProbTeam1 - 0.50);
       let drawProb = Math.max(0.02, 0.18 - (diff * 0.32)); 
 
-      // Adjust team probabilities taking draw into account
       let adjTeam1Prob = winProbTeam1 * (1.0 - drawProb);
       let adjTeam2Prob = winProbTeam2 * (1.0 - drawProb);
-
-      const opt = market.options[oKey];
-      if (!opt) return null;
-
-      const optName = String(opt.name || '').toLowerCase().trim();
-      const optionKeys = Object.keys(market.options);
 
       let finalOdds = 1.85;
 
@@ -415,7 +446,6 @@
       const isTeam2Opt = optName === 'w2' || optName.includes(team2Name) || (team2Code && optName.includes(team2Code));
       const isDrawOpt = optName === 'x' || optName.includes('draw') || optName.includes('tie');
 
-      // Real Betting Mathematics: Odds = (1 / Probability) * Bookmaker Margin
       if (isTeam1Opt) {
         finalOdds = (1 / adjTeam1Prob) * 0.92; 
       } else if (isTeam2Opt) {
@@ -423,8 +453,11 @@
       } else if (isDrawOpt) {
         finalOdds = (1 / drawProb) * 0.92; 
       } else {
-        let shift = (winProbTeam1 - 0.50);
-        const isFirstOrPositive = (oKey === optionKeys[0]) || optName.includes('over') || optName.includes('yes');
+        let marketSeed = 0;
+        for (let i = 0; i < marketTitle.length; i++) marketSeed += marketTitle.charCodeAt(i);
+        let shift = (winProbTeam1 - 0.50) + ((marketSeed % 7 - 3) * 0.02);
+        
+        const isFirstOrPositive = (oKey === optionKeys[0]) || isOverOpt;
         
         if (isFirstOrPositive) {
           finalOdds = 1.85 - (shift * 1.5);
@@ -433,7 +466,6 @@
         }
       }
 
-      // Safe Odds Threshold Bounds (1.05 to 30.00)
       finalOdds = Math.max(1.05, Math.min(30.00, finalOdds));
       return finalOdds.toFixed(2);
     }
@@ -1323,4 +1355,4 @@
     });
   </script>
 </body>
-</html>
+  </html>
