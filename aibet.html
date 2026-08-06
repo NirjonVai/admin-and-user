@@ -397,7 +397,6 @@
       let diff = Math.abs(winProbTeam1 - 0.50);
       let drawProb = Math.max(0.02, 0.18 - (diff * 0.32)); 
 
-      // Adjust team probabilities taking draw into account
       let adjTeam1Prob = winProbTeam1 * (1.0 - drawProb);
       let adjTeam2Prob = winProbTeam2 * (1.0 - drawProb);
 
@@ -455,7 +454,7 @@
           updatePayload.winner = forcedWinner;
         }
 
-        // market locked হলেও odds রিয়েলটাইমে আপডেট এবং স্টোর হবে
+        // UPDATED: Lock market thakleo dynamic odds compute o update hoba Database ebong Input field e
         if (matchData.customMarkets) {
           Object.keys(matchData.customMarkets).forEach(mKey => {
             const market = matchData.customMarkets[mKey];
@@ -636,25 +635,26 @@
               buttonStyle = 'bg-red-100 text-red-800 border border-red-300 font-bold shadow-xs';
             }
 
+            // UPDATED: Lock state responsive logic without disabling dynamic value updates
             optionsHTML += `
-              <div class="relative group p-1.5 rounded-xl border bg-white border-gray-100 transition-all ${isLocked ? 'bg-gray-50 border-amber-200' : ''}">
-                ${isLocked ? '<span class="absolute -top-1.5 -right-1 text-[8px] bg-red-500 text-white px-1 rounded-full"><i class="fa-solid fa-lock"></i></span>' : ''}
+              <div class="relative group p-1.5 rounded-xl border bg-white border-gray-100 transition-all ${isLocked ? 'bg-gray-50/70 border-gray-200' : ''}">
                 <div class="flex items-center justify-between gap-1 mb-1">
-                  <input type="text" data-id="${id}" data-mkey="${mKey}" data-okey="${oKey}" value="${formattedName}" placeholder="NAME" class="custom-option-name block text-[10px] font-bold ${totalBet > 0 ? 'text-emerald-600' : 'text-gray-500'} uppercase truncate w-full bg-transparent border-none p-0 focus:outline-none focus:ring-0">
+                  <input type="text" data-id="${id}" data-mkey="${mKey}" data-okey="${oKey}" value="${formattedName}" placeholder="NAME" ${isLocked ? 'disabled' : ''} class="custom-option-name block text-[10px] font-bold ${totalBet > 0 ? 'text-emerald-600' : 'text-gray-500'} uppercase truncate w-full bg-transparent border-none p-0 focus:outline-none focus:ring-0 ${isLocked ? 'opacity-70 cursor-not-allowed' : ''}">
                   
                   <button 
                     data-id="${id}" 
                     data-mkey="${mKey}" 
                     data-okey="${oKey}" 
                     title="Click to set WIN"
-                    class="set-option-win-btn text-[8px] px-1.5 py-0.5 rounded-md transition-all flex items-center justify-center shrink-0 cursor-pointer ${buttonStyle}"
+                    ${isLocked ? 'disabled' : ''}
+                    class="set-option-win-btn text-[8px] px-1.5 py-0.5 rounded-md transition-all flex items-center justify-center shrink-0 cursor-pointer ${buttonStyle} ${isLocked ? 'opacity-60 cursor-not-allowed' : ''}"
                   >
                     ${buttonText}
                   </button>
                 </div>
                 
                 <div class="flex items-center gap-1">
-                  <input type="text" inputmode="decimal" data-id="${id}" data-mkey="${mKey}" data-okey="${oKey}" value="${toEngNum(opt.val || '1.85')}" placeholder="Odds" class="custom-option-val w-full px-1.5 py-1 text-xs font-bold text-gray-800 bg-white border border-gray-200 rounded-lg text-center focus:outline-none focus:ring-1 focus:ring-purple-500 shadow-xs">
+                  <input type="text" inputmode="decimal" data-id="${id}" data-mkey="${mKey}" data-okey="${oKey}" value="${toEngNum(opt.val || '1.85')}" placeholder="Odds" ${isLocked ? 'readonly' : ''} class="custom-option-val w-full px-1.5 py-1 text-xs font-bold text-gray-800 ${isLocked ? 'bg-gray-100 text-gray-500 cursor-not-allowed border-gray-200' : 'bg-white border-gray-200 focus:ring-1 focus:ring-purple-500'} border rounded-lg text-center focus:outline-none shadow-xs">
                 </div>
               </div>
             `;
@@ -683,7 +683,7 @@
               </div>
 
               <div class="flex items-center justify-between mb-1.5 px-3">
-                <input type="text" data-id="${id}" data-mkey="${mKey}" value="${market.title || 'TEAM WINS 1X2'}" placeholder="Market Title" class="market-title-input text-xs font-bold ${isHidden ? 'text-gray-400 line-through' : 'text-gray-700'} bg-transparent border-b border-dashed border-gray-300 focus:border-purple-600 focus:outline-none w-full uppercase">
+                <input type="text" data-id="${id}" data-mkey="${mKey}" value="${market.title || 'TEAM WINS 1X2'}" placeholder="Market Title" ${isLocked ? 'disabled' : ''} class="market-title-input text-xs font-bold ${isHidden ? 'text-gray-400 line-through' : 'text-gray-700'} bg-transparent border-b border-dashed border-gray-300 focus:border-purple-600 focus:outline-none w-full uppercase ${isLocked ? 'cursor-not-allowed opacity-70' : ''}">
               </div>
 
               <div class="px-3 ${isHidden ? 'hidden' : 'grid'} ${gridColsClass} gap-1.5">
