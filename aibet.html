@@ -246,7 +246,7 @@
           bowlingTeam: team2Code,
           battingLogo: team1Logo,
           team1FullName: team1Name, team2FullName: team2Name,
-          runs: 0, wickets: 0, over: 0, ball: 0,
+          runs: 0, wickets: 0, over: 0, ball: 0, sixes: 0, fours: 0,
           team1Runs: 0, team1Wickets: 0, team1Over: 0, team1Ball: 0,
           team2Runs: 0, team2Wickets: 0, team2Over: 0, team2Ball: 0,
           currentOverEvents: [], target: 0, isMatchOver: false, maxOvers: maxOvers,
@@ -270,7 +270,7 @@
         battingLogo: team1Logo,
         team1FullName: team1Name, 
         team2FullName: team2Name,
-        runs: 0, wickets: 0, over: 0, ball: 0,
+        runs: 0, wickets: 0, over: 0, ball: 0, sixes: 0, fours: 0,
         team1Runs: 0, team1Wickets: 0, team1Over: 0, team1Ball: 0,
         team2Runs: 0, team2Wickets: 0, team2Over: 0, team2Ball: 0,
         currentOverEvents: [], target: 0, isMatchOver: (status === 'finished'), maxOvers: maxOvers,
@@ -286,8 +286,8 @@
         if (rand < 0.35) event = '0';
         else if (rand < 0.65) event = '1';
         else if (rand < 0.78) event = '2';
-        else if (rand < 0.88) event = '4';
-        else if (rand < 0.94) event = '6';
+        else if (rand < 0.88) { event = '4'; s.fours++; }
+        else if (rand < 0.94) { event = '6'; s.sixes++; }
         else if (rand < 0.97) event = 'wd';
         else event = 'W';
 
@@ -359,7 +359,7 @@
       return s;
     }
 
-    // Dynamic Odds Calculation Function (Updated to separate TOTAL SIX & TOTAL FOUR logic)
+    // Dynamic Odds Calculation Function (Fixed Initial Sudden Jumps)
     function calculateDynamicOdds(market, oKey, currentScore, matchData) {
       if (!currentScore || !market || !market.options) return null;
 
@@ -367,7 +367,21 @@
       const wickets = currentScore.wickets || 0;
       const totalOvers = currentScore.maxOvers || 20;
       const currentOvers = currentScore.over + (currentScore.ball / 6);
-      const progressRatio = Math.max(0.01, Math.min(1.0, currentOvers / totalOvers));
+      
+      const totalBallsPlayed = (currentScore.over * 6) + currentScore.ball;
+      
+      // If match is just starting or no overs played, keep base odds smooth (~1.85)
+      if (totalBallsPlayed === 0 && currentScore.status !== 'finished') {
+        const title = String(market.title || '').toLowerCase();
+        const opt = market.options[oKey];
+        const optName = String(opt?.name || '').toLowerCase();
+        if (title.includes('1x2') && (optName === 'x' || optName.includes('draw'))) {
+          return "5.00";
+        }
+        return "1.85";
+      }
+
+      const progressRatio = Math.max(0.0, Math.min(1.0, currentOvers / totalOvers));
 
       const team1Name = String(matchData?.team1?.name || '').toLowerCase().trim();
       const team2Name = String(matchData?.team2?.name || '').toLowerCase().trim();
@@ -384,44 +398,46 @@
       // 1. TOTAL SIX MARKET LOGIC
       if (marketTitle.includes('total six') || marketTitle.includes('sixes')) {
         const lineMatch = optName.match(/\d+(\.\d+)?/);
-        const line = lineMatch ? parseFloat(lineMatch[0]) : 6.5;
+        const line = lineMatch ? parseFloat(lineMatch[0]) : 4.5;
+        const currentSixes = currentScore.sixes || 0;
         
-        // Projected sixes based on current overs progress and run acceleration
-        const projectedSixes = (totalOvers * 0.45) * (1 + (runs / Math.max(1, currentOvers * 8) - 1) * 0.3);
         const isOver = optName.includes('over');
         
+        // Estimated sixes at current rate
+        const estimatedSixes = currentOvers > 0 ? (currentSixes / currentOvers) * totalOvers : line;
+        
         let overProb = 0.50;
-        if (projectedSixes > line) {
-          overProb = 0.50 + Math.min(0.40, (projectedSixes - line) * 0.08);
+        if (currentSixes > line) {
+          overProb = 0.92;
         } else {
-          overProb = 0.50 - Math.min(0.40, (line - projectedSixes) * 0.08);
+          let expectedDiff = estimatedSixes - line;
+          overProb = 0.50 + (expectedDiff * 0.08) * Math.min(1, progressRatio * 1.5);
         }
 
-        // Adjust slightly as match progresses
-        overProb = Math.max(0.05, Math.min(0.95, overProb + (progressRatio * 0.05)));
+        overProb = Math.max(0.08, Math.min(0.92, overProb));
         const prob = isOver ? overProb : (1 - overProb);
-        finalOdds = (1 / prob) * 0.90;
+        finalOdds = (1 / prob) * 0.92;
       } 
       // 2. TOTAL FOUR MARKET LOGIC
       else if (marketTitle.includes('total four') || marketTitle.includes('fours')) {
         const lineMatch = optName.match(/\d+(\.\d+)?/);
-        const line = lineMatch ? parseFloat(lineMatch[0]) : 7.5;
+        const line = lineMatch ? parseFloat(lineMatch[0]) : 6.5;
+        const currentFours = currentScore.fours || 0;
         
-        // Projected fours based on overs and wickets in hand (fours depend heavily on overs)
-        const projectedFours = (totalOvers * 0.65) * (1 + ((10 - wickets) / 10 - 0.5) * 0.25);
         const isOver = optName.includes('over');
+        const estimatedFours = currentOvers > 0 ? (currentFours / currentOvers) * totalOvers : line;
         
         let overProb = 0.50;
-        if (projectedFours > line) {
-          overProb = 0.50 + Math.min(0.42, (projectedFours - line) * 0.09);
+        if (currentFours > line) {
+          overProb = 0.92;
         } else {
-          overProb = 0.50 - Math.min(0.42, (line - projectedFours) * 0.09);
+          let expectedDiff = estimatedFours - line;
+          overProb = 0.50 + (expectedDiff * 0.07) * Math.min(1, progressRatio * 1.5);
         }
 
-        // Adjust inversely based on wickets fallen
-        overProb = Math.max(0.05, Math.min(0.95, overProb - (wickets * 0.02)));
+        overProb = Math.max(0.08, Math.min(0.92, overProb));
         const prob = isOver ? overProb : (1 - overProb);
-        finalOdds = (1 / prob) * 0.90;
+        finalOdds = (1 / prob) * 0.92;
       } 
       // 3. TEAM WINS 1X2 & OTHER MARKETS LOGIC
       else {
@@ -430,8 +446,8 @@
         if (currentScore.innings === 1) {
           const expectedRR = 7.5;
           const currentRR = currentOvers > 0 ? (runs / currentOvers) : expectedRR;
-          let scoreImpact = ((currentRR - expectedRR) * 0.04) - (wickets * 0.06);
-          winProbTeam1 = Math.max(0.05, Math.min(0.95, 0.50 + scoreImpact));
+          let scoreImpact = ((currentRR - expectedRR) * 0.03) - (wickets * 0.04);
+          winProbTeam1 = Math.max(0.10, Math.min(0.90, 0.50 + (scoreImpact * Math.min(1, progressRatio * 2))));
         } else {
           const target = currentScore.target || (totalOvers * 7);
           const remainingRuns = Math.max(0, target - runs);
@@ -439,44 +455,37 @@
           const reqRR = (remainingRuns / remainingBalls) * 6;
           const initReqRR = (target / totalOvers);
           
-          let chaseImpact = ((reqRR - initReqRR) * 0.05) + (wickets * 0.07);
+          let chaseImpact = ((initReqRR - reqRR) * 0.05) - (wickets * 0.05);
           winProbTeam1 = Math.max(0.05, Math.min(0.95, 0.50 + chaseImpact));
         }
 
         let winProbTeam2 = 1.0 - winProbTeam1;
-
-        let diff = Math.abs(winProbTeam1 - 0.50);
-        let drawProb = Math.max(0.02, 0.18 - (diff * 0.32)); 
-
-        let adjTeam1Prob = winProbTeam1 * (1.0 - drawProb);
-        let adjTeam2Prob = winProbTeam2 * (1.0 - drawProb);
-
-        const optionKeys = Object.keys(market.options);
 
         const isTeam1Opt = optName === 'w1' || optName.includes(team1Name) || (team1Code && optName.includes(team1Code));
         const isTeam2Opt = optName === 'w2' || optName.includes(team2Name) || (team2Code && optName.includes(team2Code));
         const isDrawOpt = optName === 'x' || optName.includes('draw') || optName.includes('tie');
 
         if (isTeam1Opt) {
-          finalOdds = (1 / adjTeam1Prob) * 0.92; 
+          finalOdds = (1 / (winProbTeam1 * 0.92)) * 0.90; 
         } else if (isTeam2Opt) {
-          finalOdds = (1 / adjTeam2Prob) * 0.92;
+          finalOdds = (1 / (winProbTeam2 * 0.92)) * 0.90;
         } else if (isDrawOpt) {
-          finalOdds = (1 / drawProb) * 0.92; 
+          finalOdds = 5.00 + (progressRatio * 3); 
         } else {
           let shift = (winProbTeam1 - 0.50);
+          const optionKeys = Object.keys(market.options);
           const isFirstOrPositive = (oKey === optionKeys[0]) || optName.includes('over') || optName.includes('yes');
           
           if (isFirstOrPositive) {
-            finalOdds = 1.85 - (shift * 1.5);
+            finalOdds = 1.85 - (shift * 1.2);
           } else {
-            finalOdds = 1.85 + (shift * 1.5);
+            finalOdds = 1.85 + (shift * 1.2);
           }
         }
       }
 
-      // Safe Odds Threshold Bounds (1.05 to 30.00)
-      finalOdds = Math.max(1.05, Math.min(30.00, finalOdds));
+      // Bounds
+      finalOdds = Math.max(1.05, Math.min(25.00, finalOdds));
       return finalOdds.toFixed(2);
     }
 
@@ -490,7 +499,7 @@
 
       const updatePayload = {};
 
-      if (currentBallCount > dbBallCount || currentScore.innings !== dbInnings || !matchData.aiScore) {
+      if (currentBallCount >= dbBallCount || currentScore.innings !== dbInnings || !matchData.aiScore) {
         updatePayload.aiScore = currentScore;
         
         if (currentScore.isMatchOver) {
